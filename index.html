@@ -145,7 +145,33 @@
     flex: 1;
     overflow-x: hidden;
     overflow-y: auto;
+    display: flex;
     /* border-radius: 0.75em; */ /* This is the real problem: scrollbars here. ugh */
+  }
+
+  .card .content .editor {
+    flex: 1;
+    margin: 0;
+    resize: none;
+    border: 2px inset #777;
+    overflow-y: scroll;
+    overflow-x: hidden;
+    padding: 0.4em;
+    background: #EEE;
+    color: #333;
+  }
+  .card .content .markdown {
+    flex: 1;
+    margin: 0;
+    overflow-y: scroll;
+    overflow-x: hidden;
+    padding: 0.5em;
+  }
+  .markdown p {
+    margin: 1em 0;
+  }
+  .markdown p:first-child {
+    margin: 0;
   }
 </style>
 
@@ -179,8 +205,14 @@
 
   function removeSelf(element) { element.parentNode.removeChild(element); }
   function toggleHidden(element) { return element.classList.toggle('hidden'); }
-  function copyTemplate(name) { return document.getElementById(name).content.cloneNode(true).firstElementChild; }
+  function copyTemplateSingle(name) { return document.getElementById(name).content.cloneNode(true).firstElementChild; }
+  function copyTemplateSafe(name) {
+    let t = document.getElementById(name);
+    if(!t) return document.createDocumentFragment();
+    return t.content.cloneNode(true);
+  }
   function getProductVersion() { return document.querySelector("footer .version").textContent; }
+  function toggleHiddenChildren(element) { let hid = null; Array.from(element.children).forEach(e => hid = toggleHidden(e)); return hid; }
 
   function pxToRem(pxValue) { // ai generated
     const htmlFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize);
@@ -230,8 +262,10 @@
     return maxZ;
   }
 
+
   function cardEvent(event) { event.preventDefault(); return getParentCard(event.target); }
   function getCardTitle(card) { return card.querySelector('.title'); }
+  function getCardContent(card) { return card.querySelector(':scope > .content'); }
   function getCardMenu(card) { return card.querySelector('.menu'); }
   function getCardTitleEdit(card) { return card.querySelector('.edit-title'); }
   
@@ -248,7 +282,7 @@
     } else {
       addCard.offset = { x: 2, y: 2 };
     }
-    let card = copyTemplate("template-card");
+    let card = copyTemplateSingle("template-card");
     const mofs = getMainOffset();
     const nextid = nextCardId();
     card.id = "card_" + nextid;
@@ -261,6 +295,9 @@
     card.style.left = addCard.offset.x - pxToRem(mofs.x) + "em";
     card.style.top = addCard.offset.y - pxToRem(mofs.y) + "em";
     setDateElement(card.querySelector(".top time"));
+    getCardContent(card).appendChild(copyTemplateSafe("template-" + type));
+    let menu = getCardMenu(card);
+    menu.insertBefore(copyTemplateSafe("template-" + type + "-menu"), menu.querySelector('.card-info'));
     window[MCKEY].appendChild(card);
   }
 
@@ -327,12 +364,11 @@
       <button class="control" id="action-newtext" title="New text card">📄</button>
       <button class="control" id="action-newchat" title="New chat card">💬</button>
       <button class="control" id="action-resetview" title="Reset view">🧭</button>
-      <!--<button class="control" id="action-resetview" title="Reset view">◎</button>-->
       <button class="control" id="action-save" title="Save page">💾</button>
     </div>
   </footer>
 
-  <div id="main-container" title="Reset anchor" style="font-size: 1rem" data-nextid="1">
+  <div id="main-container" style="font-size: 1rem" data-nextid="1">
   </div>
 
   <template id="template-card">
@@ -352,12 +388,20 @@
             <div><span>type:</span> <span class="card-type"></span></div>
             <div><span>from:</span> <span class="card-from"></span></div>
           </div>
-          <!--<table class="card-info">
-            <tr><td>id:</td><td class="card-id"></td></tr>
-            <tr><td>type:</td><td class="card-type"></td></tr>
-          </table>-->
         </div>
       </div>
       <div class="content"></div>
     </div>
+  </template>
+
+  <template id="template-text">
+    <textarea class="editor" onchange="event.target.textContent=event.target.value"></textarea>
+    <div class="markdown hidden"></div>
+  </template>
+
+  <template id="template-text-menu">
+    <a href="#" onclick="card=cardEvent(event); content=getCardContent(card); toggleHidden(getCardMenu(card)); content.querySelector('.markdown').innerHTML=marked.parse(content.querySelector('.editor').value); toggleHiddenChildren(content)">Toggle markdown</a>
+  </template>
+
+  <template id="template-chat">
   </template>
