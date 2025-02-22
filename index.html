@@ -20,7 +20,7 @@
   #main-container {
     width: 10em;
     height: 10em;
-    position: relative;
+    position: absolute;
     background: #EEE;
   }
 
@@ -45,6 +45,39 @@
 
   button.control:hover {
     filter: brightness(1.2);
+  }
+
+  .card {
+    display: flex;
+    flex-direction: column;
+    padding: 0.35em;
+    border-radius: 1em;
+    background: lightseagreen;
+    position: absolute;
+  }
+  .card .top {
+    /*border-bottom: 0.1em solid rgba(0,0,0, 0.2);*/
+    flex: none;
+    color: white;
+    padding: 0.25em;
+    padding-top: 0;
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 1em;
+  }
+  .card .top .title {
+    flex: 1;
+  }
+  .card .top time {
+    font-size: 0.8em;
+    opacity: 0.8;
+    flex: none;
+  }
+  .card .content {
+    background: white;
+    flex: 1;
+    border-radius: 0.75em;
   }
 </style>
 
@@ -74,25 +107,93 @@
     window.URL.revokeObjectURL(a.href);
   }
 
+  function pxToRem(pxValue) { // ai generated
+    const htmlFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize);
+    return pxValue / htmlFontSize; //(pxValue / htmlFontSize).toFixed(4); // Keeping it up to 4 decimal points for precision.
+  }
+
+  function copyTemplate(name) {
+    return document.getElementById(name).content.cloneNode(true).firstElementChild;
+  }
+
+  function getEventCard(event) {
+    let currentElement = event.target;
+    while (currentElement) {
+      if (currentElement.classList.contains('card')) {
+        return currentElement;
+      }
+      currentElement = currentElement.parentElement; // Move up the DOM tree.
+    }
+    return null;
+  }
+
+  function getOffset(element) {
+    return {
+        x : parseFloat(element.style.left) || 0,
+        y : parseFloat(element.style.top) || 0,
+        fs : parseFloat(element.style.fontSize) || 1
+    }
+  }
+
+  function getMainOffset() {
+    return getOffset(window["main-container"]);
+  }
+
+  function setDateElement(tm) {
+    const now = new Date();
+    tm.setAttribute("datetime", now.toISOString());
+    tm.setAttribute("title", now.toISOString());
+    tm.textContent = now.toLocaleDateString();
+  }
+
+  function addCard(type) {
+    let card = copyTemplate("template-card");
+    const mofs = getMainOffset();
+    card.style.left = 2 - pxToRem(mofs.x) + "em";
+    card.style.top = 2 - pxToRem(mofs.y) + "em";
+    setDateElement(card.querySelector(".top time"));
+    window["main-container"].appendChild(card);
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     let main = window["main-container"];
 
     window["action-save"].addEventListener("click", downloadPage);
+    window["action-newtext"].addEventListener("click", () => addCard("text"));
+    window["action-newchat"].addEventListener("click", () => addCard("chat"));
     window["action-resetview"].addEventListener("click", () => main.style = "");
 
     let lastBodyMouse = null;
+    document.body.addEventListener("wheel", (event) => {
+      //event.preventDefault();
+      if(lastBodyMouse) return false;
+      var delta = Math.max(-1, Math.min(1, (event.wheelDelta || -event.detail)));
+      const mofs = getMainOffset();
+      console.log("DELTA", delta);
+      main.style.fontSize = Math.max(mofs.fs + 0.1 * delta, 0.1) + "em";
+    });
     document.body.addEventListener("mousedown", (event) => {
       if(event.button === 1) {
-        lastBodyMouse = { x : event.clientX, y : event.clientY }
+        let card = getEventCard(event);
+        lastBodyMouse = { x : event.clientX, y : event.clientY, card: card };
         event.preventDefault();
         return false;
       }
     });
     document.body.addEventListener("mousemove", (event) => {
       if(lastBodyMouse) {
-        main.style.left = (parseFloat(main.style.left) || 0) + (event.clientX - lastBodyMouse.x) + "px";
-        main.style.top = (parseFloat(main.style.top) || 0) + (event.clientY - lastBodyMouse.y) + "px";
-        lastBodyMouse = { x : event.clientX, y : event.clientY }
+        const mofs = getMainOffset();
+        if(lastBodyMouse.card) {
+          const cofs = getOffset(lastBodyMouse.card);
+          lastBodyMouse.card.style.left = cofs.x + pxToRem(event.clientX - lastBodyMouse.x) / mofs.fs + "em";
+          lastBodyMouse.card.style.top = cofs.y + pxToRem(event.clientY - lastBodyMouse.y) / mofs.fs + "em";
+        }
+        else {
+          main.style.left = mofs.x + (event.clientX - lastBodyMouse.x) + "px";
+          main.style.top = mofs.y + (event.clientY - lastBodyMouse.y) + "px";
+        }
+        lastBodyMouse.x = event.clientX;
+        lastBodyMouse.y = event.clientY;
       }
     });
     document.body.addEventListener("mouseup", (event) => {
@@ -114,5 +215,15 @@
     <button class="control" id="action-save" title="Save page">💾</button>
   </div>
 
-  <div id="main-container">
+  <div id="main-container" style="font-size: 1rem">
   </div>
+
+  <template id="template-card">
+    <div class="card" style="width: 20em; height: 30em;">
+        <div class="top">
+          <span class="title">New card</span>
+          <time></time>
+        </div>
+        <div class="content"></div>
+    </div>
+  </template>
