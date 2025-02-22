@@ -31,6 +31,7 @@
     display: flex;
     padding: 0.25em;
     gap: 0.25em;
+    z-index: 100000000;
   }
 
   button.control {
@@ -54,6 +55,7 @@
     border-radius: 1em;
     background: lightseagreen;
     position: absolute;
+    border: 0.1em solid #367370;
   }
   .card .top {
     /*border-bottom: 0.1em solid rgba(0,0,0, 0.2);*/
@@ -89,6 +91,8 @@
 </script>
 
 <script>
+  const MCKEY = "main-container";
+
   function downloadPage() { // ai generated (sorry)
     // Get the HTML of the current page
     var doc = document.documentElement.outerHTML;
@@ -119,7 +123,7 @@
   function getEventCard(event) {
     let currentElement = event.target;
     while (currentElement) {
-      if (currentElement.classList.contains('card')) {
+      if (currentElement.hasAttribute("data-topcard")) {
         return currentElement;
       }
       currentElement = currentElement.parentElement; // Move up the DOM tree.
@@ -131,12 +135,13 @@
     return {
         x : parseFloat(element.style.left) || 0,
         y : parseFloat(element.style.top) || 0,
+        z : parseFloat(element.style.zIndex) || 0,
         fs : parseFloat(element.style.fontSize) || 1
     }
   }
 
   function getMainOffset() {
-    return getOffset(window["main-container"]);
+    return getOffset(window[MCKEY]);
   }
 
   function setDateElement(tm) {
@@ -146,17 +151,42 @@
     tm.textContent = now.toLocaleDateString();
   }
 
+  function findMaxCardIndex() {
+    const cards = window[MCKEY].querySelectorAll(":scope > [data-topcard]");
+    let maxZ = 0;
+    cards.forEach(card => {
+      maxZ = Math.max(maxZ, parseFloat(card.style.zIndex));
+    });
+    return maxZ;
+  }
+  
+  function nextCardId() {
+    const nextid = parseInt(window[MCKEY].getAttribute("data-nextid"));
+    window[MCKEY].setAttribute("data-nextid", nextid + 1);
+    return nextid;
+  }
+
   function addCard(type) {
+    if(addCard.offset) { // horrible, I don't care though :)
+      addCard.offset.x += 2;
+      addCard.offset.y += 2;
+    } else {
+      addCard.offset = { x: 2, y: 2 };
+    }
     let card = copyTemplate("template-card");
     const mofs = getMainOffset();
-    card.style.left = 2 - pxToRem(mofs.x) + "em";
-    card.style.top = 2 - pxToRem(mofs.y) + "em";
+    const nextid = nextCardId();
+    card.querySelector(".top .title").textContent += " " + nextid;
+    card.setAttribute("data-id", nextid);
+    card.style.zIndex = findMaxCardIndex() + 1; // TODO: Could this get slow?
+    card.style.left = addCard.offset.x - pxToRem(mofs.x) + "em";
+    card.style.top = addCard.offset.y - pxToRem(mofs.y) + "em";
     setDateElement(card.querySelector(".top time"));
-    window["main-container"].appendChild(card);
+    window[MCKEY].appendChild(card);
   }
 
   document.addEventListener("DOMContentLoaded", function () {
-    let main = window["main-container"];
+    let main = window[MCKEY];
 
     window["action-save"].addEventListener("click", downloadPage);
     window["action-newtext"].addEventListener("click", () => addCard("text"));
@@ -165,16 +195,17 @@
 
     let lastBodyMouse = null;
     document.body.addEventListener("wheel", (event) => {
-      //event.preventDefault();
       if(lastBodyMouse) return false;
       var delta = Math.max(-1, Math.min(1, (event.wheelDelta || -event.detail)));
       const mofs = getMainOffset();
-      console.log("DELTA", delta);
       main.style.fontSize = Math.max(mofs.fs + 0.1 * delta, 0.1) + "em";
     });
     document.body.addEventListener("mousedown", (event) => {
       if(event.button === 1) {
         let card = getEventCard(event);
+        if(card) {
+          card.style.zIndex = findMaxCardIndex() + 1; // This will increase forever
+        }
         lastBodyMouse = { x : event.clientX, y : event.clientY, card: card };
         event.preventDefault();
         return false;
@@ -182,6 +213,7 @@
     });
     document.body.addEventListener("mousemove", (event) => {
       if(lastBodyMouse) {
+        addCard.offset = null; // any movement will reset the accum offset
         const mofs = getMainOffset();
         if(lastBodyMouse.card) {
           const cofs = getOffset(lastBodyMouse.card);
@@ -215,13 +247,13 @@
     <button class="control" id="action-save" title="Save page">💾</button>
   </div>
 
-  <div id="main-container" style="font-size: 1rem">
+  <div id="main-container" style="font-size: 1rem" data-nextid="1">
   </div>
 
   <template id="template-card">
-    <div class="card" style="width: 20em; height: 30em;">
+    <div class="card" data-topcard="" style="width: 20em; height: 30em;">
         <div class="top">
-          <span class="title">New card</span>
+          <span class="title">Card</span>
           <time></time>
         </div>
         <div class="content"></div>
