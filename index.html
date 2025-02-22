@@ -53,7 +53,7 @@
     display: flex;
     flex-direction: column;
     padding: 0.35em;
-    border-radius: 1em;
+    /* border-radius: 1em; */ /* Not sure about these... scrollbars suck */
     background: lightseagreen;
     position: absolute;
     border: 0.1em solid #367370;
@@ -80,7 +80,9 @@
   .card .content {
     background: white;
     flex: 1;
-    border-radius: 0.75em;
+    overflow-x: hidden;
+    overflow-y: auto;
+    /* border-radius: 0.75em; */ /* This is the real problem: scrollbars here. ugh */
   }
 </style>
 

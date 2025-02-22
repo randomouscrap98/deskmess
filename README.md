@@ -17,6 +17,8 @@ nobody else does.
 - Work and save locally like tiddly wiki
 - Add files to cards. Do we save it directly into the card though?
   blobs make everything very large in b64.
+- Individual card management menu (delete, id, link, etc)
+- Change title of card (is that in menu? Do we use the title to drag cards around? Yeah)
 
 Extended goals:
 
@@ -25,6 +27,7 @@ Extended goals:
   everything connects
 - Display all cards of a "type" and a simplified view of how you get to them.
   For things like finding all todo lists
+- Grid snapping for slightly less disorganization?
 
 ## Work in progress
 
