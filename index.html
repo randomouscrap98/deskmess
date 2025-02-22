@@ -18,6 +18,10 @@
     background: #F3F3F3;
   }
 
+  .hidden {
+    display: none !important;
+  }
+
   #main-container {
     width: 10em;
     height: 10em;
@@ -35,7 +39,6 @@
     padding: 0.25em;
     z-index: 100000000;
   }
-
   footer .version {
     font-size: 0.6em;
     opacity: 0.5;
@@ -88,9 +91,11 @@
     align-items: baseline;
     flex-wrap: wrap;
     gap: 1em;
+    position: relative;
   }
   .card .top a:visited, .card .top a:link {
     text-decoration: none;
+    color: white;
   }
   .card .top > * {
     flex: none;
@@ -98,9 +103,29 @@
   .card .top .titlearea {
     flex: 1;
   }
+  .card .top .titlearea > * {
+    width: 100%;
+  }
   .card .top time {
     font-size: 0.8em;
     opacity: 0.8;
+  }
+  .card .top .menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: #367370;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    padding: 0.1em;
+  }
+  .card .top .menu > * {
+    padding: 0.1em;
+    transition: background 0.1s ease-in-out;
+  }
+  .card .top .menu > *:hover {
+    background: lightseagreen;
   }
   .card .content {
     background: white;
@@ -139,17 +164,17 @@
     window.URL.revokeObjectURL(a.href);
   }
 
+  function removeSelf(element) { element.parentNode.removeChild(element); }
+  function toggleHidden(element) { element.classList.toggle('hidden'); }
+  function copyTemplate(name) { return document.getElementById(name).content.cloneNode(true).firstElementChild; }
+
   function pxToRem(pxValue) { // ai generated
     const htmlFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize);
     return pxValue / htmlFontSize; //(pxValue / htmlFontSize).toFixed(4); // Keeping it up to 4 decimal points for precision.
   }
 
-  function copyTemplate(name) {
-    return document.getElementById(name).content.cloneNode(true).firstElementChild;
-  }
-
-  function findEventParent(event, check) {
-    let currentElement = event.target;
+  function findParentOrSelf(currentElement, check) {
+    //let currentElement = event.target;
     while (currentElement) {
       if (check(currentElement)) {
         return currentElement;
@@ -159,13 +184,8 @@
     return null;
   }
 
-  function getEventCard(event) {
-    return findEventParent(event, (e) => e.hasAttribute("data-topcard"));
-  }
-
-  function isInFooter(event) {
-    return findEventParent(event, (e) => e.nodeName.toLowerCase() == 'footer');
-  }
+  function getParentCard(element) { return findParentOrSelf(element, (e) => e.hasAttribute("data-topcard")); }
+  function isInFooter(element) { return findParentOrSelf(element, (e) => e.nodeName.toLowerCase() == 'footer'); }
 
   function getOffset(element) {
     return {
@@ -195,6 +215,11 @@
     });
     return maxZ;
   }
+
+  function cardEvent(event) { event.preventDefault(); return getParentCard(event.target); }
+  function getCardTitle(card) { return card.querySelector('.title'); }
+  function getCardMenu(card) { return card.querySelector('.menu'); }
+  function getCardTitleEdit(card) { return card.querySelector('.edit-title'); }
   
   function nextCardId() {
     const nextid = parseInt(window[MCKEY].getAttribute("data-nextid"));
@@ -238,8 +263,8 @@
     });
     document.body.addEventListener("mousedown", (event) => {
       if(event.button === 0) {
-        if(isInFooter(event)) return;
-        let card = getEventCard(event);
+        if(isInFooter(event.target)) return;
+        let card = getParentCard(event.target);
         if(card) {
           // Only accept dragging if they're using the draghandle
           if(!event.target.classList.contains('draghandle')) return;
@@ -293,17 +318,22 @@
   </div>
 
   <template id="template-card">
-    <div class="card" data-topcard="" style="width: 20em; height: 30em;">
+    <div class="card" data-topcard="" style="width: 25em; height: 30em;">
       <div class="top">
         <div class="titlearea">
           <div class="title draghandle">Card</div>
-          <div class="edit-title" style="display: none">
-            <input type="text">
+          <input type="text" class="edit-title hidden" oninput="i=event.target; card=getParentCard(i); getCardTitle(card).textContent=i.value; i.setAttribute('data-value', i.value)">
+              <!--
+            <input type="text" oninput="i=event.target; card=getParentCard(i); getCardTitle(card).textContent=i.value; i.setAttribute('value', i.value)">
             <a href="#">✅</a>
-          </div>
+          </div>-->
         </div>
         <time></time>
-        <a href="#">⚙️</a>
+        <a href="#" onclick="card=cardEvent(event); toggleHidden(getCardMenu(card))">⚙️</a>
+        <div class="menu hidden">
+          <a href="#" onclick="card=cardEvent(event); t=getCardTitle(card); te=getCardTitleEdit(card); te.value=t.textContent; toggleHidden(te); toggleHidden(t)">Edit title</a>
+          <a href="#" onclick="card=cardEvent(event); if(confirm('Really delete \''+getCardTitle(card).textContent+'\'?')){removeSelf(card)}">Delete card</a>
+        </div>
       </div>
       <div class="content"></div>
     </div>
