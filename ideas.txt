@@ -1,0 +1,20 @@
+- Limit card colors to one of just a handful. Colors are classes, thus stylable by theme
+- This also enables easy dark mode? Maybe?
+- Drag cards by title, expand by dragging on right or bottom side. Maybe resize always available
+- Potentially draw lines using canvas behind, could be slow and use lots of memory
+- need to see if textarea automatically saves what's in it or if you need to set it
+  somewhere
+- Concern about user saving while card title is being edited, have to see how that goes
+- leave card title default and user has to click through every time to edit it. this is
+  adhd software, i'm not going to be setting a title most of the time until after the fact
+- Might be able to use border-right and border-bottom on rectangles that follow their connected cards.
+  could be more efficient maybe...
+- sticky cards? it might be nice if some cards could stick to others... but consider stacks
+- was considering how chat might be nice to attach to some image but then that's what links are for...
+- potentially making "hard" links which drag elements with them? how to move around hard links
+  though?
+- absolutely NEED export functionality NOW so that people (myself included) can move to
+  newer versions. Adding export and import will add a LOT of code...
+
+make sure it's different enough from tiddlywiki to be worth it. or just have fun with it and
+never end up using it lol

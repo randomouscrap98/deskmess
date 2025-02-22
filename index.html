@@ -25,14 +25,34 @@
     background: #EEE;
   }
 
-  #controls {
+  footer {
     position: fixed;
     bottom: 0;
     right: 0;
     display: flex;
-    padding: 0.25em;
+    align-items: flex-end;
     gap: 0.25em;
+    padding: 0.25em;
     z-index: 100000000;
+  }
+
+  footer .version {
+    font-size: 0.6em;
+    opacity: 0.5;
+  }
+
+  #controls {
+    display: flex;
+    gap: 0.25em;
+  }
+
+  .draghandle {
+    cursor: grab;
+  }
+
+  .no-interaction {
+    pointer-events: none; /* Disables all mouse events */
+    user-select: none;    /* Prevents text selection */
   }
 
   button.control {
@@ -69,13 +89,18 @@
     flex-wrap: wrap;
     gap: 1em;
   }
-  .card .top .title {
+  .card .top a:visited, .card .top a:link {
+    text-decoration: none;
+  }
+  .card .top > * {
+    flex: none;
+  }
+  .card .top .titlearea {
     flex: 1;
   }
   .card .top time {
     font-size: 0.8em;
     opacity: 0.8;
-    flex: none;
   }
   .card .content {
     background: white;
@@ -123,15 +148,23 @@
     return document.getElementById(name).content.cloneNode(true).firstElementChild;
   }
 
-  function getEventCard(event) {
+  function findEventParent(event, check) {
     let currentElement = event.target;
     while (currentElement) {
-      if (currentElement.hasAttribute("data-topcard")) {
+      if (check(currentElement)) {
         return currentElement;
       }
       currentElement = currentElement.parentElement; // Move up the DOM tree.
     }
     return null;
+  }
+
+  function getEventCard(event) {
+    return findEventParent(event, (e) => e.hasAttribute("data-topcard"));
+  }
+
+  function isInFooter(event) {
+    return findEventParent(event, (e) => e.nodeName.toLowerCase() == 'footer');
   }
 
   function getOffset(element) {
@@ -204,9 +237,12 @@
       main.style.fontSize = Math.max(mofs.fs + 0.1 * delta, 0.1) + "em";
     });
     document.body.addEventListener("mousedown", (event) => {
-      if(event.button === 1) {
+      if(event.button === 0) {
+        if(isInFooter(event)) return;
         let card = getEventCard(event);
         if(card) {
+          // Only accept dragging if they're using the draghandle
+          if(!event.target.classList.contains('draghandle')) return;
           card.style.zIndex = findMaxCardIndex() + 1; // This will increase forever
         }
         lastBodyMouse = { x : event.clientX, y : event.clientY, card: card };
@@ -232,7 +268,7 @@
       }
     });
     document.body.addEventListener("mouseup", (event) => {
-      if(event.button === 1) {
+      if(event.button === 0) {
         lastBodyMouse = null;
         event.preventDefault();
       }
@@ -242,23 +278,33 @@
 
 <body>
 
-  <div id="controls">
-    <button class="control" id="action-newtext" title="New text card">📄</button>
-    <button class="control" id="action-newchat" title="New chat card">💬</button>
-    <button class="control" id="action-resetview" title="Reset view">🧭</button>
-    <!--<button class="control" id="action-resetview" title="Reset view">◎</button>-->
-    <button class="control" id="action-save" title="Save page">💾</button>
-  </div>
+  <footer>
+    <span class="version no-interaction">v0.1</span>
+    <div id="controls">
+      <button class="control" id="action-newtext" title="New text card">📄</button>
+      <button class="control" id="action-newchat" title="New chat card">💬</button>
+      <button class="control" id="action-resetview" title="Reset view">🧭</button>
+      <!--<button class="control" id="action-resetview" title="Reset view">◎</button>-->
+      <button class="control" id="action-save" title="Save page">💾</button>
+    </div>
+  </footer>
 
   <div id="main-container" style="font-size: 1rem" data-nextid="1">
   </div>
 
   <template id="template-card">
     <div class="card" data-topcard="" style="width: 20em; height: 30em;">
-        <div class="top">
-          <span class="title">Card</span>
-          <time></time>
+      <div class="top">
+        <div class="titlearea">
+          <div class="title draghandle">Card</div>
+          <div class="edit-title" style="display: none">
+            <input type="text">
+            <a href="#">✅</a>
+          </div>
         </div>
-        <div class="content"></div>
+        <time></time>
+        <a href="#">⚙️</a>
+      </div>
+      <div class="content"></div>
     </div>
   </template>
