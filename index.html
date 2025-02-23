@@ -55,6 +55,10 @@
     cursor: grab;
   }
 
+  .card-main { /* class for main card content? I don't know... */
+    border: 0.15em solid #367370;
+  }
+
   .no-interaction {
     pointer-events: none; /* Disables all mouse events */
     user-select: none;    /* Prevents text selection */
@@ -170,7 +174,7 @@
   .card .content .chat-editor {
     flex: none;
     resize: vertical;
-    min-height: 3em;
+    min-height: 4em;
   }
 
   .card .content .chat {
@@ -183,6 +187,7 @@
     overflow-x: hidden;
     overflow-y: scroll;
     font-size: 0.93em; /* very silly */
+    /*border: 0.2em inset #777; /* Is this going to be a common thing? Will I need to add this everywhere? */
   }
   .message-container {
     padding: 0.1em 0.2em;
@@ -613,7 +618,7 @@
 
   <template id="template-text">
     <textarea class="editor markdown-editor" onchange="event.target.textContent=event.target.value"></textarea>
-    <div class="markdown hidden"></div>
+    <div class="markdown hidden card-main"></div>
   </template>
 
   <template id="template-text-menu">
@@ -622,7 +627,7 @@
 
   <template id="template-chat">
     <div class="chat">
-      <div class="messages"></div>
+      <div class="messages card-main"></div>
       <textarea class="editor chat-editor" onkeydown="if(event.keyCode===13 && !event.shiftKey){card=cardEvent(event); sendMessage(card,event.target.value); event.target.value='';}"></textarea>
     </div>
   </template>
