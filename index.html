@@ -151,9 +151,7 @@
   }
 
   .card .content .editor {
-    flex: 1;
     margin: 0;
-    resize: none;
     border: 0.2em inset #777;
     overflow-y: scroll;
     overflow-x: hidden;
@@ -165,18 +163,56 @@
     border-radius: 0;
     outline: none;
   }
+  .card .content .markdown-editor {
+    flex: 1;
+    resize: none;
+  }
+  .card .content .chat-editor {
+    flex: none;
+    resize: vertical;
+    min-height: 3em;
+  }
+
+  .card .content .chat {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  .card .content .messages {
+    flex: 1;
+    overflow-x: hidden;
+    overflow-y: scroll;
+  }
+  .message-container {
+    padding: 0.1em 0.2em;
+  }
+  .message-container:nth-child(odd) {
+    background-color: #F7F7F7;
+  }
+  .message-container time {
+    font-weight: bold;
+  }
+  .message-container time::after {
+    content: ":";
+    /*font-weight: bold;*/
+  }
+
   .card .content .markdown {
     flex: 1;
     margin: 0;
     overflow-y: scroll;
     overflow-x: hidden;
     padding: 0.5em;
+    line-height: 1.4;
   }
   .markdown p {
     margin: 1em 0;
   }
   .markdown p:first-child {
     margin: 0;
+  }
+  .markdown ul {
+    padding-left: 1.5em;
   }
   .markdown pre code {
     background: #333;
@@ -278,8 +314,75 @@
       cdata.text = editor.value;
       cdata.is_edit = !isHidden(editor);
     }
+    if(cdata.type == "chat") {
+      console.warn("NEED TO EXPORT MESSAGES");
+    }
     return cdata;
   }
+
+  function importCard(cdata) {
+    let card = copyTemplateSingle("template-card");
+    refreshCardId(cdata.id); // Make sure next card id is proper just in case id is huge
+    card.id = "card_" + cdata.id;
+    getCardId(card).textContent = cdata.id;
+    getCardRef(card).textContent = card.id;
+    getCardType(card).textContent = cdata.type;
+    getCardFrom(card).textContent = cdata.from;
+    getCardTitle(card).textContent = cdata.title;
+    card.style.zIndex = cdata.z;
+    card.style.left = cdata.x + "em";
+    card.style.top = cdata.y + "em";
+    setDateElement(getCardDate(card), cdata.date);
+    let content = getCardContent(card);
+    content.appendChild(copyTemplateSafe("template-" + cdata.type));
+    let menu = getCardMenu(card);
+    menu.insertBefore(copyTemplateSafe("template-" + cdata.type + "-menu"), menu.querySelector('.card-info'));
+    window[MCKEY].appendChild(card);
+    if(cdata.type == "text") {
+      const editor = content.querySelector(".editor");
+      editor.textContent = cdata.text;
+      if(!cdata.is_edit) {
+        menu.querySelector(".toggle-markdown").click();
+        console.log("Showing markdown in " + cdata.id);
+      }
+    }
+    if(cdata.type == "chat") {
+      // Need to recreate all messages!
+      console.warn("NEED TO CREATE OLD MESSAGES");
+    }
+  }
+
+  function addCard(type) {
+    if(addCard.offset) { // horrible, I don't care though :)
+      addCard.offset.x += 2;
+      addCard.offset.y += 2;
+    } else {
+      addCard.offset = { x: 2, y: 2 };
+    }
+    const mofs = getMainOffset();
+    const nextid = nextCardId();
+    let cdata = {
+      title: "Card " + nextid,
+      date: new Date().toISOString(),
+      id: nextid,
+      x: addCard.offset.x - pxToRem(mofs.x),
+      y: addCard.offset.y - pxToRem(mofs.y),
+      z: findMaxCardIndex() + 1, // TODO: could this get slow?
+      width: 25,
+      height: 30,
+      type: type,
+      from: getProductVersion(),
+    };
+    if(cdata.type == "text") {
+      cdata.is_edit = true;
+      cdata.text = "";
+    }
+    if(cdata.type == "chat") {
+      cdata.messages = [];
+    }
+    importCard(cdata);
+  }
+
 
   function downloadPage() { // ai generated (sorry)
     // Get the HTML of the current page
@@ -373,80 +476,21 @@
 
   function cardEvent(event) { event.preventDefault(); return getParentCard(event.target); }
 
-  function importCard(cdata) {
-    let card = copyTemplateSingle("template-card");
-    refreshCardId(cdata.id); // Make sure next card id is proper just in case id is huge
-    card.id = "card_" + cdata.id;
-    getCardId(card).textContent = cdata.id;
-    getCardRef(card).textContent = card.id;
-    getCardType(card).textContent = cdata.type;
-    getCardFrom(card).textContent = cdata.from;
-    getCardTitle(card).textContent = cdata.title;
-    card.style.zIndex = cdata.z;
-    card.style.left = cdata.x + "em";
-    card.style.top = cdata.y + "em";
-    setDateElement(getCardDate(card), cdata.date);
+  function createMessage(message, date) {
+    date = date || new Date().toISOString();
+    let emsg = copyTemplateSingle("template-message");
+    setDateElement(emsg.querySelector('time'), date);
+    emsg.querySelector('.message').innerHTML = marked.parseInline(message);
+    return emsg;
+  }
+
+  function sendMessage(card, message) {
+    let emsg = createMessage(message);
     let content = getCardContent(card);
-    content.appendChild(copyTemplateSafe("template-" + cdata.type));
-    let menu = getCardMenu(card);
-    menu.insertBefore(copyTemplateSafe("template-" + cdata.type + "-menu"), menu.querySelector('.card-info'));
-    window[MCKEY].appendChild(card);
-    if(cdata.type == "text") {
-      const editor = content.querySelector(".editor");
-      editor.textContent = cdata.text;
-      if(!cdata.is_edit) {
-        menu.querySelector(".toggle-markdown").click();
-        console.log("Showing markdown in " + cdata.id);
-      }
-    }
+    let messages = content.querySelector(".messages");
+    messages.appendChild(emsg);
+    messages.scrollTop = messages.scrollHeight;
   }
-
-  function addCard(type) {
-    if(addCard.offset) { // horrible, I don't care though :)
-      addCard.offset.x += 2;
-      addCard.offset.y += 2;
-    } else {
-      addCard.offset = { x: 2, y: 2 };
-    }
-    const mofs = getMainOffset();
-    const nextid = nextCardId();
-    let cdata = {
-      title: "Card " + nextid,
-      date: new Date().toISOString(),
-      id: nextid,
-      x: addCard.offset.x - pxToRem(mofs.x),
-      y: addCard.offset.y - pxToRem(mofs.y),
-      z: findMaxCardIndex() + 1, // TODO: could this get slow?
-      width: 25,
-      height: 30,
-      type: type,
-      from: getProductVersion(),
-    };
-    if(cdata.type == "text") {
-      cdata.is_edit = true;
-      cdata.text = "";
-    }
-    importCard(cdata);
-  }
-
-  /*function addCard(type) {
-    let card = copyTemplateSingle("template-card");
-    const mofs = getMainOffset();
-    const nextid = nextCardId();
-    card.id = "card_" + nextid;
-    getCardId(card).textContent = card.id;
-    getCardType(card).textContent = type;
-    getCardFrom(card).textContent = getProductVersion();
-    getCardTitle(card).textContent += " " + nextid;
-    card.style.zIndex = findMaxCardIndex() + 1; // TODO: Could this get slow?
-    card.style.left = addCard.offset.x - pxToRem(mofs.x) + "em";
-    card.style.top = addCard.offset.y - pxToRem(mofs.y) + "em";
-    setDateElement(getCardDate(card));
-    getCardContent(card).appendChild(copyTemplateSafe("template-" + type));
-    let menu = getCardMenu(card);
-    menu.insertBefore(copyTemplateSafe("template-" + type + "-menu"), menu.querySelector('.card-info'));
-    window[MCKEY].appendChild(card);
-  }*/
 
   document.addEventListener("DOMContentLoaded", function () {
     let main = window[MCKEY];
@@ -455,7 +499,7 @@
     window["action-export"].addEventListener("click", downloadExport);
     window["action-import"].addEventListener("click", () => window['import-file'].click());
     window["action-newtext"].addEventListener("click", () => addCard("text"));
-    //window["action-newchat"].addEventListener("click", () => addCard("chat"));
+    window["action-newchat"].addEventListener("click", () => addCard("chat"));
     window["action-resetview"].addEventListener("click", () => main.style = "");
 
     let lastBodyMouse = null;
@@ -499,8 +543,10 @@
     });
     document.body.addEventListener("mouseup", (event) => {
       if(event.button === 0) {
-        lastBodyMouse = null;
-        event.preventDefault();
+        if(lastBodyMouse) {
+          lastBodyMouse = null;
+          event.preventDefault();
+        }
       }
     });
   });
@@ -509,10 +555,10 @@
 <body>
 
   <footer>
-    <span class="version no-interaction">v0.1</span>
+    <span class="version no-interaction">v0.2</span>
     <div id="controls">
       <button class="control" id="action-newtext" title="New text card">📄</button>
-      <!--<button class="control" id="action-newchat" title="New chat card">💬</button>-->
+      <button class="control" id="action-newchat" title="New chat card">💬</button>
       <button class="control" id="action-resetview" title="Reset view">🧭</button>
       <button class="control" id="action-import" title="Import page">📥</button>
       <button class="control" id="action-export" title="Export page">📤</button>
@@ -549,7 +595,7 @@
   </template>
 
   <template id="template-text">
-    <textarea class="editor" onchange="event.target.textContent=event.target.value"></textarea>
+    <textarea class="editor markdown-editor" onchange="event.target.textContent=event.target.value"></textarea>
     <div class="markdown hidden"></div>
   </template>
 
@@ -558,4 +604,15 @@
   </template>
 
   <template id="template-chat">
+    <div class="chat">
+      <div class="messages"></div>
+      <textarea class="editor chat-editor" onkeydown="if(event.keyCode===13 && !event.shiftKey){card=cardEvent(event); sendMessage(card,event.target.value); event.target.value='';}"></textarea>
+    </div>
+  </template>
+
+  <template id="template-message">
+    <div class="message-container">
+      <time></time>
+      <span class="message"></span>
+    </div>
   </template>
