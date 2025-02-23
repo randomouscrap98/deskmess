@@ -82,6 +82,9 @@
     transition: filter 0.1s ease-in-out;
     cursor: pointer;
   }
+  button.control.unsaved {
+    background: var(--red);
+  }
 
   button.control:hover {
     filter: brightness(1.2);
@@ -93,8 +96,6 @@
     padding: 0.35em;
     position: absolute;
     font-size: 1em;
-    /*min-width: 7em;
-    min-height: 2em;*/
     overflow: hidden;
   }
   .card .top {
@@ -185,12 +186,6 @@
     right: 0;
     cursor: se-resize;
   }
-  /*.card .right-resize, .card .bottom-resize {
-    transition: background 0.1s ease-in-out;
-  }
-  .card .right-resize:hover, .card .bottom-resize:hover {
-    background: 
-  }*/
 
   .card .content {
     background: white;
@@ -333,6 +328,7 @@
 
 <script>
   const MCKEY = "main-container";
+  const NEXTIDKEY = "data-nextid";
   const MODRESIZERIGHT = 1;
   const MODRESIZEBOTTOM = 2;
   const MINCARDWIDTH = 7;
@@ -373,18 +369,18 @@
 
   function pxToRem(pxValue) { // ai generated
     const htmlFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize);
-    return pxValue / htmlFontSize; //(pxValue / htmlFontSize).toFixed(4); // Keeping it up to 4 decimal points for precision.
+    return pxValue / htmlFontSize;
   }
 
   function nextCardId() {
-    const nextid = parseInt(window[MCKEY].getAttribute("data-nextid"));
-    window[MCKEY].setAttribute("data-nextid", nextid + 1);
+    const nextid = parseInt(window[MCKEY].getAttribute(NEXTIDKEY));
+    window[MCKEY].setAttribute(NEXTIDKEY, nextid + 1);
     return nextid;
   }
   function refreshCardId(id) {
-    const nextid = parseInt(window[MCKEY].getAttribute("data-nextid"));
+    const nextid = parseInt(window[MCKEY].getAttribute(NEXTIDKEY));
     const maxid = Math.max(parseInt(id) + 1, nextid);
-    window[MCKEY].setAttribute("data-nextid", maxid);
+    window[MCKEY].setAttribute(NEXTIDKEY, maxid);
     return maxid;
   }
 
@@ -426,7 +422,6 @@
     if(cdata.type == "chat") {
       cdata.messages = Array.from(card.querySelectorAll(".content .message-container")).map(
         emsg => parseMessage(emsg));
-      //console.warn("NEED TO EXPORT MESSAGES");
     }
     return cdata;
   }
@@ -501,10 +496,10 @@
       cdata.messages = [];
     }
     importCard(cdata);
+    setUnsaved();
   }
 
-
-  function downloadPage() { // ai generated (sorry)
+  function downloadPage() {
     // Get the HTML of the current page
     var doc = document.documentElement.outerHTML;
     doc = "<!DOCTYPE html>\n" + doc;
@@ -542,7 +537,7 @@
           }
           window['main-container'].innerHTML = "";
           Object.values(jsonData.cards).forEach(cdata => importCard(cdata));
-          alert("Import complete!");
+          setSaved();
         } catch (err) {
           alert(`Couldn't parse file: ${err}`);
         }
@@ -619,22 +614,35 @@
     let messages = content.querySelector(".messages");
     messages.appendChild(emsg);
     messages.scrollTop = messages.scrollHeight;
+    setUnsaved();
   }
   function setCardColor(event) {
     let card = cardEvent(event);
     card.setAttribute("data-color", event.target.getAttribute("data-color"));
     setHidden(getCardMenu(card));
+    setUnsaved();
   }
+
+  function setSaved() { window["action-save"].classList.remove("unsaved"); }
+  function setUnsaved() { window["action-save"].classList.add("unsaved"); }
+  function isUnsaved() { return window["action-save"].classList.contains("unsaved"); }
 
   document.addEventListener("DOMContentLoaded", function () {
     let main = window[MCKEY];
 
-    window["action-save"].addEventListener("click", downloadPage);
-    window["action-export"].addEventListener("click", downloadExport);
+    window["action-save"].addEventListener("click", () => {setSaved(); downloadPage();});
+    window["action-export"].addEventListener("click", () => {downloadExport(); setSaved();});
     window["action-import"].addEventListener("click", () => window['import-file'].click());
     window["action-newtext"].addEventListener("click", () => addCard("text"));
     window["action-newchat"].addEventListener("click", () => addCard("chat"));
     window["action-resetview"].addEventListener("click", () => main.style = "");
+
+    window.addEventListener('beforeunload', function (event) {
+      if (isUnsaved()) {
+        event.preventDefault();
+        event.returnValue = ''; // Chrome requires returnValue to be set
+      }
+    });
 
     let lastBodyMouse = null;
     document.body.addEventListener("wheel", (event) => {
@@ -740,7 +748,7 @@
             <a href="#" data-color="purple" onclick="setCardColor(event);"></a>
             <a href="#" data-color="gray" onclick="setCardColor(event);"></a>
           </div>
-          <a href="#" class="toggle-title" onclick="card=cardEvent(event); t=getCardTitle(card); te=getCardTitleEdit(card); te.value=t.textContent; toggleHidden(t); if(toggleHidden(te)){setHidden(getCardMenu(card));event.target.textContent='Edit title';}else{event.target.textContent='Set title';te.focus()}">Edit title</a>
+          <a href="#" class="toggle-title" onclick="card=cardEvent(event); t=getCardTitle(card); te=getCardTitleEdit(card); te.value=t.textContent; toggleHidden(t); if(toggleHidden(te)){setHidden(getCardMenu(card));event.target.textContent='Edit title';setUnsaved();}else{event.target.textContent='Set title';te.focus()}">Edit title</a>
           <a href="#" onclick="card=cardEvent(event); if(confirm('Really delete \''+getCardTitle(card).textContent+'\'?')){removeSelf(card)}">Delete card</a>
           <div class="card-info">
             <div><span>id:</span> <span class="card-id"></span></div>
@@ -758,7 +766,7 @@
   </template>
 
   <template id="template-text">
-    <textarea class="editor markdown-editor" onchange="event.target.textContent=event.target.value"></textarea>
+    <textarea class="editor markdown-editor" oninput="setUnsaved();" onchange="event.target.textContent=event.target.value"></textarea>
     <div class="markdown hidden card-main"></div>
   </template>
 
