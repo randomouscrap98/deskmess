@@ -154,13 +154,14 @@
     flex: 1;
     margin: 0;
     resize: none;
-    border: 2px inset #777;
+    border: 0.2em inset #777;
     overflow-y: scroll;
     overflow-x: hidden;
     padding: 0.4em;
     background: #EEE;
     color: #333;
     font-size: 0.8em;
+    font-family: monospace, monospace;
     border-radius: 0;
     outline: none;
   }
@@ -185,7 +186,7 @@
     overflow-y: auto;
     overflow-x: auto;
     padding: 0.3em;
-    font-family: mono;
+    font-family: monospace, monospace;
   }
 </style>
 
@@ -392,7 +393,7 @@
     window[MCKEY].appendChild(card);
     if(cdata.type == "text") {
       const editor = content.querySelector(".editor");
-      editor.value = cdata.text;
+      editor.textContent = cdata.text;
       if(!cdata.is_edit) {
         menu.querySelector(".toggle-markdown").click();
         console.log("Showing markdown in " + cdata.id);
