@@ -10,14 +10,14 @@
   :root {
     --teal: #20B2AA;
     --teal-border: #367370;
-    --blue: rgb(95, 146, 200);
-    --blue-border: rgb(52, 99, 147);
-    --red: rgb(221, 109, 109); /*rgb(234, 108, 108); /*rgb(221, 109, 109);*/
-    --red-border: rgb(172, 77, 77);
-    --purple: rgb(171, 124, 187); /*rgb(184, 122, 206);*/
-    --purple-border: rgb(120, 74, 136); /*rgb(146, 84, 168);*/
-    --gray: rgb(168, 168, 168); /*rgb(181, 181, 181);*/
-    --gray-border: rgb(113, 113, 113);
+    --blue: #5F92C8;
+    --blue-border: #346393;
+    --red: #DD6D6D;
+    --red-border: #AC4D4D;
+    --purple: #AB7CBB;
+    --purple-border: #784A88;
+    --gray: #A8A8A8;
+    --gray-border: #717171;
   }
 
   body {
@@ -91,12 +91,13 @@
     display: flex;
     flex-direction: column;
     padding: 0.35em;
-    /* border-radius: 1em; */ /* Not sure about these... scrollbars suck */
     position: absolute;
     font-size: 1em;
+    /*min-width: 7em;
+    min-height: 2em;*/
+    overflow: hidden;
   }
   .card .top {
-    /*border-bottom: 0.1em solid rgba(0,0,0, 0.2);*/
     flex: none;
     color: white;
     padding: 0.25em;
@@ -154,12 +155,41 @@
   }
 
   .card .card-info {
-    background: #444; /*darkslategray;*/
+    background: #444;
     font-size: 0.8em;
     margin-top: 0.1em;
   }
-  /*.card .card-info td:first-child {
-    text-align: right;
+
+  .card .right-resize {
+    position: absolute;
+    height: calc(100% - 0.3em);
+    width: 0.2em;
+    top: 0;
+    right: 0;
+    cursor: ew-resize;
+
+  }
+  .card .bottom-resize {
+    position: absolute;
+    width: calc(100% - 0.3em);
+    height: 0.2em;
+    bottom: 0;
+    left: 0;
+    cursor: ns-resize;
+  }
+  .card .corner-resize {
+    position: absolute;
+    width: 0.3em;
+    height: 0.3em;
+    bottom: 0;
+    right: 0;
+    cursor: se-resize;
+  }
+  /*.card .right-resize, .card .bottom-resize {
+    transition: background 0.1s ease-in-out;
+  }
+  .card .right-resize:hover, .card .bottom-resize:hover {
+    background: 
   }*/
 
   .card .content {
@@ -168,7 +198,6 @@
     overflow-x: hidden;
     overflow-y: auto;
     display: flex;
-    /* border-radius: 0.75em; */ /* This is the real problem: scrollbars here. ugh */
   }
 
   .card .content .editor {
@@ -204,7 +233,6 @@
     overflow-x: hidden;
     overflow-y: scroll;
     font-size: 0.93em; /* very silly */
-    /*border: 0.2em inset #777; /* Is this going to be a common thing? Will I need to add this everywhere? */
   }
   .message-container {
     padding: 0.1em 0.2em;
@@ -217,7 +245,6 @@
   }
   .message-container time::after {
     content: ":";
-    /*font-weight: bold;*/
   }
 
   .card .content .markdown {
@@ -306,6 +333,10 @@
 
 <script>
   const MCKEY = "main-container";
+  const MODRESIZERIGHT = 1;
+  const MODRESIZEBOTTOM = 2;
+  const MINCARDWIDTH = 7;
+  const MINCARDHEIGHT = 2;
 
   // Simple Card helpers
   function getParentCard(element) { return findParentOrSelf(element, (e) => e.hasAttribute("data-topcard")); }
@@ -333,6 +364,12 @@
   function getProductVersion() { return document.querySelector("footer .version").textContent; }
   function toggleHiddenChildren(element) { let hid = null; Array.from(element.children).forEach(e => hid = toggleHidden(e)); return hid; }
   function isInFooter(element) { return findParentOrSelf(element, (e) => e.nodeName.toLowerCase() == 'footer'); }
+  function clamp(v, min, max) {
+    if(min > max) { const tmp = min; min = max; max = tmp; }
+    if(v < min) v = min;
+    if(v > max) v = max;
+    return v;
+  }
 
   function pxToRem(pxValue) { // ai generated
     const htmlFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize);
@@ -407,6 +444,8 @@
     card.style.zIndex = cdata.z;
     card.style.left = cdata.x + "em";
     card.style.top = cdata.y + "em";
+    card.style.width = cdata.width + "em";
+    card.style.height = cdata.height + "em";
     setDateElement(getCardDate(card), cdata.date);
     let content = getCardContent(card);
     content.appendChild(copyTemplateSafe("template-" + cdata.type));
@@ -515,7 +554,6 @@
   }
 
   function findParentOrSelf(currentElement, check) {
-    //let currentElement = event.target;
     while (currentElement) {
       if (check(currentElement)) {
         return currentElement;
@@ -585,8 +623,6 @@
   function setCardColor(event) {
     let card = cardEvent(event);
     card.setAttribute("data-color", event.target.getAttribute("data-color"));
-    //card.classList.remove("teal", "blue");
-    //card.classList.add(event.target.getAttribute("data-color"));
     setHidden(getCardMenu(card));
   }
 
@@ -602,7 +638,6 @@
 
     let lastBodyMouse = null;
     document.body.addEventListener("wheel", (event) => {
-      //if(lastBodyMouse) return false;
       if(getParentCard(event.target)) return;
       var delta = Math.max(-1, Math.min(1, (event.wheelDelta || -event.detail)));
       const mofs = getMainOffset();
@@ -612,12 +647,22 @@
       if(event.button === 0) {
         if(isInFooter(event.target)) return;
         let card = getParentCard(event.target);
+        let mods = 0;
+        let cofs = null;
         if(card) {
           card.style.zIndex = findMaxCardIndex() + 1; // This will increase forever
-          // Only accept dragging if they're using the draghandle
-          if(!event.target.classList.contains('draghandle')) return;
+          cofs = getOffset(card);
+          if(event.target.classList.contains("right-resize")) mods = MODRESIZERIGHT;
+          else if(event.target.classList.contains("bottom-resize")) mods = MODRESIZEBOTTOM;
+          else if(event.target.classList.contains("corner-resize")) mods = MODRESIZERIGHT | MODRESIZEBOTTOM;
+          if(!mods && !event.target.classList.contains('draghandle')) return;
         }
-        lastBodyMouse = { x : event.clientX, y : event.clientY, card: card };
+        lastBodyMouse = {
+          x : event.clientX, xs: event.clientX,
+          y : event.clientY, ys: event.clientY,
+          card: card, cofs: cofs,
+          mods: mods
+        };
         event.preventDefault();
         return false;
       }
@@ -628,8 +673,15 @@
         const mofs = getMainOffset();
         if(lastBodyMouse.card) {
           const cofs = getOffset(lastBodyMouse.card);
-          lastBodyMouse.card.style.left = cofs.x + pxToRem(event.clientX - lastBodyMouse.x) / mofs.fs + "em";
-          lastBodyMouse.card.style.top = cofs.y + pxToRem(event.clientY - lastBodyMouse.y) / mofs.fs + "em";
+          if(lastBodyMouse.mods) {
+            if(lastBodyMouse.mods & MODRESIZERIGHT)
+              lastBodyMouse.card.style.width = Math.max(lastBodyMouse.cofs.width + pxToRem(event.clientX - lastBodyMouse.xs) / mofs.fs, MINCARDWIDTH) + "em";
+            if(lastBodyMouse.mods & MODRESIZEBOTTOM)
+              lastBodyMouse.card.style.height = Math.max(lastBodyMouse.cofs.height + pxToRem(event.clientY - lastBodyMouse.ys) / mofs.fs, MINCARDHEIGHT) + "em";
+          } else {
+            lastBodyMouse.card.style.left = lastBodyMouse.cofs.x + pxToRem(event.clientX - lastBodyMouse.xs) / mofs.fs + "em";
+            lastBodyMouse.card.style.top = lastBodyMouse.cofs.y + pxToRem(event.clientY - lastBodyMouse.ys) / mofs.fs + "em";
+          }
         }
         else {
           main.style.left = mofs.x + (event.clientX - lastBodyMouse.x) + "px";
@@ -673,11 +725,10 @@
       <div class="top">
         <div class="titlearea">
           <div class="title draghandle">UNKNOWN</div>
-          <input type="text" class="edit-title hidden" 
+          <input type="text" class="edit-title hidden"
                 onkeydown="if(event.keyCode==13){card=cardEvent(event);menu=getCardMenu(card);menu.querySelector('.toggle-title').click()}" 
                 oninput="i=event.target; card=getParentCard(i); getCardTitle(card).textContent=i.value;"
                 onchange="event.target.setAttribute('value', event.target.value)">
-      <!--<textarea class="editor chat-editor" onkeydown="if(event.keyCode===13 && !event.shiftKey){card=cardEvent(event); sendMessage(card,event.target.value); event.target.value='';}"></textarea>-->
         </div>
         <time></time>
         <a href="#" onclick="card=cardEvent(event); toggleHidden(getCardMenu(card))">⚙️</a>
@@ -689,7 +740,7 @@
             <a href="#" data-color="purple" onclick="setCardColor(event);"></a>
             <a href="#" data-color="gray" onclick="setCardColor(event);"></a>
           </div>
-          <a href="#" class="toggle-title" onclick="card=cardEvent(event); t=getCardTitle(card); te=getCardTitleEdit(card); te.value=t.textContent; toggleHidden(t); if(toggleHidden(te)){setHidden(getCardMenu(card));event.target.textContent='Edit title';}else{event.target.textContent='Set title'}">Edit title</a>
+          <a href="#" class="toggle-title" onclick="card=cardEvent(event); t=getCardTitle(card); te=getCardTitleEdit(card); te.value=t.textContent; toggleHidden(t); if(toggleHidden(te)){setHidden(getCardMenu(card));event.target.textContent='Edit title';}else{event.target.textContent='Set title';te.focus()}">Edit title</a>
           <a href="#" onclick="card=cardEvent(event); if(confirm('Really delete \''+getCardTitle(card).textContent+'\'?')){removeSelf(card)}">Delete card</a>
           <div class="card-info">
             <div><span>id:</span> <span class="card-id"></span></div>
@@ -700,6 +751,9 @@
         </div>
       </div>
       <div class="content"></div>
+      <div class="right-resize"></div>
+      <div class="bottom-resize"></div>
+      <div class="corner-resize"></div>
     </div>
   </template>
 
