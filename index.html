@@ -182,6 +182,7 @@
     flex: 1;
     overflow-x: hidden;
     overflow-y: scroll;
+    font-size: 0.93em; /* very silly */
   }
   .message-container {
     padding: 0.1em 0.2em;
@@ -315,7 +316,9 @@
       cdata.is_edit = !isHidden(editor);
     }
     if(cdata.type == "chat") {
-      console.warn("NEED TO EXPORT MESSAGES");
+      cdata.messages = Array.from(card.querySelectorAll(".content .message-container")).map(
+        emsg => parseMessage(emsg));
+      //console.warn("NEED TO EXPORT MESSAGES");
     }
     return cdata;
   }
@@ -348,7 +351,12 @@
     }
     if(cdata.type == "chat") {
       // Need to recreate all messages!
-      console.warn("NEED TO CREATE OLD MESSAGES");
+      let melem = content.querySelector(".messages");
+      cdata.messages.forEach(m => {
+        melem.appendChild(createMessage(m.message, m.date));
+      });
+      // Do we scroll to the bottom here? I guess...
+      melem.scrollTop = melem.scrollHeight;
     }
   }
 
@@ -480,8 +488,17 @@
     date = date || new Date().toISOString();
     let emsg = copyTemplateSingle("template-message");
     setDateElement(emsg.querySelector('time'), date);
-    emsg.querySelector('.message').innerHTML = marked.parseInline(message);
+    let emsgmsg = emsg.querySelector('.message');
+    emsgmsg.innerHTML = marked.parseInline(message);
+    emsgmsg.setAttribute("data-message", message);
     return emsg;
+  }
+
+  function parseMessage(emsg) {
+    return {
+      date: emsg.querySelector('time').getAttribute("datetime"),
+      message: emsg.querySelector('.message').getAttribute("data-message")
+    }
   }
 
   function sendMessage(card, message) {
