@@ -7,6 +7,19 @@
 <title>Desk Mess</title>
 
 <style>
+  :root {
+    --teal: #20B2AA;
+    --teal-border: #367370;
+    --blue: rgb(95, 146, 200);
+    --blue-border: rgb(52, 99, 147);
+    --red: rgb(221, 109, 109); /*rgb(234, 108, 108); /*rgb(221, 109, 109);*/
+    --red-border: rgb(172, 77, 77);
+    --purple: rgb(171, 124, 187); /*rgb(184, 122, 206);*/
+    --purple-border: rgb(120, 74, 136); /*rgb(146, 84, 168);*/
+    --gray: rgb(168, 168, 168); /*rgb(181, 181, 181);*/
+    --gray-border: rgb(113, 113, 113);
+  }
+
   body {
     font-family: sans-serif;
     padding: 0;
@@ -55,10 +68,6 @@
     cursor: grab;
   }
 
-  .card-main { /* class for main card content? I don't know... */
-    border: 0.15em solid #367370;
-  }
-
   .no-interaction {
     pointer-events: none; /* Disables all mouse events */
     user-select: none;    /* Prevents text selection */
@@ -69,7 +78,7 @@
     height: 2em;
     border: none;
     border-radius: 50%;
-    background: lightseagreen;
+    background: var(--teal);
     transition: filter 0.1s ease-in-out;
     cursor: pointer;
   }
@@ -83,9 +92,7 @@
     flex-direction: column;
     padding: 0.35em;
     /* border-radius: 1em; */ /* Not sure about these... scrollbars suck */
-    background: lightseagreen;
     position: absolute;
-    border: 0.1em solid #367370;
     font-size: 1em;
   }
   .card .top {
@@ -113,6 +120,12 @@
   .card .top .titlearea > * {
     width: 100%;
   }
+  .card .top .edit-title {
+    font-size: 0.9em;
+    outline: none;
+    border: 0.05em solid black;
+    padding: 0.1em 0.25em;
+  }
   .card .top time {
     font-size: 0.8em;
     opacity: 0.8;
@@ -122,7 +135,6 @@
     position: absolute;
     top: 100%;
     right: 0;
-    background: #367370;
     color: white;
     display: flex;
     flex-direction: column;
@@ -132,12 +144,17 @@
     padding: 0.1em;
     transition: background 0.1s ease-in-out;
   }
-  .card .top .menu > a:hover {
-    background: lightseagreen;
+  .card .menu .colors {
+    display: flex;
+    gap: 0.14em;
+  }
+  .card .menu .colors a {
+    width: 1em;
+    height: 1em;
   }
 
   .card .card-info {
-    background: darkslategray;
+    background: #444; /*darkslategray;*/
     font-size: 0.8em;
     margin-top: 0.1em;
   }
@@ -230,6 +247,54 @@
     padding: 0.3em;
     font-family: monospace, monospace;
   }
+
+  /* Standard colors */
+  .card, .card.teal {
+    background: var(--teal);
+    border: 0.1em solid var(--teal-border);
+  }
+  /* class for main card content? I don't know... */
+  .card .card-main, .card.teal .card-main { border: 0.15em solid var(--teal-border); }
+  .card .top .menu, .card.teal .top .menu { background: var(--teal-border); }
+  .card .top .menu > a:hover, .card.teal .top .menu > a:hover { background: var(--teal); }
+  .card .menu .colors a[data-color="teal"] { background: var(--teal); }
+  /* Blue */
+  .card[data-color="blue"] {
+    background: var(--blue);
+    border: 0.1em solid var(--blue-border);
+  }
+  .card[data-color="blue"] .card-main { border: 0.15em solid var(--blue-border); }
+  .card[data-color="blue"] .top .menu { background: var(--blue-border); }
+  .card[data-color="blue"] .top .menu > a:hover { background: var(--blue); }
+  .card .menu .colors a[data-color="blue"] { background: var(--blue); }
+  /* Red */
+  .card[data-color="red"] {
+    background: var(--red);
+    border: 0.1em solid var(--red-border);
+  }
+  .card[data-color="red"] .card-main { border: 0.15em solid var(--red-border); }
+  .card[data-color="red"] .top .menu { background: var(--red-border); }
+  .card[data-color="red"] .top .menu > a:hover { background: var(--red); }
+  .card .menu .colors a[data-color="red"] { background: var(--red); }
+  /* Purple */
+  .card[data-color="purple"] {
+    background: var(--purple);
+    border: 0.1em solid var(--purple-border);
+  }
+  .card[data-color="purple"] .card-main { border: 0.15em solid var(--purple-border); }
+  .card[data-color="purple"] .top .menu { background: var(--purple-border); }
+  .card[data-color="purple"] .top .menu > a:hover { background: var(--purple); }
+  .card .menu .colors a[data-color="purple"] { background: var(--purple); }
+  /* Gray */
+  .card[data-color="gray"] {
+    background: var(--gray);
+    border: 0.1em solid var(--gray-border);
+  }
+  .card[data-color="gray"] .card-main { border: 0.15em solid var(--gray-border); }
+  .card[data-color="gray"] .top .menu { background: var(--gray-border); }
+  .card[data-color="gray"] .top .menu > a:hover { background: var(--gray); }
+  .card .menu .colors a[data-color="gray"] { background: var(--gray); }
+
 </style>
 
 <script>
@@ -305,6 +370,7 @@
     let cdata = {
       title: getCardTitle(card).textContent,
       date: getCardDate(card).getAttribute('datetime'),
+      color: card.getAttribute("data-color"),
       id: getCardId(card).textContent,
       ref: getCardRef(card).textContent,
       x: ofs.x,
@@ -332,6 +398,7 @@
     let card = copyTemplateSingle("template-card");
     refreshCardId(cdata.id); // Make sure next card id is proper just in case id is huge
     card.id = "card_" + cdata.id;
+    card.setAttribute("data-color", cdata.color);
     getCardId(card).textContent = cdata.id;
     getCardRef(card).textContent = card.id;
     getCardType(card).textContent = cdata.type;
@@ -377,6 +444,7 @@
     let cdata = {
       title: "Card " + nextid,
       date: new Date().toISOString(),
+      color: "teal",
       id: nextid,
       x: addCard.offset.x - pxToRem(mofs.x),
       y: addCard.offset.y - pxToRem(mofs.y),
@@ -400,6 +468,7 @@
   function downloadPage() { // ai generated (sorry)
     // Get the HTML of the current page
     var doc = document.documentElement.outerHTML;
+    doc = "<!DOCTYPE html>\n" + doc;
     // Create a Blob object containing the HTML content
     var blob = new Blob([doc], {type: 'text/html'});
     downloadBlob(blob, "deskmess.html");
@@ -513,6 +582,13 @@
     messages.appendChild(emsg);
     messages.scrollTop = messages.scrollHeight;
   }
+  function setCardColor(event) {
+    let card = cardEvent(event);
+    card.setAttribute("data-color", event.target.getAttribute("data-color"));
+    //card.classList.remove("teal", "blue");
+    //card.classList.add(event.target.getAttribute("data-color"));
+    setHidden(getCardMenu(card));
+  }
 
   document.addEventListener("DOMContentLoaded", function () {
     let main = window[MCKEY];
@@ -577,7 +653,7 @@
 <body>
 
   <footer>
-    <span class="version no-interaction">v0.2</span>
+    <span class="version no-interaction">v0.3</span>
     <div id="controls">
       <button class="control" id="action-newtext" title="New text card">📄</button>
       <button class="control" id="action-newchat" title="New chat card">💬</button>
@@ -596,13 +672,24 @@
     <div class="card" data-topcard="" style="width: 25em; height: 30em;">
       <div class="top">
         <div class="titlearea">
-          <div class="title draghandle">Card</div>
-          <input type="text" class="edit-title hidden" oninput="i=event.target; card=getParentCard(i); getCardTitle(card).textContent=i.value;" onchange="event.target.setAttribute('value', event.target.value)">
+          <div class="title draghandle">UNKNOWN</div>
+          <input type="text" class="edit-title hidden" 
+                onkeydown="if(event.keyCode==13){card=cardEvent(event);menu=getCardMenu(card);menu.querySelector('.toggle-title').click()}" 
+                oninput="i=event.target; card=getParentCard(i); getCardTitle(card).textContent=i.value;"
+                onchange="event.target.setAttribute('value', event.target.value)">
+      <!--<textarea class="editor chat-editor" onkeydown="if(event.keyCode===13 && !event.shiftKey){card=cardEvent(event); sendMessage(card,event.target.value); event.target.value='';}"></textarea>-->
         </div>
         <time></time>
         <a href="#" onclick="card=cardEvent(event); toggleHidden(getCardMenu(card))">⚙️</a>
         <div class="menu hidden">
-          <a href="#" onclick="card=cardEvent(event); t=getCardTitle(card); te=getCardTitleEdit(card); te.value=t.textContent; toggleHidden(t); if(toggleHidden(te)){setHidden(getCardMenu(card));event.target.textContent='Edit title';}else{event.target.textContent='Set title'}">Edit title</a>
+          <div class="colors">
+            <a href="#" data-color="teal" onclick="setCardColor(event);"></a>
+            <a href="#" data-color="blue" onclick="setCardColor(event);"></a>
+            <a href="#" data-color="red" onclick="setCardColor(event);"></a>
+            <a href="#" data-color="purple" onclick="setCardColor(event);"></a>
+            <a href="#" data-color="gray" onclick="setCardColor(event);"></a>
+          </div>
+          <a href="#" class="toggle-title" onclick="card=cardEvent(event); t=getCardTitle(card); te=getCardTitleEdit(card); te.value=t.textContent; toggleHidden(t); if(toggleHidden(te)){setHidden(getCardMenu(card));event.target.textContent='Edit title';}else{event.target.textContent='Set title'}">Edit title</a>
           <a href="#" onclick="card=cardEvent(event); if(confirm('Really delete \''+getCardTitle(card).textContent+'\'?')){removeSelf(card)}">Delete card</a>
           <div class="card-info">
             <div><span>id:</span> <span class="card-id"></span></div>
