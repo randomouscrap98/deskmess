@@ -82,6 +82,7 @@
     background: lightseagreen;
     position: absolute;
     border: 0.1em solid #367370;
+    font-size: 1em;
   }
   .card .top {
     /*border-bottom: 0.1em solid rgba(0,0,0, 0.2);*/
@@ -160,6 +161,8 @@
     background: #EEE;
     color: #333;
     font-size: 0.8em;
+    border-radius: 0;
+    outline: none;
   }
   .card .content .markdown {
     flex: 1;
@@ -451,7 +454,7 @@
     window["action-export"].addEventListener("click", downloadExport);
     window["action-import"].addEventListener("click", () => window['import-file'].click());
     window["action-newtext"].addEventListener("click", () => addCard("text"));
-    window["action-newchat"].addEventListener("click", () => addCard("chat"));
+    //window["action-newchat"].addEventListener("click", () => addCard("chat"));
     window["action-resetview"].addEventListener("click", () => main.style = "");
 
     let lastBodyMouse = null;
@@ -508,7 +511,7 @@
     <span class="version no-interaction">v0.1</span>
     <div id="controls">
       <button class="control" id="action-newtext" title="New text card">📄</button>
-      <button class="control" id="action-newchat" title="New chat card">💬</button>
+      <!--<button class="control" id="action-newchat" title="New chat card">💬</button>-->
       <button class="control" id="action-resetview" title="Reset view">🧭</button>
       <button class="control" id="action-import" title="Import page">📥</button>
       <button class="control" id="action-export" title="Export page">📤</button>
