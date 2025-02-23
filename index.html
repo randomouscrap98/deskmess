@@ -159,6 +159,7 @@
     padding: 0.4em;
     background: #EEE;
     color: #333;
+    font-size: 0.8em;
   }
   .card .content .markdown {
     flex: 1;
@@ -173,6 +174,16 @@
   .markdown p:first-child {
     margin: 0;
   }
+  .markdown pre code {
+    background: #333;
+    color: #EEE;
+    display: block;
+    max-height: 20em;
+    overflow-y: auto;
+    overflow-x: auto;
+    padding: 0.3em;
+    font-family: mono;
+  }
 </style>
 
 <script>
@@ -185,14 +196,54 @@
 <script>
   const MCKEY = "main-container";
 
-  function downloadPage() { // ai generated (sorry)
-    // Get the HTML of the current page
-    var doc = document.documentElement.outerHTML;
-    // Create a Blob object containing the HTML content
-    var blob = new Blob([doc], {type: 'text/html'});
+  // Simple Card helpers
+  function getParentCard(element) { return findParentOrSelf(element, (e) => e.hasAttribute("data-topcard")); }
+  function getCardTitle(card) { return card.querySelector('.top .title'); }
+  function getCardDate(card) { return card.querySelector('.top time'); }
+  function getCardContent(card) { return card.querySelector(':scope > .content'); }
+  function getCardMenu(card) { return card.querySelector('.menu'); }
+  function getCardTitleEdit(card) { return card.querySelector('.edit-title'); }
+  function getCardFrom(card) { return card.querySelector(".card-from"); }
+  function getCardType(card) { return card.querySelector(".card-type"); }
+  function getCardId(card) { return card.querySelector(".card-id"); } // Id from INFO, not actual id
+  function getCardRef(card) { return card.querySelector(".card-ref"); } // Id from INFO, not actual id
+
+  // Simple Html helpers
+  function removeSelf(element) { element.parentNode.removeChild(element); }
+  function toggleHidden(element) { return element.classList.toggle('hidden'); }
+  function setHidden(element) { return element.classList.add('hidden'); }
+  function isHidden(element) { return element.classList.contains('hidden'); }
+  function copyTemplateSingle(name) { return document.getElementById(name).content.cloneNode(true).firstElementChild; }
+  function copyTemplateSafe(name) {
+    let t = document.getElementById(name);
+    if(!t) return document.createDocumentFragment();
+    return t.content.cloneNode(true);
+  }
+  function getProductVersion() { return document.querySelector("footer .version").textContent; }
+  function toggleHiddenChildren(element) { let hid = null; Array.from(element.children).forEach(e => hid = toggleHidden(e)); return hid; }
+  function isInFooter(element) { return findParentOrSelf(element, (e) => e.nodeName.toLowerCase() == 'footer'); }
+
+  function pxToRem(pxValue) { // ai generated
+    const htmlFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize);
+    return pxValue / htmlFontSize; //(pxValue / htmlFontSize).toFixed(4); // Keeping it up to 4 decimal points for precision.
+  }
+
+  function nextCardId() {
+    const nextid = parseInt(window[MCKEY].getAttribute("data-nextid"));
+    window[MCKEY].setAttribute("data-nextid", nextid + 1);
+    return nextid;
+  }
+  function refreshCardId(id) {
+    const nextid = parseInt(window[MCKEY].getAttribute("data-nextid"));
+    const maxid = Math.max(parseInt(id) + 1, nextid);
+    window[MCKEY].setAttribute("data-nextid", maxid);
+    return maxid;
+  }
+
+  function downloadBlob(blob, name) {
     // Create an anchor element to create the download link
     var a = document.createElement('a');
-    a.download = 'downloaded_page.html';
+    a.download = name;
     a.href = URL.createObjectURL(blob);
     a.style.display = "none";
     // Append the anchor to the body and trigger the click event
@@ -203,20 +254,75 @@
     window.URL.revokeObjectURL(a.href);
   }
 
-  function removeSelf(element) { element.parentNode.removeChild(element); }
-  function toggleHidden(element) { return element.classList.toggle('hidden'); }
-  function copyTemplateSingle(name) { return document.getElementById(name).content.cloneNode(true).firstElementChild; }
-  function copyTemplateSafe(name) {
-    let t = document.getElementById(name);
-    if(!t) return document.createDocumentFragment();
-    return t.content.cloneNode(true);
+  function exportCard(card) {
+    const ofs = getOffset(card);
+    let cdata = {
+      title: getCardTitle(card).textContent,
+      date: getCardDate(card).getAttribute('datetime'),
+      id: getCardId(card).textContent,
+      ref: getCardRef(card).textContent,
+      x: ofs.x,
+      y: ofs.y,
+      z: ofs.z,
+      width: ofs.width,
+      height: ofs.height,
+      type: getCardType(card).textContent,
+      from: getCardFrom(card).textContent
+    };
+    if(cdata.type == "text") {
+      const editor = card.querySelector(".content .editor");
+      cdata.text = editor.value;
+      cdata.is_edit = !isHidden(editor);
+    }
+    return cdata;
   }
-  function getProductVersion() { return document.querySelector("footer .version").textContent; }
-  function toggleHiddenChildren(element) { let hid = null; Array.from(element.children).forEach(e => hid = toggleHidden(e)); return hid; }
 
-  function pxToRem(pxValue) { // ai generated
-    const htmlFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize);
-    return pxValue / htmlFontSize; //(pxValue / htmlFontSize).toFixed(4); // Keeping it up to 4 decimal points for precision.
+  function downloadPage() { // ai generated (sorry)
+    // Get the HTML of the current page
+    var doc = document.documentElement.outerHTML;
+    // Create a Blob object containing the HTML content
+    var blob = new Blob([doc], {type: 'text/html'});
+    downloadBlob(blob, "deskmess.html");
+  }
+
+  function downloadExport() {
+    let exp = {
+      file_version: "1",
+      app_version: getProductVersion(),
+      export_date: new Date().toISOString(),
+      cards: {}
+    };
+    document.querySelectorAll(".card").forEach(card => {
+      exp.cards[card.id] = exportCard(card);
+    });
+    var blob = new Blob([JSON.stringify(exp, null, 2)], {type: 'application/json'});
+    downloadBlob(blob, "deskmess.json");
+  }
+
+  function importTrigger(event) {
+    const file = event.target.files[0];
+    if(file && confirm("Importing will OVERWRITE all existing data on this page! This is intended for version upgrades!\n\nAre you sure you want to remove all data and import?")) {
+      console.log("User is importing " + file.name);
+      const reader = new FileReader();
+      // Set up the onload function to parse and use the JSON data
+      reader.onload = function(e) {
+        try {
+          const jsonData = JSON.parse(e.target.result);
+          console.log('Parsed JSON successfully');
+          if(jsonData.file_version != "1") {
+            throw "Invalid or unknown file version";
+          }
+          window['main-container'].innerHTML = "";
+          Object.values(jsonData.cards).forEach(cdata => importCard(cdata));
+          alert("Import complete!");
+        } catch (err) {
+          alert(`Couldn't parse file: ${err}`);
+        }
+      };
+      reader.readAsText(file);
+    } else {
+      console.log("Quit import (no files)");
+    }
   }
 
   function findParentOrSelf(currentElement, check) {
@@ -230,14 +336,13 @@
     return null;
   }
 
-  function getParentCard(element) { return findParentOrSelf(element, (e) => e.hasAttribute("data-topcard")); }
-  function isInFooter(element) { return findParentOrSelf(element, (e) => e.nodeName.toLowerCase() == 'footer'); }
-
   function getOffset(element) {
     return {
         x : parseFloat(element.style.left) || 0,
         y : parseFloat(element.style.top) || 0,
         z : parseFloat(element.style.zIndex) || 0,
+        width: parseFloat(element.style.width) || 1,
+        height: parseFloat(element.style.height) || 1,
         fs : parseFloat(element.style.fontSize) || 1
     }
   }
@@ -246,8 +351,8 @@
     return getOffset(window[MCKEY]);
   }
 
-  function setDateElement(tm) {
-    const now = new Date();
+  function setDateElement(tm, datetime) {
+    const now = new Date(datetime);
     tm.setAttribute("datetime", now.toISOString());
     tm.setAttribute("title", now.toISOString());
     tm.textContent = now.toLocaleDateString();
@@ -262,17 +367,34 @@
     return maxZ;
   }
 
-
   function cardEvent(event) { event.preventDefault(); return getParentCard(event.target); }
-  function getCardTitle(card) { return card.querySelector('.title'); }
-  function getCardContent(card) { return card.querySelector(':scope > .content'); }
-  function getCardMenu(card) { return card.querySelector('.menu'); }
-  function getCardTitleEdit(card) { return card.querySelector('.edit-title'); }
-  
-  function nextCardId() {
-    const nextid = parseInt(window[MCKEY].getAttribute("data-nextid"));
-    window[MCKEY].setAttribute("data-nextid", nextid + 1);
-    return nextid;
+
+  function importCard(cdata) {
+    let card = copyTemplateSingle("template-card");
+    refreshCardId(cdata.id); // Make sure next card id is proper just in case id is huge
+    card.id = "card_" + cdata.id;
+    getCardId(card).textContent = cdata.id;
+    getCardRef(card).textContent = card.id;
+    getCardType(card).textContent = cdata.type;
+    getCardFrom(card).textContent = cdata.from;
+    getCardTitle(card).textContent = cdata.title;
+    card.style.zIndex = cdata.z;
+    card.style.left = cdata.x + "em";
+    card.style.top = cdata.y + "em";
+    setDateElement(getCardDate(card), cdata.date);
+    let content = getCardContent(card);
+    content.appendChild(copyTemplateSafe("template-" + cdata.type));
+    let menu = getCardMenu(card);
+    menu.insertBefore(copyTemplateSafe("template-" + cdata.type + "-menu"), menu.querySelector('.card-info'));
+    window[MCKEY].appendChild(card);
+    if(cdata.type == "text") {
+      const editor = content.querySelector(".editor");
+      editor.value = cdata.text;
+      if(!cdata.is_edit) {
+        menu.querySelector(".toggle-markdown").click();
+        console.log("Showing markdown in " + cdata.id);
+      }
+    }
   }
 
   function addCard(type) {
@@ -282,36 +404,60 @@
     } else {
       addCard.offset = { x: 2, y: 2 };
     }
+    const mofs = getMainOffset();
+    const nextid = nextCardId();
+    let cdata = {
+      title: "Card " + nextid,
+      date: new Date().toISOString(),
+      id: nextid,
+      x: addCard.offset.x - pxToRem(mofs.x),
+      y: addCard.offset.y - pxToRem(mofs.y),
+      z: findMaxCardIndex() + 1, // TODO: could this get slow?
+      width: 25,
+      height: 30,
+      type: type,
+      from: getProductVersion(),
+    };
+    if(cdata.type == "text") {
+      cdata.is_edit = true;
+      cdata.text = "";
+    }
+    importCard(cdata);
+  }
+
+  /*function addCard(type) {
     let card = copyTemplateSingle("template-card");
     const mofs = getMainOffset();
     const nextid = nextCardId();
     card.id = "card_" + nextid;
-    card.querySelector(".card-id").textContent = card.id;
-    card.querySelector(".card-type").textContent = type;
-    card.querySelector(".card-from").textContent = getProductVersion();
-    card.querySelector(".top .title").textContent += " " + nextid;
-    card.setAttribute("data-id", nextid);
+    getCardId(card).textContent = card.id;
+    getCardType(card).textContent = type;
+    getCardFrom(card).textContent = getProductVersion();
+    getCardTitle(card).textContent += " " + nextid;
     card.style.zIndex = findMaxCardIndex() + 1; // TODO: Could this get slow?
     card.style.left = addCard.offset.x - pxToRem(mofs.x) + "em";
     card.style.top = addCard.offset.y - pxToRem(mofs.y) + "em";
-    setDateElement(card.querySelector(".top time"));
+    setDateElement(getCardDate(card));
     getCardContent(card).appendChild(copyTemplateSafe("template-" + type));
     let menu = getCardMenu(card);
     menu.insertBefore(copyTemplateSafe("template-" + type + "-menu"), menu.querySelector('.card-info'));
     window[MCKEY].appendChild(card);
-  }
+  }*/
 
   document.addEventListener("DOMContentLoaded", function () {
     let main = window[MCKEY];
 
     window["action-save"].addEventListener("click", downloadPage);
+    window["action-export"].addEventListener("click", downloadExport);
+    window["action-import"].addEventListener("click", () => window['import-file'].click());
     window["action-newtext"].addEventListener("click", () => addCard("text"));
     window["action-newchat"].addEventListener("click", () => addCard("chat"));
     window["action-resetview"].addEventListener("click", () => main.style = "");
 
     let lastBodyMouse = null;
     document.body.addEventListener("wheel", (event) => {
-      if(lastBodyMouse) return false;
+      //if(lastBodyMouse) return false;
+      if(getParentCard(event.target)) return;
       var delta = Math.max(-1, Math.min(1, (event.wheelDelta || -event.detail)));
       const mofs = getMainOffset();
       main.style.fontSize = Math.max(mofs.fs + 0.1 * delta, 0.1) + "em";
@@ -364,8 +510,11 @@
       <button class="control" id="action-newtext" title="New text card">📄</button>
       <button class="control" id="action-newchat" title="New chat card">💬</button>
       <button class="control" id="action-resetview" title="Reset view">🧭</button>
+      <button class="control" id="action-import" title="Import page">📥</button>
+      <button class="control" id="action-export" title="Export page">📤</button>
       <button class="control" id="action-save" title="Save page">💾</button>
     </div>
+    <input type="file" title="Select a JSON file to import" accept=".json" id="import-file" class="hidden" onchange="importTrigger(event)" />
   </footer>
 
   <div id="main-container" style="font-size: 1rem" data-nextid="1">
@@ -381,10 +530,11 @@
         <time></time>
         <a href="#" onclick="card=cardEvent(event); toggleHidden(getCardMenu(card))">⚙️</a>
         <div class="menu hidden">
-          <a href="#" onclick="card=cardEvent(event); t=getCardTitle(card); te=getCardTitleEdit(card); te.value=t.textContent; toggleHidden(t); if(toggleHidden(te)){toggleHidden(getCardMenu(card));event.target.textContent='Edit title';}else{event.target.textContent='Set title'}">Edit title</a>
+          <a href="#" onclick="card=cardEvent(event); t=getCardTitle(card); te=getCardTitleEdit(card); te.value=t.textContent; toggleHidden(t); if(toggleHidden(te)){setHidden(getCardMenu(card));event.target.textContent='Edit title';}else{event.target.textContent='Set title'}">Edit title</a>
           <a href="#" onclick="card=cardEvent(event); if(confirm('Really delete \''+getCardTitle(card).textContent+'\'?')){removeSelf(card)}">Delete card</a>
           <div class="card-info">
             <div><span>id:</span> <span class="card-id"></span></div>
+            <div><span>ref:</span> <span class="card-ref"></span></div>
             <div><span>type:</span> <span class="card-type"></span></div>
             <div><span>from:</span> <span class="card-from"></span></div>
           </div>
@@ -400,7 +550,7 @@
   </template>
 
   <template id="template-text-menu">
-    <a href="#" onclick="card=cardEvent(event); content=getCardContent(card); toggleHidden(getCardMenu(card)); content.querySelector('.markdown').innerHTML=marked.parse(content.querySelector('.editor').value); toggleHiddenChildren(content)">Toggle markdown</a>
+    <a href="#" class="toggle-markdown" onclick="card=cardEvent(event); content=getCardContent(card); setHidden(getCardMenu(card)); content.querySelector('.markdown').innerHTML=marked.parse(content.querySelector('.editor').value); toggleHiddenChildren(content)">Toggle markdown</a>
   </template>
 
   <template id="template-chat">
