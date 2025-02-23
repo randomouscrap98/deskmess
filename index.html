@@ -749,7 +749,7 @@
             <a href="#" data-color="gray" onclick="setCardColor(event);"></a>
           </div>
           <a href="#" class="toggle-title" onclick="card=cardEvent(event); t=getCardTitle(card); te=getCardTitleEdit(card); te.value=t.textContent; toggleHidden(t); if(toggleHidden(te)){setHidden(getCardMenu(card));event.target.textContent='Edit title';setUnsaved();}else{event.target.textContent='Set title';te.focus()}">Edit title</a>
-          <a href="#" onclick="card=cardEvent(event); if(confirm('Really delete \''+getCardTitle(card).textContent+'\'?')){removeSelf(card)}">Delete card</a>
+          <a href="#" onclick="card=cardEvent(event); if(confirm('Really delete \''+getCardTitle(card).textContent+'\'?')){removeSelf(card);setUnsaved();}">Delete card</a>
           <div class="card-info">
             <div><span>id:</span> <span class="card-id"></span></div>
             <div><span>ref:</span> <span class="card-ref"></span></div>
