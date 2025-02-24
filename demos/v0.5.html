@@ -1,7 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
-
-<head>
+<html lang="en"><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Desk Mess</title>
@@ -1059,7 +1057,7 @@
 
 </script>
 
-<body>
+</head><body>
 
   <footer>
     <span class="version no-interaction">v0.5</span>
@@ -1073,10 +1071,479 @@
       <button class="control" id="action-export" title="Export page">📤</button>
       <button class="control" id="action-save" title="Save page">💾</button>
     </div>
-    <input type="file" title="Select a JSON file to import" accept=".json" id="import-file" class="hidden" onchange="importTrigger(event)" />
+    <input type="file" title="Select a JSON file to import" accept=".json" id="import-file" class="hidden" onchange="importTrigger(event)">
   </footer>
 
-  <div id="main-container" style="font-size: 1rem" data-nextid="1">
+  <div id="main-container" style="font-size: 0.64em; left: -12.52px; top: -13.16px;" data-nextid="10" class="">
+    <div class="card" data-topcard="" style="width: 25em; height: 25em; z-index: 143; left: 2em; top: 2em;" id="card_1" data-cardset="card_1" data-color="teal" data-parent="">
+      <div class="top">
+        <div class="titlearea draghandle">
+          <span class="type-icon no-interaction">📄</span>
+          <span class="title">Main idea</span>
+          <input type="text" class="edit-title hidden" onkeydown="if(event.keyCode==13){card=cardEvent(event);menu=getCardMenu(card);menu.querySelector('.toggle-title').click()}" oninput="i=event.target; card=getContainingCard(i); getCardTitle(card).textContent=i.value;" onchange="event.target.setAttribute('value', event.target.value)">
+          <time datetime="2025-02-24T22:06:49.709Z" title="2025-02-24T22:06:49.709Z">2/24/2025</time>
+        </div>
+        <a href="#" onclick="card=cardEvent(event); toggleHidden(getCardMenu(card))">⚙️</a>
+        <div class="menu hidden">
+          <div class="colors">
+            <a href="#" data-color="teal" onclick="setCardColor(event);"></a>
+            <a href="#" data-color="blue" onclick="setCardColor(event);"></a>
+            <a href="#" data-color="red" onclick="setCardColor(event);"></a>
+            <a href="#" data-color="purple" onclick="setCardColor(event);"></a>
+            <a href="#" data-color="gray" onclick="setCardColor(event);"></a>
+          </div>
+          <a href="#" class="toggle-title" onclick="card=cardEvent(event); t=getCardTitle(card); te=getCardTitleEdit(card); te.value=t.textContent; toggleHidden(t); if(toggleHidden(te)){setHidden(getCardMenu(card));event.target.textContent='Edit title';setUnsaved();}else{event.target.textContent='Set title';te.focus()}">Edit title</a>
+          <a href="#" onclick="card=cardEvent(event); if(confirm('Really delete \''+getCardTitle(card).textContent+'\'?')){deleteCard(card);}">Delete card</a>
+          <a href="#" class="set-parent" onclick="card=cardEvent(event); menu_setUnsetParent(card); setHidden(getCardMenu(card));">Set parent</a>
+          
+    <a href="#" class="toggle-editor" onclick="card=cardEvent(event); setHidden(getCardMenu(card)); toggleHidden(getCardContent(card).querySelector('.editor'));">Toggle editor</a>
+  <div class="card-info">
+            <div><span>id:</span> <span class="card-id">1</span></div>
+            <div><span>ref:</span> <a href="#card_1" class="card-ref">card_1</a></div>
+            <div><span>type:</span> <span class="card-type">text</span></div>
+            <div><span>from:</span> <span class="card-from">v0.5</span></div>
+            <div><span>parent:</span> <a href="#" class="card-parent"></a></div>
+          </div>
+        </div>
+      </div>
+      <div class="content">
+    <div class="markdown card-main"><h2>Desk Mess</h2>
+<ul>
+<li>What a mess!</li>
+<li>But it makes sense to someone!</li>
+</ul>
+<p>You can <a href="#card_2">link</a> cards together</p>
+<p>You can also toggle the editor below</p>
+</div>
+    <textarea class="editor" style="height: 33%" oninput="setUnsaved(); text_autoMarkdown(event.target);" onchange="event.target.textContent=event.target.value;">## Desk Mess
+- What a mess!
+- But it makes sense to someone!
+
+You can [link](#card_2) cards together
+
+You can also toggle the editor below</textarea>
+  </div>
+      <div class="right-resize"></div>
+      <div class="bottom-resize"></div>
+      <div class="corner-resize"></div>
+    </div>
+    <div class="card-connector no-interaction hidden" data-cardset="card_1"></div>
+  
+    <div class="card" data-topcard="" style="width: 25.125em; height: 16.4375em; z-index: 21; left: 30.75em; top: 2.625em;" id="card_2" data-cardset="card_2" data-color="blue" data-parent="card_1">
+      <div class="top">
+        <div class="titlearea draghandle">
+          <span class="type-icon no-interaction">💬</span>
+          <span class="title">Card 2</span>
+          <input type="text" class="edit-title hidden" onkeydown="if(event.keyCode==13){card=cardEvent(event);menu=getCardMenu(card);menu.querySelector('.toggle-title').click()}" oninput="i=event.target; card=getContainingCard(i); getCardTitle(card).textContent=i.value;" onchange="event.target.setAttribute('value', event.target.value)">
+          <time datetime="2025-02-24T22:08:35.755Z" title="2025-02-24T22:08:35.755Z">2/24/2025</time>
+        </div>
+        <a href="#" onclick="card=cardEvent(event); toggleHidden(getCardMenu(card))">⚙️</a>
+        <div class="menu hidden">
+          <div class="colors">
+            <a href="#" data-color="teal" onclick="setCardColor(event);"></a>
+            <a href="#" data-color="blue" onclick="setCardColor(event);"></a>
+            <a href="#" data-color="red" onclick="setCardColor(event);"></a>
+            <a href="#" data-color="purple" onclick="setCardColor(event);"></a>
+            <a href="#" data-color="gray" onclick="setCardColor(event);"></a>
+          </div>
+          <a href="#" class="toggle-title" onclick="card=cardEvent(event); t=getCardTitle(card); te=getCardTitleEdit(card); te.value=t.textContent; toggleHidden(t); if(toggleHidden(te)){setHidden(getCardMenu(card));event.target.textContent='Edit title';setUnsaved();}else{event.target.textContent='Set title';te.focus()}">Edit title</a>
+          <a href="#" onclick="card=cardEvent(event); if(confirm('Really delete \''+getCardTitle(card).textContent+'\'?')){deleteCard(card);}">Delete card</a>
+          <a href="#" class="set-parent" onclick="card=cardEvent(event); menu_setUnsetParent(card); setHidden(getCardMenu(card));">Clear parent</a>
+          <div class="card-info">
+            <div><span>id:</span> <span class="card-id">2</span></div>
+            <div><span>ref:</span> <a href="#card_2" class="card-ref">card_2</a></div>
+            <div><span>type:</span> <span class="card-type">chat</span></div>
+            <div><span>from:</span> <span class="card-from">v0.5</span></div>
+            <div><span>parent:</span> <a href="#card_1" class="card-parent">card_1</a></div>
+          </div>
+        </div>
+      </div>
+      <div class="content">
+    <div class="messages card-main"><div class="message-container">
+      <time datetime="2025-02-24T22:08:52.408Z" title="2025-02-24T22:08:52.408Z">2/24/2025</time>
+      <span class="message" data-message="sometimes, it's easier to talk out your ideas">sometimes, it's easier to talk out your ideas</span>
+    </div><div class="message-container">
+      <time datetime="2025-02-24T22:09:18.111Z" title="2025-02-24T22:09:18.111Z">2/24/2025</time>
+      <span class="message" data-message="you can have &quot;rubber duck&quot; conversations in windows like these">you can have "rubber duck" conversations in windows like these</span>
+    </div><div class="message-container">
+      <time datetime="2025-02-24T22:09:43.695Z" title="2025-02-24T22:09:43.695Z">2/24/2025</time>
+      <span class="message" data-message="try it out sometime... or don't! it's a little crazy I guess">try it out sometime... or don't! it's a little crazy I guess</span>
+    </div><div class="message-container">
+      <time datetime="2025-02-24T22:09:53.851Z" title="2025-02-24T22:09:53.851Z">2/24/2025</time>
+      <span class="message" data-message="you can also have **markdown** in here">you can also have <strong>markdown</strong> in here</span>
+    </div><div class="message-container">
+      <time datetime="2025-02-24T22:10:09.018Z" title="2025-02-24T22:10:09.018Z">2/24/2025</time>
+      <span class="message" data-message="no editing though!">no editing though!</span>
+    </div></div>
+    <textarea class="editor" onkeydown="if(event.keyCode===13 &amp;&amp; !event.shiftKey){card=cardEvent(event); sendMessage(card,event.target.value); event.target.value='';}"></textarea>
+  </div>
+      <div class="right-resize"></div>
+      <div class="bottom-resize"></div>
+      <div class="corner-resize"></div>
+    </div>
+    <div class="card-connector no-interaction" data-cardset="card_2" style="left: 43.3125em; top: 10.8438em; width: 28.8125em; height: 3.65625em; transform: scale(-1, 1);"></div>
+  
+    <div class="card" data-topcard="" style="width: 25em; height: 14.7656em; z-index: 154; left: 63.1055em; top: 2.38283em;" id="card_3" data-cardset="card_3" data-color="gray" data-parent="">
+      <div class="top">
+        <div class="titlearea draghandle">
+          <span class="type-icon no-interaction">📄</span>
+          <span class="title">Card 3</span>
+          <input type="text" class="edit-title hidden" onkeydown="if(event.keyCode==13){card=cardEvent(event);menu=getCardMenu(card);menu.querySelector('.toggle-title').click()}" oninput="i=event.target; card=getContainingCard(i); getCardTitle(card).textContent=i.value;" onchange="event.target.setAttribute('value', event.target.value)">
+          <time datetime="2025-02-24T22:10:42.287Z" title="2025-02-24T22:10:42.287Z">2/24/2025</time>
+        </div>
+        <a href="#" onclick="card=cardEvent(event); toggleHidden(getCardMenu(card))">⚙️</a>
+        <div class="menu hidden">
+          <div class="colors">
+            <a href="#" data-color="teal" onclick="setCardColor(event);"></a>
+            <a href="#" data-color="blue" onclick="setCardColor(event);"></a>
+            <a href="#" data-color="red" onclick="setCardColor(event);"></a>
+            <a href="#" data-color="purple" onclick="setCardColor(event);"></a>
+            <a href="#" data-color="gray" onclick="setCardColor(event);"></a>
+          </div>
+          <a href="#" class="toggle-title" onclick="card=cardEvent(event); t=getCardTitle(card); te=getCardTitleEdit(card); te.value=t.textContent; toggleHidden(t); if(toggleHidden(te)){setHidden(getCardMenu(card));event.target.textContent='Edit title';setUnsaved();}else{event.target.textContent='Set title';te.focus()}">Edit title</a>
+          <a href="#" onclick="card=cardEvent(event); if(confirm('Really delete \''+getCardTitle(card).textContent+'\'?')){deleteCard(card);}">Delete card</a>
+          <a href="#" class="set-parent" onclick="card=cardEvent(event); menu_setUnsetParent(card); setHidden(getCardMenu(card));">Set parent</a>
+          
+    <a href="#" class="toggle-editor" onclick="card=cardEvent(event); setHidden(getCardMenu(card)); toggleHidden(getCardContent(card).querySelector('.editor'));">Toggle editor</a>
+  <div class="card-info">
+            <div><span>id:</span> <span class="card-id">3</span></div>
+            <div><span>ref:</span> <a href="#card_3" class="card-ref">card_3</a></div>
+            <div><span>type:</span> <span class="card-type">text</span></div>
+            <div><span>from:</span> <span class="card-from">v0.5</span></div>
+            <div><span>parent:</span> <a href="#" class="card-parent"></a></div>
+          </div>
+        </div>
+      </div>
+      <div class="content">
+    <div class="markdown card-main"><h3>Obsolete cards</h3>
+<p>You can link together cards any way you want. I like keeping an "obsolete" parent card to attach all the cards I don't need anymore. Parents drag their children around when moved, so this acts like a group!</p>
+</div>
+    <textarea class="editor hidden" style="height: 33%" oninput="setUnsaved(); text_autoMarkdown(event.target);" onchange="event.target.textContent=event.target.value;">### Obsolete cards
+
+You can link together cards any way you want. I like keeping an "obsolete" parent card to attach all the cards I don't need anymore. Parents drag their children around when moved, so this acts like a group!</textarea>
+  </div>
+      <div class="right-resize"></div>
+      <div class="bottom-resize"></div>
+      <div class="corner-resize"></div>
+    </div>
+    <div class="card-connector no-interaction hidden" data-cardset="card_3"></div>
+  
+    <div class="card" data-topcard="" style="width: 11.7188em; height: 10.7813em; z-index: 88; left: 60.7617em; top: 18.9454em;" id="card_4" data-cardset="card_4" data-color="gray" data-parent="card_3">
+      <div class="top">
+        <div class="titlearea draghandle">
+          <span class="type-icon no-interaction">💬</span>
+          <span class="title">Card 4</span>
+          <input type="text" class="edit-title hidden" onkeydown="if(event.keyCode==13){card=cardEvent(event);menu=getCardMenu(card);menu.querySelector('.toggle-title').click()}" oninput="i=event.target; card=getContainingCard(i); getCardTitle(card).textContent=i.value;" onchange="event.target.setAttribute('value', event.target.value)">
+          <time datetime="2025-02-24T22:11:58.468Z" title="2025-02-24T22:11:58.468Z">2/24/2025</time>
+        </div>
+        <a href="#" onclick="card=cardEvent(event); toggleHidden(getCardMenu(card))">⚙️</a>
+        <div class="menu hidden">
+          <div class="colors">
+            <a href="#" data-color="teal" onclick="setCardColor(event);"></a>
+            <a href="#" data-color="blue" onclick="setCardColor(event);"></a>
+            <a href="#" data-color="red" onclick="setCardColor(event);"></a>
+            <a href="#" data-color="purple" onclick="setCardColor(event);"></a>
+            <a href="#" data-color="gray" onclick="setCardColor(event);"></a>
+          </div>
+          <a href="#" class="toggle-title" onclick="card=cardEvent(event); t=getCardTitle(card); te=getCardTitleEdit(card); te.value=t.textContent; toggleHidden(t); if(toggleHidden(te)){setHidden(getCardMenu(card));event.target.textContent='Edit title';setUnsaved();}else{event.target.textContent='Set title';te.focus()}">Edit title</a>
+          <a href="#" onclick="card=cardEvent(event); if(confirm('Really delete \''+getCardTitle(card).textContent+'\'?')){deleteCard(card);}">Delete card</a>
+          <a href="#" class="set-parent" onclick="card=cardEvent(event); menu_setUnsetParent(card); setHidden(getCardMenu(card));">Clear parent</a>
+          <div class="card-info">
+            <div><span>id:</span> <span class="card-id">4</span></div>
+            <div><span>ref:</span> <a href="#card_4" class="card-ref">card_4</a></div>
+            <div><span>type:</span> <span class="card-type">chat</span></div>
+            <div><span>from:</span> <span class="card-from">v0.5</span></div>
+            <div><span>parent:</span> <a href="#card_3" class="card-parent">card_3</a></div>
+          </div>
+        </div>
+      </div>
+      <div class="content">
+    <div class="messages card-main"><div class="message-container">
+      <time datetime="2025-02-24T22:12:06.855Z" title="2025-02-24T22:12:06.855Z">2/24/2025</time>
+      <span class="message" data-message="dead chat 1">dead chat 1</span>
+    </div><div class="message-container">
+      <time datetime="2025-02-24T22:12:11.541Z" title="2025-02-24T22:12:11.541Z">2/24/2025</time>
+      <span class="message" data-message="it's so dead in here!">it's so dead in here!</span>
+    </div></div>
+    <textarea class="editor" onkeydown="if(event.keyCode===13 &amp;&amp; !event.shiftKey){card=cardEvent(event); sendMessage(card,event.target.value); event.target.value='';}"></textarea>
+  </div>
+      <div class="right-resize"></div>
+      <div class="bottom-resize"></div>
+      <div class="corner-resize"></div>
+    </div>
+    <div class="card-connector no-interaction" data-cardset="card_4" style="left: 66.6211em; top: 24.3361em; width: 8.9844em; height: 14.5704em; transform: scale(1, -1);"></div>
+  
+    <div class="card" data-topcard="" style="width: 25em; height: 9.6875em; z-index: 66; left: 63.5742em; top: 31.6015em;" id="card_5" data-cardset="card_5" data-color="gray" data-parent="card_3">
+      <div class="top">
+        <div class="titlearea draghandle">
+          <span class="type-icon no-interaction">✅</span>
+          <span class="title">Card 5</span>
+          <input type="text" class="edit-title hidden" onkeydown="if(event.keyCode==13){card=cardEvent(event);menu=getCardMenu(card);menu.querySelector('.toggle-title').click()}" oninput="i=event.target; card=getContainingCard(i); getCardTitle(card).textContent=i.value;" onchange="event.target.setAttribute('value', event.target.value)">
+          <time datetime="2025-02-24T22:12:29.723Z" title="2025-02-24T22:12:29.723Z">2/24/2025</time>
+        </div>
+        <a href="#" onclick="card=cardEvent(event); toggleHidden(getCardMenu(card))">⚙️</a>
+        <div class="menu hidden">
+          <div class="colors">
+            <a href="#" data-color="teal" onclick="setCardColor(event);"></a>
+            <a href="#" data-color="blue" onclick="setCardColor(event);"></a>
+            <a href="#" data-color="red" onclick="setCardColor(event);"></a>
+            <a href="#" data-color="purple" onclick="setCardColor(event);"></a>
+            <a href="#" data-color="gray" onclick="setCardColor(event);"></a>
+          </div>
+          <a href="#" class="toggle-title" onclick="card=cardEvent(event); t=getCardTitle(card); te=getCardTitleEdit(card); te.value=t.textContent; toggleHidden(t); if(toggleHidden(te)){setHidden(getCardMenu(card));event.target.textContent='Edit title';setUnsaved();}else{event.target.textContent='Set title';te.focus()}">Edit title</a>
+          <a href="#" onclick="card=cardEvent(event); if(confirm('Really delete \''+getCardTitle(card).textContent+'\'?')){deleteCard(card);}">Delete card</a>
+          <a href="#" class="set-parent" onclick="card=cardEvent(event); menu_setUnsetParent(card); setHidden(getCardMenu(card));">Clear parent</a>
+          
+    <a href="#" class="toggle-editor" onclick="card=cardEvent(event); setHidden(getCardMenu(card)); toggleHidden(getCardContent(card).querySelector('.editor'));">Toggle editor</a>
+  <div class="card-info">
+            <div><span>id:</span> <span class="card-id">5</span></div>
+            <div><span>ref:</span> <a href="#card_5" class="card-ref">card_5</a></div>
+            <div><span>type:</span> <span class="card-type">todo</span></div>
+            <div><span>from:</span> <span class="card-from">v0.5</span></div>
+            <div><span>parent:</span> <a href="#card_3" class="card-parent">card_3</a></div>
+          </div>
+        </div>
+      </div>
+      <div class="content">
+    <div class="todo-list card-main">
+    <div class="todo-item" data-refid="0">
+      <input type="checkbox" onchange="todo_changeState(event.target)" checked="true">
+      <span class="todo-text" data-raw="this list" style="text-decoration: line-through;">this list</span>
+      <time datetime="2025-02-24T22:12:57.530Z" title="2025-02-24T22:12:57.530Z">2/24/2025</time>
+    </div>
+  
+    <div class="todo-item" data-refid="1">
+      <input type="checkbox" onchange="todo_changeState(event.target)" checked="true">
+      <span class="todo-text" data-raw="is **already**" style="text-decoration: line-through;">is <strong>already</strong></span>
+      <time datetime="2025-02-24T22:12:57.832Z" title="2025-02-24T22:12:57.832Z">2/24/2025</time>
+    </div>
+  
+    <div class="todo-item" data-refid="2">
+      <input type="checkbox" onchange="todo_changeState(event.target)" checked="true">
+      <span class="todo-text" data-raw="complete" style="text-decoration: line-through;">complete</span>
+      <time datetime="2025-02-24T22:12:58.990Z" title="2025-02-24T22:12:58.990Z">2/24/2025</time>
+    </div>
+  
+    <div class="todo-item" data-refid="3">
+      <input type="checkbox" onchange="todo_changeState(event.target)">
+      <span class="todo-text" data-raw="but I didn't care about this one!">but I didn't care about this one!</span>
+      <time></time>
+    </div>
+  </div>
+    <textarea class="editor hidden" style="height: 33%" oninput="setUnsaved(); todo_autoGenerate(event.target);" onchange="event.target.textContent=event.target.value;">this list (done 2025-02-24T22:12:57.530Z)
+is **already** (done 2025-02-24T22:12:57.832Z)
+complete (done 2025-02-24T22:12:58.990Z)
+but I didn't care about this one!</textarea>
+  </div>
+      <div class="right-resize"></div>
+      <div class="bottom-resize"></div>
+      <div class="corner-resize"></div>
+    </div>
+    <div class="card-connector no-interaction" data-cardset="card_5" style="left: 76.0742em; top: 36.4453em; width: 0.4687em; height: 26.6796em; transform: scale(-1);"></div>
+  
+    <div class="card" data-topcard="" style="width: 16.6406em; height: 8.43748em; z-index: 97; left: 76.6993em; top: 21.6017em;" id="card_6" data-cardset="card_6" data-color="gray" data-parent="card_4">
+      <div class="top">
+        <div class="titlearea draghandle">
+          <span class="type-icon no-interaction">📄</span>
+          <span class="title">Card 6</span>
+          <input type="text" class="edit-title hidden" onkeydown="if(event.keyCode==13){card=cardEvent(event);menu=getCardMenu(card);menu.querySelector('.toggle-title').click()}" oninput="i=event.target; card=getContainingCard(i); getCardTitle(card).textContent=i.value;" onchange="event.target.setAttribute('value', event.target.value)">
+          <time datetime="2025-02-24T22:13:28.571Z" title="2025-02-24T22:13:28.571Z">2/24/2025</time>
+        </div>
+        <a href="#" onclick="card=cardEvent(event); toggleHidden(getCardMenu(card))">⚙️</a>
+        <div class="menu hidden">
+          <div class="colors">
+            <a href="#" data-color="teal" onclick="setCardColor(event);"></a>
+            <a href="#" data-color="blue" onclick="setCardColor(event);"></a>
+            <a href="#" data-color="red" onclick="setCardColor(event);"></a>
+            <a href="#" data-color="purple" onclick="setCardColor(event);"></a>
+            <a href="#" data-color="gray" onclick="setCardColor(event);"></a>
+          </div>
+          <a href="#" class="toggle-title" onclick="card=cardEvent(event); t=getCardTitle(card); te=getCardTitleEdit(card); te.value=t.textContent; toggleHidden(t); if(toggleHidden(te)){setHidden(getCardMenu(card));event.target.textContent='Edit title';setUnsaved();}else{event.target.textContent='Set title';te.focus()}">Edit title</a>
+          <a href="#" onclick="card=cardEvent(event); if(confirm('Really delete \''+getCardTitle(card).textContent+'\'?')){deleteCard(card);}">Delete card</a>
+          <a href="#" class="set-parent" onclick="card=cardEvent(event); menu_setUnsetParent(card); setHidden(getCardMenu(card));">Clear parent</a>
+          
+    <a href="#" class="toggle-editor" onclick="card=cardEvent(event); setHidden(getCardMenu(card)); toggleHidden(getCardContent(card).querySelector('.editor'));">Toggle editor</a>
+  <div class="card-info">
+            <div><span>id:</span> <span class="card-id">6</span></div>
+            <div><span>ref:</span> <a href="#card_6" class="card-ref">card_6</a></div>
+            <div><span>type:</span> <span class="card-type">text</span></div>
+            <div><span>from:</span> <span class="card-from">v0.5</span></div>
+            <div><span>parent:</span> <a href="#card_4" class="card-parent">card_4</a></div>
+          </div>
+        </div>
+      </div>
+      <div class="content">
+    <div class="markdown card-main"><p>trees can be as complicated as you want. here, we're another layer deep</p>
+</div>
+    <textarea class="editor hidden" style="height: 33%" oninput="setUnsaved(); text_autoMarkdown(event.target);" onchange="event.target.textContent=event.target.value;">trees can be as complicated as you want. here, we're another layer deep</textarea>
+  </div>
+      <div class="right-resize"></div>
+      <div class="bottom-resize"></div>
+      <div class="corner-resize"></div>
+    </div>
+    <div class="card-connector no-interaction" data-cardset="card_6" style="left: 85.0196em; top: 25.8204em; width: 18.3985em; height: 1.48439em; transform: scale(-1);"></div>
+  
+    <div class="card" data-topcard="" style="width: 23.2422em; height: 18.3789em; z-index: 146; left: 34.8711em; top: 21.9453em;" id="card_7" data-cardset="card_7" data-color="purple" data-parent="">
+      <div class="top">
+        <div class="titlearea draghandle">
+          <span class="type-icon no-interaction">✅</span>
+          <span class="title">General TODO</span>
+          <input type="text" class="edit-title hidden" onkeydown="if(event.keyCode==13){card=cardEvent(event);menu=getCardMenu(card);menu.querySelector('.toggle-title').click()}" oninput="i=event.target; card=getContainingCard(i); getCardTitle(card).textContent=i.value;" onchange="event.target.setAttribute('value', event.target.value)">
+          <time datetime="2025-02-24T22:16:03.329Z" title="2025-02-24T22:16:03.329Z">2/24/2025</time>
+        </div>
+        <a href="#" onclick="card=cardEvent(event); toggleHidden(getCardMenu(card))">⚙️</a>
+        <div class="menu hidden">
+          <div class="colors">
+            <a href="#" data-color="teal" onclick="setCardColor(event);"></a>
+            <a href="#" data-color="blue" onclick="setCardColor(event);"></a>
+            <a href="#" data-color="red" onclick="setCardColor(event);"></a>
+            <a href="#" data-color="purple" onclick="setCardColor(event);"></a>
+            <a href="#" data-color="gray" onclick="setCardColor(event);"></a>
+          </div>
+          <a href="#" class="toggle-title" onclick="card=cardEvent(event); t=getCardTitle(card); te=getCardTitleEdit(card); te.value=t.textContent; toggleHidden(t); if(toggleHidden(te)){setHidden(getCardMenu(card));event.target.textContent='Edit title';setUnsaved();}else{event.target.textContent='Set title';te.focus()}">Edit title</a>
+          <a href="#" onclick="card=cardEvent(event); if(confirm('Really delete \''+getCardTitle(card).textContent+'\'?')){deleteCard(card);}">Delete card</a>
+          <a href="#" class="set-parent" onclick="card=cardEvent(event); menu_setUnsetParent(card); setHidden(getCardMenu(card));">Set parent</a>
+          
+    <a href="#" class="toggle-editor" onclick="card=cardEvent(event); setHidden(getCardMenu(card)); toggleHidden(getCardContent(card).querySelector('.editor'));">Toggle editor</a>
+  <div class="card-info">
+            <div><span>id:</span> <span class="card-id">7</span></div>
+            <div><span>ref:</span> <a href="#card_7" class="card-ref">card_7</a></div>
+            <div><span>type:</span> <span class="card-type">todo</span></div>
+            <div><span>from:</span> <span class="card-from">v0.5</span></div>
+            <div><span>parent:</span> <a href="#" class="card-parent"></a></div>
+          </div>
+        </div>
+      </div>
+      <div class="content">
+    <div class="todo-list card-main">
+    <div class="todo-item" data-refid="0">
+      <input type="checkbox" onchange="todo_changeState(event.target)">
+      <span class="todo-text" data-raw="More QOL">More QOL</span>
+      <time></time>
+    </div>
+  
+    <div class="todo-item" data-refid="1">
+      <input type="checkbox" onchange="todo_changeState(event.target)">
+      <span class="todo-text" data-raw="More cards">More cards</span>
+      <time></time>
+    </div>
+  
+    <div class="todo-item" data-refid="2">
+      <input type="checkbox" onchange="todo_changeState(event.target)">
+      <span class="todo-text" data-raw="More organization (somehow?)">More organization (somehow?)</span>
+      <time></time>
+    </div>
+  
+    <div class="todo-item" data-refid="3">
+      <input type="checkbox" onchange="todo_changeState(event.target)" checked="true">
+      <span class="todo-text" data-raw="Fix zoom" style="text-decoration: line-through;">Fix zoom</span>
+      <time datetime="2025-02-24T22:16:52.622Z" title="2025-02-24T22:16:52.622Z">2/24/2025</time>
+    </div>
+  
+    <div class="todo-item" data-refid="4">
+      <input type="checkbox" onchange="todo_changeState(event.target)">
+      <span class="todo-text" data-raw="Dark mode?">Dark mode?</span>
+      <time></time>
+    </div>
+  </div>
+    <textarea class="editor" style="height: 33%" oninput="setUnsaved(); todo_autoGenerate(event.target);" onchange="event.target.textContent=event.target.value;">More QOL
+More cards
+More organization (somehow?)
+Fix zoom (done 2025-02-24T22:16:52.622Z)
+Dark mode?</textarea>
+  </div>
+      <div class="right-resize"></div>
+      <div class="bottom-resize"></div>
+      <div class="corner-resize"></div>
+    </div>
+    <div class="card-connector no-interaction hidden" data-cardset="card_7"></div>
+  
+    <div class="card" data-topcard="" style="width: 20.4102em; height: 10.7617em; z-index: 157; left: 4.40237em; top: 36.8867em;" id="card_8" data-cardset="card_8" data-color="red" data-parent="card_9">
+      <div class="top">
+        <div class="titlearea draghandle">
+          <span class="type-icon no-interaction">💬</span>
+          <span class="title">Bug pondering</span>
+          <input type="text" class="edit-title hidden" onkeydown="if(event.keyCode==13){card=cardEvent(event);menu=getCardMenu(card);menu.querySelector('.toggle-title').click()}" oninput="i=event.target; card=getContainingCard(i); getCardTitle(card).textContent=i.value;" onchange="event.target.setAttribute('value', event.target.value)">
+          <time datetime="2025-02-24T22:17:44.691Z" title="2025-02-24T22:17:44.691Z">2/24/2025</time>
+        </div>
+        <a href="#" onclick="card=cardEvent(event); toggleHidden(getCardMenu(card))">⚙️</a>
+        <div class="menu hidden">
+          <div class="colors">
+            <a href="#" data-color="teal" onclick="setCardColor(event);"></a>
+            <a href="#" data-color="blue" onclick="setCardColor(event);"></a>
+            <a href="#" data-color="red" onclick="setCardColor(event);"></a>
+            <a href="#" data-color="purple" onclick="setCardColor(event);"></a>
+            <a href="#" data-color="gray" onclick="setCardColor(event);"></a>
+          </div>
+          <a href="#" class="toggle-title" onclick="card=cardEvent(event); t=getCardTitle(card); te=getCardTitleEdit(card); te.value=t.textContent; toggleHidden(t); if(toggleHidden(te)){setHidden(getCardMenu(card));event.target.textContent='Edit title';setUnsaved();}else{event.target.textContent='Set title';te.focus()}">Edit title</a>
+          <a href="#" onclick="card=cardEvent(event); if(confirm('Really delete \''+getCardTitle(card).textContent+'\'?')){deleteCard(card);}">Delete card</a>
+          <a href="#" class="set-parent" onclick="card=cardEvent(event); menu_setUnsetParent(card); setHidden(getCardMenu(card));">Clear parent</a>
+          <div class="card-info">
+            <div><span>id:</span> <span class="card-id">8</span></div>
+            <div><span>ref:</span> <a href="#card_8" class="card-ref">card_8</a></div>
+            <div><span>type:</span> <span class="card-type">chat</span></div>
+            <div><span>from:</span> <span class="card-from">v0.5</span></div>
+            <div><span>parent:</span> <a href="#card_9" class="card-parent">card_9</a></div>
+          </div>
+        </div>
+      </div>
+      <div class="content">
+    <div class="messages card-main"><div class="message-container">
+      <time datetime="2025-02-24T22:18:09.854Z" title="2025-02-24T22:18:09.854Z">2/24/2025</time>
+      <span class="message" data-message="why DO these bugs occur?">why DO these bugs occur?</span>
+    </div><div class="message-container">
+      <time datetime="2025-02-24T22:18:15.645Z" title="2025-02-24T22:18:15.645Z">2/24/2025</time>
+      <span class="message" data-message="are browsers just evil? probably">are browsers just evil? probably</span>
+    </div></div>
+    <textarea class="editor" onkeydown="if(event.keyCode===13 &amp;&amp; !event.shiftKey){card=cardEvent(event); sendMessage(card,event.target.value); event.target.value='';}"></textarea>
+  </div>
+      <div class="right-resize"></div>
+      <div class="bottom-resize"></div>
+      <div class="corner-resize"></div>
+    </div>
+    <div class="card-connector no-interaction" data-cardset="card_8" style="left: 14.6075em; top: 42.2676em; width: 0.14644em; height: 10.0586em; transform: scale(1, -1);"></div>
+  
+    <div class="card" data-topcard="" style="width: 25em; height: 6.66013em; z-index: 158; left: 2.25391em; top: 28.8789em;" id="card_9" data-cardset="card_9" data-color="red" data-parent="card_1">
+      <div class="top">
+        <div class="titlearea draghandle">
+          <span class="type-icon no-interaction">📄</span>
+          <span class="title">BUG: chat changes scroll on zoom</span>
+          <input type="text" class="edit-title hidden" onkeydown="if(event.keyCode==13){card=cardEvent(event);menu=getCardMenu(card);menu.querySelector('.toggle-title').click()}" oninput="i=event.target; card=getContainingCard(i); getCardTitle(card).textContent=i.value;" onchange="event.target.setAttribute('value', event.target.value)">
+          <time datetime="2025-02-24T22:18:40.862Z" title="2025-02-24T22:18:40.862Z">2/24/2025</time>
+        </div>
+        <a href="#" onclick="card=cardEvent(event); toggleHidden(getCardMenu(card))">⚙️</a>
+        <div class="menu hidden">
+          <div class="colors">
+            <a href="#" data-color="teal" onclick="setCardColor(event);"></a>
+            <a href="#" data-color="blue" onclick="setCardColor(event);"></a>
+            <a href="#" data-color="red" onclick="setCardColor(event);"></a>
+            <a href="#" data-color="purple" onclick="setCardColor(event);"></a>
+            <a href="#" data-color="gray" onclick="setCardColor(event);"></a>
+          </div>
+          <a href="#" class="toggle-title" onclick="card=cardEvent(event); t=getCardTitle(card); te=getCardTitleEdit(card); te.value=t.textContent; toggleHidden(t); if(toggleHidden(te)){setHidden(getCardMenu(card));event.target.textContent='Edit title';setUnsaved();}else{event.target.textContent='Set title';te.focus()}">Edit title</a>
+          <a href="#" onclick="card=cardEvent(event); if(confirm('Really delete \''+getCardTitle(card).textContent+'\'?')){deleteCard(card);}">Delete card</a>
+          <a href="#" class="set-parent" onclick="card=cardEvent(event); menu_setUnsetParent(card); setHidden(getCardMenu(card));">Clear parent</a>
+          
+    <a href="#" class="toggle-editor" onclick="card=cardEvent(event); setHidden(getCardMenu(card)); toggleHidden(getCardContent(card).querySelector('.editor'));">Toggle editor</a>
+  <div class="card-info">
+            <div><span>id:</span> <span class="card-id">9</span></div>
+            <div><span>ref:</span> <a href="#card_9" class="card-ref">card_9</a></div>
+            <div><span>type:</span> <span class="card-type">text</span></div>
+            <div><span>from:</span> <span class="card-from">v0.5</span></div>
+            <div><span>parent:</span> <a href="#card_1" class="card-parent">card_1</a></div>
+          </div>
+        </div>
+      </div>
+      <div class="content">
+    <div class="markdown card-main"><p>When zooming out far, the scroll position changes. I think it's because the text layout is changing</p>
+</div>
+    <textarea class="editor hidden" style="height: 33%" oninput="setUnsaved(); text_autoMarkdown(event.target);" onchange="event.target.textContent=event.target.value;">When zooming out far, the scroll position changes. I think it's because the text layout is changing</textarea>
+  </div>
+      <div class="right-resize"></div>
+      <div class="bottom-resize"></div>
+      <div class="corner-resize"></div>
+    </div>
+    <div class="card-connector no-interaction" data-cardset="card_9" style="left: 14.7539em; top: 32.209em; width: 0.25391em; height: 17.709em; transform: scale(-1);"></div>
   </div>
 
   <template id="template-card">
@@ -1085,10 +1552,7 @@
         <div class="titlearea draghandle">
           <span class="type-icon no-interaction">X</span>
           <span class="title">UNKNOWN</span>
-          <input type="text" class="edit-title hidden"
-                onkeydown="if(event.keyCode==13){card=cardEvent(event);menu=getCardMenu(card);menu.querySelector('.toggle-title').click()}" 
-                oninput="i=event.target; card=getContainingCard(i); getCardTitle(card).textContent=i.value;"
-                onchange="event.target.setAttribute('value', event.target.value)">
+          <input type="text" class="edit-title hidden" onkeydown="if(event.keyCode==13){card=cardEvent(event);menu=getCardMenu(card);menu.querySelector('.toggle-title').click()}" oninput="i=event.target; card=getContainingCard(i); getCardTitle(card).textContent=i.value;" onchange="event.target.setAttribute('value', event.target.value)">
           <time></time>
         </div>
         <a href="#" onclick="card=cardEvent(event); toggleHidden(getCardMenu(card))">⚙️</a>
@@ -1122,9 +1586,7 @@
 
   <template id="template-text">
     <div class="markdown card-main"></div>
-    <textarea class="editor" style="height: 33%"
-      oninput="setUnsaved(); text_autoMarkdown(event.target);"
-      onchange="event.target.textContent=event.target.value;"></textarea>
+    <textarea class="editor" style="height: 33%" oninput="setUnsaved(); text_autoMarkdown(event.target);" onchange="event.target.textContent=event.target.value;"></textarea>
   </template>
       <!--onchange="event.target.textContent=event.target.value; text_updateMarkdown(getContainingCard(event.target))"></textarea>-->
 
@@ -1134,8 +1596,7 @@
 
   <template id="template-chat">
     <div class="messages card-main"></div>
-    <textarea class="editor"
-      onkeydown="if(event.keyCode===13 && !event.shiftKey){card=cardEvent(event); sendMessage(card,event.target.value); event.target.value='';}"></textarea>
+    <textarea class="editor" onkeydown="if(event.keyCode===13 &amp;&amp; !event.shiftKey){card=cardEvent(event); sendMessage(card,event.target.value); event.target.value='';}"></textarea>
   </template>
 
   <template id="template-message">
@@ -1147,9 +1608,7 @@
 
   <template id="template-todo">
     <div class="todo-list card-main"></div>
-    <textarea class="editor" style="height: 33%"
-      oninput="setUnsaved(); todo_autoGenerate(event.target);"
-      onchange="event.target.textContent=event.target.value;"></textarea>
+    <textarea class="editor" style="height: 33%" oninput="setUnsaved(); todo_autoGenerate(event.target);" onchange="event.target.textContent=event.target.value;"></textarea>
   </template>
       <!--onchange="event.target.textContent=event.target.value; todo_updateAll(getContainingCard(event.target))"></textarea>-->
 
@@ -1164,3 +1623,4 @@
       <time></time>
     </div>
   </template>
+</body></html>

@@ -1,6 +1,6 @@
 # Desk Mess
 
-![v0.4 screenshot](screenshots/v0.4.png)
+![v0.5 screenshot](screenshots/v0.5.png)
 
 I got inspired by the non-linear, "save locally" [TiddlyWiki](https://tiddlywiki.com/)
 and wanted to make something more akin to one of those pegboards filled
@@ -17,12 +17,12 @@ nobody else does.
 - Fully local, save exact html and open it later where you left off,
   page will never update from underneath you (no server)
 - Import/export raw data so you can upgrade to newer versions when desired
+- Ability to link cards together parent / child, build trees you can move around
 
 ## Goals
 
 - If mobile support is added, perhaps different navigation modes
-- Ability to link cards together parent / child, build trees you can move around
-- Different types of things you can put in cards (todo, drawing, etc)
+- Different types of things you can put in cards (drawing, etc)
 - List all cards in simplified list tree view somewhere
 - Add files to cards. Do we save it directly into the card though?
   blobs make everything very large in b64.
