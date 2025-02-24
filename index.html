@@ -830,11 +830,12 @@
           } else if(event.target.classList.contains("corner-resize")) {
             mods = MODRESIZERIGHT | MODRESIZEBOTTOM;
           } else if(event.target.classList.contains('draghandle')) {
+            if(pendingCardAction) {
+              pendingCardAction(card);
+              return;
+            }
             mods = MODMOVECARDS;
             getCardAllChildren(card).forEach(c => cards.push({card:c, cofs:getOffset(c)}));
-          } else if(pendingCardAction) {
-            pendingCardAction(card);
-            return;
           } else {
             return;
           }
@@ -867,9 +868,9 @@
             if(lastBodyMouse.mods & MODMOVECARDS) {
               c.card.style.left = c.cofs.x + xofs + "em";
               c.card.style.top = c.cofs.y + yofs + "em";
-              // HORRIBLE!!
-              setCardParent(c.card, c.card.getAttribute("data-parent"));
             }
+            // HORRIBLE!!
+            setCardParent(c.card, c.card.getAttribute("data-parent"));
           });
         }
         else { // Working solely on main

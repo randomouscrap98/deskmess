@@ -1,5 +1,7 @@
 # Desk Mess
 
+![v0.4 screenshot](screenshots/v0.4.png)
+
 I got inspired by the non-linear, "save locally" [TiddlyWiki](https://tiddlywiki.com/)
 and wanted to make something more akin to one of those pegboards filled
 with images and string connecting them all. Or, a bunch of papers on a messy
