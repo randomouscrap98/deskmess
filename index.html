@@ -820,7 +820,7 @@
     let main = window[MCKEY];
 
     window["action-cancelpending"].addEventListener("click", () => {removePendingCardAction();});
-    window["action-save"].addEventListener("click", () => {setSaved(); downloadPage();});
+    window["action-save"].addEventListener("click", () => {removePendingCardAction(); setSaved(); downloadPage();});
     window["action-export"].addEventListener("click", () => {downloadExport(); setSaved();});
     window["action-import"].addEventListener("click", () => window['import-file'].click());
     window["action-newtext"].addEventListener("click", () => addCard("text"));
