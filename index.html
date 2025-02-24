@@ -239,6 +239,13 @@
     flex-direction: column;
   }
 
+  .card .content .card-main {
+    flex: 1;
+    margin: 0;
+    overflow-y: scroll;
+    overflow-x: hidden;
+  }
+
   .card .content .editor {
     margin: 0;
     border: 0.2em inset #777;
@@ -257,9 +264,6 @@
   }
 
   .card .content .messages {
-    flex: 1;
-    overflow-x: hidden;
-    overflow-y: scroll;
     font-size: 0.93em; /* very silly */
   }
   .message-container {
@@ -276,10 +280,6 @@
   }
 
   .card .content .markdown {
-    flex: 1;
-    margin: 0;
-    overflow-y: scroll;
-    overflow-x: hidden;
     padding: 0.5em;
     line-height: 1.4;
   }
@@ -376,6 +376,7 @@
   function getCardTitle(card) { return card.querySelector('.top .title'); }
   function getCardDate(card) { return card.querySelector('.top time'); }
   function getCardContent(card) { return card.querySelector(':scope > .content'); }
+  function getCardEditor(card) { return card.querySelector('.content .editor'); }
   function getCardMenu(card) { return card.querySelector('.menu'); }
   function getCardTitleEdit(card) { return card.querySelector('.edit-title'); }
   function getCardFrom(card) { return card.querySelector(".card-from"); }
@@ -470,7 +471,6 @@
     return findParentOrSelf(ce, (e) => e.classList.contains("draghandle"));
   }
 
-
   function pxToRem(pxValue) { // ai generated
     const htmlFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize);
     return pxValue / htmlFontSize;
@@ -532,8 +532,8 @@
       type: getCardType(card).textContent,
       from: getCardFrom(card).textContent
     };
-    if(cdata.type == "text") {
-      const editor = card.querySelector(".content .editor");
+    const editor = getCardEditor(card);
+    if(editor) {
       cdata.text = editor.value;
       cdata.is_edit = !isHidden(editor);
     }
@@ -552,7 +552,7 @@
     setUnsaved();
   }
 
-  const TYPEICONS = { text: "📄", chat: "💬" }; // TODO: don't duplicate these
+  const TYPEICONS = { text: "📄", chat: "💬", todo: "✅" }; // TODO: don't duplicate these
   function importCard(cdata) {
     let cardsec = copyTemplateSafe("template-card");
     let card = cardsec.firstElementChild;
@@ -580,13 +580,16 @@
     let menu = getCardMenu(card);
     menu.insertBefore(copyTemplateSafe("template-" + cdata.type + "-menu"), menu.querySelector('.card-info'));
     window[MCKEY].appendChild(cardsec);
-    if(cdata.type == "text") {
-      const editor = content.querySelector(".editor");
+    const editor = getCardEditor(card);
+    if(editor) {
       editor.textContent = cdata.text;
-      text_updateMarkdown(card); // TODO: right now, this wastes cpu by doing markdown twice
-      if(!cdata.is_edit) {
-        menu.querySelector(".toggle-editor").click();
+      let toggler = menu.querySelector(".toggle-editor");
+      if(!cdata.is_edit && toggler) {
+        toggler.click();
       }
+    }
+    if(cdata.type == "text") {
+      text_updateMarkdown(card); // TODO: right now, this wastes cpu by doing markdown twice
     } else if(cdata.type == "chat") {
       // Need to recreate all messages!
       let melem = content.querySelector(".messages");
@@ -620,11 +623,9 @@
       height: 30,
       type: type,
       from: getProductVersion(),
+      is_edit: true,
+      text: ""
     };
-    if(cdata.type == "text") {
-      cdata.is_edit = true;
-      cdata.text = "";
-    }
     if(cdata.type == "chat") {
       cdata.messages = [];
     }
@@ -670,7 +671,7 @@
           }
           window[MCKEY].innerHTML = "";
           window[MCKEY].style = "";
-          Object.values(jsonData.cards).forEach(cdata => importCard(cdata));
+          Object.keys(jsonData.cards).forEach(key => importCard(jsonData.cards[key]));
           // After, some parents may need to be reconnected
           document.querySelectorAll(".card").forEach(card => {
             setCardParent(card, getCardParent(card).textContent);
@@ -678,6 +679,7 @@
           setSaved();
           window.location.hash = "";
         } catch (err) {
+          console.error(err, e.stack);
           alert(`Couldn't parse file: ${err}`);
         }
       };
@@ -792,6 +794,7 @@
     window["action-import"].addEventListener("click", () => window['import-file'].click());
     window["action-newtext"].addEventListener("click", () => addCard("text"));
     window["action-newchat"].addEventListener("click", () => addCard("chat"));
+    window["action-newtodo"].addEventListener("click", () => addCard("todo"));
     window["action-resetview"].addEventListener("click", () => main.style = "");
 
     window.addEventListener('beforeunload', function (event) {
@@ -929,19 +932,43 @@
   function text_updateMarkdown(card) {
     let content = getCardContent(card);
     content.querySelector(".markdown").innerHTML =
-      marked.parse(content.querySelector(".editor").value);
+      marked.parse(getCardEditor(card).value);
     console.log("Updating markdown in " + card.id);
   }
 
-  let autoMarkdownTimeout = null;
-  function text_autoMarkdown(editor) {
-    if(autoMarkdownTimeout !== null) {
-      clearTimeout(autoMarkdownTimeout);
-    }
-    autoMarkdownTimeout = setTimeout(() => {
-      text_updateMarkdown(getContainingCard(editor))
-    }, AUTOMARKDOWNDELAY);
+  function todo_parseLine(line) {
+    const regex = /^(.*?)(\s+\(done\s*([0-9:tTzZ]+)?\))?$/;
+    const matches = line.match(regex);
+    if(!matches) return null;
+
   }
+
+  function todo_update(card) {
+    let content = getCardContent(card);
+    let editor = getCardEditor(card);
+    let list = content.querySelector(".todo-list");
+    list.innerHTML = "";
+    let lines = editor.value.split('\n').filter(line => line.trim() !== '');
+    lines.forEach(l => {
+    });
+    console.log("Todo items: ", lines.length);
+  }
+
+  function newAutoGenerate(fn) {
+    let autoTimeout = null;
+    return (editor) => {
+      if(autoTimeout !== null) {
+        clearTimeout(autoTimeout);
+      }
+      autoTimeout = setTimeout(() => {
+        fn(getContainingCard(editor))
+      }, AUTOMARKDOWNDELAY);
+    }
+  }
+
+  let text_autoMarkdown = newAutoGenerate(text_updateMarkdown);
+  let todo_autoGenerate = newAutoGenerate(todo_update);
+
 </script>
 
 <body>
@@ -952,6 +979,7 @@
       <button class="control temp hidden" id="action-cancelpending" title="Cancel pending operation">❌</button>
       <button class="control" id="action-newtext" title="New text card">📄</button>
       <button class="control" id="action-newchat" title="New chat card">💬</button>
+      <button class="control" id="action-newtodo" title="New todo card">✅</button>
       <button class="control" id="action-resetview" title="Reset view">🧭</button>
       <button class="control" id="action-import" title="Import page">📥</button>
       <button class="control" id="action-export" title="Export page">📤</button>
@@ -1017,12 +1045,30 @@
 
   <template id="template-chat">
     <div class="messages card-main"></div>
-    <textarea class="editor" onkeydown="if(event.keyCode===13 && !event.shiftKey){card=cardEvent(event); sendMessage(card,event.target.value); event.target.value='';}"></textarea>
+    <textarea class="editor"
+      onkeydown="if(event.keyCode===13 && !event.shiftKey){card=cardEvent(event); sendMessage(card,event.target.value); event.target.value='';}"></textarea>
   </template>
 
   <template id="template-message">
     <div class="message-container">
       <time></time>
       <span class="message"></span>
+    </div>
+  </template>
+
+  <template id="template-todo">
+    <div class="todo-list card-main"></div>
+    <textarea class="editor" style="height: 33%"
+      oninput="setUnsaved(); todo_autoGenerate(event.target);"
+      onchange="event.target.textContent=event.target.value; todo_update(getContainingCard(event.target))"></textarea>
+  </template>
+
+  <template id="template-todo-menu">
+    <a href="#" class="toggle-editor" onclick="card=cardEvent(event); setHidden(getCardMenu(card)); toggleHidden(getCardContent(card).querySelector('.editor'));">Toggle editor</a>
+  </template>
+
+  <template id="template-todo-item">
+    <div class="todo-item">
+      <input type="checkbox"> <span class="todo-text"></span>
     </div>
   </template>
