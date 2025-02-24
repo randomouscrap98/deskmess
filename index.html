@@ -727,15 +727,15 @@
       const mofs = getMainOffset();
       const xofs = event.clientX - mofs.x;
       const yofs = event.clientY - mofs.y;
-      const newfs = Math.max(mofs.fs + 0.1 * delta, 0.1);
-      const ratio = newfs / mofs.fs; /// newfs;
-      //console.log(event.clientX, event.clientY, xofs, yofs, ratio);
+      const newfs = Math.max(mofs.fs * (delta < 0 ? 0.8 : 1.2), 0.1);
+      //const newfs = Math.max(mofs.fs + 0.1 * delta, 0.1);
+      const ratio = newfs / mofs.fs;
       main.style.fontSize = newfs + "em";
-      main.style.left = (event.clientX - xofs * ratio) + "px"; //(mofs.x + (xofs - xofs * ratio)) + "px";
-      main.style.top = (event.clientY - yofs * ratio) + "px"; //(mofs.y + (yofs - yofs * ratio)) + "px";
-
-      //main.style.left = (mofs.x + (xofs - xofs * ratio)) + "px";
-      //main.style.top = (mofs.y + (yofs - yofs * ratio)) + "px";
+      // Put canvas at user pointer minus original relative offset scaled by zoom.
+      // So, if user was at 0,0, new canvas location would simply be under cursor.
+      // Basically, want to preserve the relative offset into canvas underneath cursor
+      main.style.left = (event.clientX - xofs * ratio) + "px";
+      main.style.top = (event.clientY - yofs * ratio) + "px";
     });
     document.body.addEventListener("mousedown", (event) => {
       if(event.button === 0) {
