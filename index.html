@@ -236,6 +236,7 @@
     overflow-x: hidden;
     overflow-y: auto;
     display: flex;
+    flex-direction: column;
   }
 
   .card .content .editor {
@@ -250,22 +251,11 @@
     font-family: monospace, monospace;
     border-radius: 0;
     outline: none;
-  }
-  .card .content .markdown-editor {
-    flex: 1;
-    resize: none;
-  }
-  .card .content .chat-editor {
     flex: none;
     resize: vertical;
     min-height: 4em;
   }
 
-  .card .content .chat {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-  }
   .card .content .messages {
     flex: 1;
     overflow-x: hidden;
@@ -379,9 +369,10 @@
   const MINCARDHEIGHT = 2;
   const CARDOFSX = 2;
   const CARDOFSY = 2;
+  const AUTOMARKDOWNDELAY = 300; // ms
 
   // Simple Card helpers
-  function getParentCard(element) { return findParentOrSelf(element, (e) => e.hasAttribute("data-topcard")); }
+  function getContainingCard(element) { return findParentOrSelf(element, (e) => e.hasAttribute("data-topcard")); }
   function getCardTitle(card) { return card.querySelector('.top .title'); }
   function getCardDate(card) { return card.querySelector('.top time'); }
   function getCardContent(card) { return card.querySelector(':scope > .content'); }
@@ -561,6 +552,7 @@
     setUnsaved();
   }
 
+  const TYPEICONS = { text: "📄", chat: "💬" }; // TODO: don't duplicate these
   function importCard(cdata) {
     let cardsec = copyTemplateSafe("template-card");
     let card = cardsec.firstElementChild;
@@ -572,32 +564,30 @@
     let cardref = getCardRef(card);
     cardref.textContent = card.id;
     cardref.href = "#" + card.id;
+    card.querySelector(".type-icon").textContent = TYPEICONS[cdata.type];
     getCardType(card).textContent = cdata.type;
     getCardFrom(card).textContent = cdata.from;
     getCardTitle(card).textContent = cdata.title;
     setCardParent(card, cdata.parent); // bit more complicated...
+    setDateElement(getCardDate(card), cdata.date);
     card.style.zIndex = cdata.z;
     card.style.left = cdata.x + "em";
     card.style.top = cdata.y + "em";
     card.style.width = cdata.width + "em";
     card.style.height = cdata.height + "em";
-    setDateElement(getCardDate(card), cdata.date);
     let content = getCardContent(card);
     content.appendChild(copyTemplateSafe("template-" + cdata.type));
     let menu = getCardMenu(card);
-    let typeicon = card.querySelector(".type-icon");
     menu.insertBefore(copyTemplateSafe("template-" + cdata.type + "-menu"), menu.querySelector('.card-info'));
     window[MCKEY].appendChild(cardsec);
     if(cdata.type == "text") {
-      typeicon.textContent = "📄"; // TODO: don't duplicate this symbol
       const editor = content.querySelector(".editor");
       editor.textContent = cdata.text;
+      text_updateMarkdown(card); // TODO: right now, this wastes cpu by doing markdown twice
       if(!cdata.is_edit) {
-        menu.querySelector(".toggle-markdown").click();
-        console.log("Showing markdown in " + cdata.id);
+        menu.querySelector(".toggle-editor").click();
       }
     } else if(cdata.type == "chat") {
-      typeicon.textContent = "💬"; // TODO: don't duplicate this symbol
       // Need to recreate all messages!
       let melem = content.querySelector(".messages");
       cdata.messages.forEach(m => {
@@ -813,7 +803,7 @@
 
     let lastBodyMouse = null;
     document.body.addEventListener("wheel", (event) => {
-      if(getParentCard(event.target)) return;
+      if(getContainingCard(event.target)) return;
       var delta = Math.max(-1, Math.min(1, (event.wheelDelta || -event.detail)));
       const mofs = getMainOffset();
       const xofs = event.clientX - mofs.x;
@@ -830,7 +820,7 @@
     document.body.addEventListener("mousedown", (event) => {
       if(event.button === 0) {
         if(isInFooter(event.target)) return;
-        let card = getParentCard(event.target);
+        let card = getContainingCard(event.target);
         let cards = [];
         let mods = 0;
         if(card) {
@@ -907,7 +897,7 @@
     });
   });
 
-  function cardEvent(event) { event.preventDefault(); return getParentCard(event.target); }
+  function cardEvent(event) { event.preventDefault(); return getContainingCard(event.target); }
 
   function menu_setUnsetParent(card) {
     // If card already has a parent, need to unset it. Otherwise begin the
@@ -935,12 +925,29 @@
       console.log("User must now select a parent card");
     }
   }
+
+  function text_updateMarkdown(card) {
+    let content = getCardContent(card);
+    content.querySelector(".markdown").innerHTML =
+      marked.parse(content.querySelector(".editor").value);
+    console.log("Updating markdown in " + card.id);
+  }
+
+  let autoMarkdownTimeout = null;
+  function text_autoMarkdown(editor) {
+    if(autoMarkdownTimeout !== null) {
+      clearTimeout(autoMarkdownTimeout);
+    }
+    autoMarkdownTimeout = setTimeout(() => {
+      text_updateMarkdown(getContainingCard(editor))
+    }, AUTOMARKDOWNDELAY);
+  }
 </script>
 
 <body>
 
   <footer>
-    <span class="version no-interaction">v0.4.1</span>
+    <span class="version no-interaction">v0.4.2</span>
     <div id="controls">
       <button class="control temp hidden" id="action-cancelpending" title="Cancel pending operation">❌</button>
       <button class="control" id="action-newtext" title="New text card">📄</button>
@@ -964,7 +971,7 @@
           <span class="title">UNKNOWN</span>
           <input type="text" class="edit-title hidden"
                 onkeydown="if(event.keyCode==13){card=cardEvent(event);menu=getCardMenu(card);menu.querySelector('.toggle-title').click()}" 
-                oninput="i=event.target; card=getParentCard(i); getCardTitle(card).textContent=i.value;"
+                oninput="i=event.target; card=getContainingCard(i); getCardTitle(card).textContent=i.value;"
                 onchange="event.target.setAttribute('value', event.target.value)">
           <time></time>
         </div>
@@ -998,19 +1005,19 @@
   </template>
 
   <template id="template-text">
-    <textarea class="editor markdown-editor" oninput="setUnsaved();" onchange="event.target.textContent=event.target.value"></textarea>
-    <div class="markdown hidden card-main"></div>
+    <div class="markdown card-main"></div>
+    <textarea class="editor" style="height: 33%"
+      oninput="setUnsaved(); text_autoMarkdown(event.target);"
+      onchange="event.target.textContent=event.target.value; text_updateMarkdown(getContainingCard(event.target))"></textarea>
   </template>
 
   <template id="template-text-menu">
-    <a href="#" class="toggle-markdown" onclick="card=cardEvent(event); content=getCardContent(card); setHidden(getCardMenu(card)); content.querySelector('.markdown').innerHTML=marked.parse(content.querySelector('.editor').value); toggleHiddenChildren(content)">Toggle markdown</a>
+    <a href="#" class="toggle-editor" onclick="card=cardEvent(event); setHidden(getCardMenu(card)); toggleHidden(getCardContent(card).querySelector('.editor'));">Toggle editor</a>
   </template>
 
   <template id="template-chat">
-    <div class="chat">
-      <div class="messages card-main"></div>
-      <textarea class="editor chat-editor" onkeydown="if(event.keyCode===13 && !event.shiftKey){card=cardEvent(event); sendMessage(card,event.target.value); event.target.value='';}"></textarea>
-    </div>
+    <div class="messages card-main"></div>
+    <textarea class="editor" onkeydown="if(event.keyCode===13 && !event.shiftKey){card=cardEvent(event); sendMessage(card,event.target.value); event.target.value='';}"></textarea>
   </template>
 
   <template id="template-message">
