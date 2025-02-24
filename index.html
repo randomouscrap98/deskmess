@@ -406,6 +406,10 @@
     const htmlFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize);
     return pxValue / htmlFontSize;
   }
+  function pxToEm(pxValue,emTarget) {
+    const fontSize = parseFloat(getComputedStyle(emTarget).fontSize);
+    return pxValue / fontSize;
+  }
   function remToPx(remValue) {
     const htmlFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize);
     return remValue * htmlFontSize;
@@ -526,8 +530,8 @@
       date: new Date().toISOString(),
       color: "teal",
       id: nextid,
-      x: addCard.offset.x - pxToRem(mofs.x),
-      y: addCard.offset.y - pxToRem(mofs.y),
+      x: addCard.offset.x - pxToEm(mofs.x, window[MCKEY]),
+      y: addCard.offset.y - pxToEm(mofs.y, window[MCKEY]),
       z: findMaxCardIndex() + 1, // TODO: could this get slow?
       parent: "",
       width: 25,
@@ -728,7 +732,6 @@
       const xofs = event.clientX - mofs.x;
       const yofs = event.clientY - mofs.y;
       const newfs = Math.max(mofs.fs * (delta < 0 ? 0.8 : 1.2), 0.1);
-      //const newfs = Math.max(mofs.fs + 0.1 * delta, 0.1);
       const ratio = newfs / mofs.fs;
       main.style.fontSize = newfs + "em";
       // Put canvas at user pointer minus original relative offset scaled by zoom.
