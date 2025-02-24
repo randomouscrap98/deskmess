@@ -121,6 +121,14 @@
     font-size: 1em;
     overflow: hidden;
   }
+
+  .card input[type="checkbox"] {
+    width: 1em;
+    height: 1em;
+    font-size: 1em;
+    margin: 0;
+  }
+
   .card .top {
     flex: none;
     color: var(--menu-color);
@@ -172,6 +180,7 @@
     display: flex;
     flex-direction: column;
     padding: 0.1em;
+    z-index: 1;
   }
   .card .top .menu > * {
     padding: 0.1em;
@@ -277,6 +286,25 @@
   }
   .message-container time::after {
     content: ":";
+  }
+
+  .todo-list { }
+  .todo-list .todo-item {
+    margin: 0.1em;
+    display: flex;
+    gap: 0.3em;
+    align-items: center;
+    padding: 0.1em 0.2em;
+  }
+  .todo-list .todo-item:nth-child(odd) {
+    background-color: rgba(127,127,127,0.07);
+  }
+  .todo-list .todo-item .todo-text {
+    flex: 1;
+  }
+  .todo-list .todo-item time {
+    font-size: 0.8em;
+    opacity: 0.5;
   }
 
   .card .content .markdown {
@@ -590,6 +618,8 @@
     }
     if(cdata.type == "text") {
       text_updateMarkdown(card); // TODO: right now, this wastes cpu by doing markdown twice
+    } else if(cdata.type == "todo") {
+      todo_updateAll(card);
     } else if(cdata.type == "chat") {
       // Need to recreate all messages!
       let melem = content.querySelector(".messages");
@@ -937,21 +967,74 @@
   }
 
   function todo_parseLine(line) {
-    const regex = /^(.*?)(\s+\(done\s*([0-9:tTzZ]+)?\))?$/;
-    const matches = line.match(regex);
+    const matches = line.match(/^(.*?)(\s+\(done\s*([0-9:tTzZ.-]+)?\))?$/);
     if(!matches) return null;
-
+    let [_, text, doneSection, doneDate] = matches;
+    return {
+      done: doneSection ? true : false,
+      date: doneDate ? new Date(doneDate) : null,
+      text: text.trim()
+    };
+  }
+  function todo_createLine(data) {
+    if(data.done) {
+      if(data.date)
+        return data.text + " (done " + data.date.toISOString() + ")";
+      else
+        return data.text + " (done)";
+    } else {
+      return data.text;
+    }
   }
 
-  function todo_update(card) {
+  function todo_renderItem(data, refid) {
+    let item = copyTemplateSafe("template-todo-item");
+    item.firstElementChild.setAttribute("data-refid", refid);
+    let ttext = item.querySelector(".todo-text");
+    if(data.done) {
+      ttext.style.textDecoration = "line-through";
+      item.querySelector("input").setAttribute('checked', true);
+      if(data.date)
+        setDateElement(item.querySelector("time"), data.date.toISOString());
+    }
+    ttext.textContent = data.text;
+    return item;
+  }
+
+  function todo_updateAll(card) {
     let content = getCardContent(card);
     let editor = getCardEditor(card);
     let list = content.querySelector(".todo-list");
     list.innerHTML = "";
-    let lines = editor.value.split('\n').filter(line => line.trim() !== '');
-    lines.forEach(l => {
-    });
-    console.log("Todo items: ", lines.length);
+    let lines = editor.value.split('\n'); //.filter(line => line.trim() !== '');
+    for(let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if(!line) continue;
+      const parsed = todo_parseLine(line);
+      if(!parsed) {
+        console.warn("Couldn't parse todo line: " + line);
+        continue;
+      }
+      list.appendChild(todo_renderItem(parsed, i));
+    }
+  }
+  function todo_changeState(checkbox) {
+    let card = getContainingCard(checkbox);
+    let editor = getCardEditor(card);
+    let item = findParentOrSelf(checkbox, (e) => e.classList.contains("todo-item"));
+    const linenum = parseInt(item.getAttribute("data-refid"));
+    let data = {
+      text: item.querySelector('.todo-text').textContent,
+      done: checkbox.checked
+    };
+    if(data.done) data.date = new Date();
+    let newItem = todo_renderItem(data, linenum);
+    item.parentNode.replaceChild(newItem, item);
+    let lines = editor.value.split('\n');
+    lines[linenum] = todo_createLine(data);
+    let text = lines.join('\n');
+    editor.value = text;
+    editor.textContent = text;
   }
 
   function newAutoGenerate(fn) {
@@ -967,7 +1050,7 @@
   }
 
   let text_autoMarkdown = newAutoGenerate(text_updateMarkdown);
-  let todo_autoGenerate = newAutoGenerate(todo_update);
+  let todo_autoGenerate = newAutoGenerate(todo_updateAll);
 
 </script>
 
@@ -1036,8 +1119,9 @@
     <div class="markdown card-main"></div>
     <textarea class="editor" style="height: 33%"
       oninput="setUnsaved(); text_autoMarkdown(event.target);"
-      onchange="event.target.textContent=event.target.value; text_updateMarkdown(getContainingCard(event.target))"></textarea>
+      onchange="event.target.textContent=event.target.value;"></textarea>
   </template>
+      <!--onchange="event.target.textContent=event.target.value; text_updateMarkdown(getContainingCard(event.target))"></textarea>-->
 
   <template id="template-text-menu">
     <a href="#" class="toggle-editor" onclick="card=cardEvent(event); setHidden(getCardMenu(card)); toggleHidden(getCardContent(card).querySelector('.editor'));">Toggle editor</a>
@@ -1060,8 +1144,9 @@
     <div class="todo-list card-main"></div>
     <textarea class="editor" style="height: 33%"
       oninput="setUnsaved(); todo_autoGenerate(event.target);"
-      onchange="event.target.textContent=event.target.value; todo_update(getContainingCard(event.target))"></textarea>
+      onchange="event.target.textContent=event.target.value;"></textarea>
   </template>
+      <!--onchange="event.target.textContent=event.target.value; todo_updateAll(getContainingCard(event.target))"></textarea>-->
 
   <template id="template-todo-menu">
     <a href="#" class="toggle-editor" onclick="card=cardEvent(event); setHidden(getCardMenu(card)); toggleHidden(getCardContent(card).querySelector('.editor'));">Toggle editor</a>
@@ -1069,6 +1154,8 @@
 
   <template id="template-todo-item">
     <div class="todo-item">
-      <input type="checkbox"> <span class="todo-text"></span>
+      <input type="checkbox" onchange="todo_changeState(event.target)">
+      <span class="todo-text"></span>
+      <time></time>
     </div>
   </template>
