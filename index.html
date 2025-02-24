@@ -98,8 +98,11 @@
     transition: filter 0.1s ease-in-out;
     cursor: pointer;
   }
-  button.control.unsaved {
+  button.control.unsaved, button.control.alert {
     background: var(--red);
+  }
+  button.control.temp {
+    background: var(--gray);
   }
 
   button.control:hover {
@@ -355,6 +358,8 @@
   const MODRESIZEBOTTOM = 2;
   const MINCARDWIDTH = 7;
   const MINCARDHEIGHT = 2;
+  const CARDOFSX = 2;
+  const CARDOFSY = 2;
 
   // Simple Card helpers
   function getParentCard(element) { return findParentOrSelf(element, (e) => e.hasAttribute("data-topcard")); }
@@ -379,6 +384,7 @@
   function removeSelf(element) { element.parentNode.removeChild(element); }
   function toggleHidden(element) { return element.classList.toggle('hidden'); }
   function setHidden(element) { return element.classList.add('hidden'); }
+  function setUnhidden(element) { return element.classList.remove('hidden'); }
   function isHidden(element) { return element.classList.contains('hidden'); }
   function copyTemplateSingle(name) { return document.getElementById(name).content.cloneNode(true).firstElementChild; }
   function copyTemplateSafe(name) {
@@ -399,6 +405,15 @@
   function pxToRem(pxValue) { // ai generated
     const htmlFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize);
     return pxValue / htmlFontSize;
+  }
+  function remToPx(remValue) {
+    const htmlFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize);
+    return remValue * htmlFontSize;
+  }
+  function emToRem(emValue, emTarget) {
+    const htmlFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize);
+    const targetFontSize = parseFloat(getComputedStyle(emTarget).fontSize);
+    return emValue * targetFontSize / htmlFontSize;
   }
 
   function nextCardId() {
@@ -499,10 +514,10 @@
 
   function addCard(type) {
     if(addCard.offset) { // horrible, I don't care though :)
-      addCard.offset.x += 2;
-      addCard.offset.y += 2;
+      addCard.offset.x += CARDOFSX;
+      addCard.offset.y += CARDOFSY;
     } else {
-      addCard.offset = { x: 2, y: 2 };
+      addCard.offset = { x: CARDOFSX, y: CARDOFSY };
     }
     const mofs = getMainOffset();
     const nextid = nextCardId();
@@ -570,6 +585,7 @@
           window['main-container'].innerHTML = "";
           Object.values(jsonData.cards).forEach(cdata => importCard(cdata));
           setSaved();
+          window.location.hash = "";
         } catch (err) {
           alert(`Couldn't parse file: ${err}`);
         }
@@ -667,15 +683,31 @@
       removePendingCardAction();
     };
     window[MCKEY].classList.add("pending-action");
+    setUnhidden(window["action-cancelpending"]);
   }
   function removePendingCardAction() {
     pendingCardAction = null;
     window[MCKEY].classList.remove("pending-action");
+    setHidden(window["action-cancelpending"]);
   }
+
+  window.addEventListener("hashchange", function(event) {
+    const cid = window.location.hash.substring(1);
+    if(!cid) return;
+    const card = document.getElementById(cid);
+    if(card) {
+      const ofs = getOffset(card);
+      console.log("Focusing card " + cid, ofs);
+      let mc = window[MCKEY];
+      mc.style.left = remToPx(CARDOFSX - emToRem(ofs.x, mc)) + "px";
+      mc.style.top = remToPx(CARDOFSY - emToRem(ofs.y, mc)) + "px";
+    }
+  });
 
   document.addEventListener("DOMContentLoaded", function () {
     let main = window[MCKEY];
 
+    window["action-cancelpending"].addEventListener("click", () => {removePendingCardAction();});
     window["action-save"].addEventListener("click", () => {setSaved(); downloadPage();});
     window["action-export"].addEventListener("click", () => {downloadExport(); setSaved();});
     window["action-import"].addEventListener("click", () => window['import-file'].click());
@@ -722,6 +754,7 @@
           mods: mods
         };
         event.preventDefault();
+        window.location.hash = ""; // to make life easier for people 
         return false;
       }
     });
@@ -769,6 +802,7 @@
         // Unsetting parent
         setCardParent(card, null);
         cpmenu.textContent = "Set parent";
+        setUnsaved();
       }
     } else {
       // Need to enable the special... kinda weird "click on parent to set" thing.
@@ -782,6 +816,7 @@
         }
         setCardParent(card, getCardRef(parent).textContent)
         cpmenu.textContent = "Clear parent";
+        setUnsaved();
       };
       setPendingCardAction(onClick);
       console.log("User must now select a parent card");
@@ -794,6 +829,7 @@
   <footer>
     <span class="version no-interaction">v0.4</span>
     <div id="controls">
+      <button class="control temp hidden" id="action-cancelpending" title="Cancel pending operation">❌</button>
       <button class="control" id="action-newtext" title="New text card">📄</button>
       <button class="control" id="action-newchat" title="New chat card">💬</button>
       <button class="control" id="action-resetview" title="Reset view">🧭</button>
