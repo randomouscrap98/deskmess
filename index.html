@@ -637,8 +637,6 @@
     return maxZ;
   }
 
-  function cardEvent(event) { event.preventDefault(); return getParentCard(event.target); }
-
   function createMessage(message, date) {
     date = date || new Date().toISOString();
     let emsg = copyTemplateSingle("template-message");
@@ -727,7 +725,17 @@
       if(getParentCard(event.target)) return;
       var delta = Math.max(-1, Math.min(1, (event.wheelDelta || -event.detail)));
       const mofs = getMainOffset();
-      main.style.fontSize = Math.max(mofs.fs + 0.1 * delta, 0.1) + "em";
+      const xofs = event.clientX - mofs.x;
+      const yofs = event.clientY - mofs.y;
+      const newfs = Math.max(mofs.fs + 0.1 * delta, 0.1);
+      const ratio = newfs / mofs.fs; /// newfs;
+      //console.log(event.clientX, event.clientY, xofs, yofs, ratio);
+      main.style.fontSize = newfs + "em";
+      main.style.left = (event.clientX - xofs * ratio) + "px"; //(mofs.x + (xofs - xofs * ratio)) + "px";
+      main.style.top = (event.clientY - yofs * ratio) + "px"; //(mofs.y + (yofs - yofs * ratio)) + "px";
+
+      //main.style.left = (mofs.x + (xofs - xofs * ratio)) + "px";
+      //main.style.top = (mofs.y + (yofs - yofs * ratio)) + "px";
     });
     document.body.addEventListener("mousedown", (event) => {
       if(event.button === 0) {
@@ -791,6 +799,8 @@
       }
     });
   });
+
+  function cardEvent(event) { event.preventDefault(); return getParentCard(event.target); }
 
   function menu_setUnsetParent(card) {
     // If card already has a parent, need to unset it. Otherwise begin the
