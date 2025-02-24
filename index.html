@@ -115,7 +115,7 @@
     padding: 0.35em;
     position: absolute;
     font-size: 1em;
-    overflow: hidden;
+    /*overflow: hidden;*/
   }
   .card .top {
     flex: none;
@@ -209,6 +209,19 @@
     bottom: 0;
     right: 0;
     cursor: se-resize;
+  }
+
+  .card-connector {
+    z-index: -1;
+    display: block;
+    position: absolute;
+    margin: 0;
+    padding: 0;
+    min-width: 0.1em;
+    min-height: 0.1em;
+    border-right: 0.1em solid rgba(127,127,127,0.5);
+    border-top: 0.1em solid rgba(127,127,127,0.5);
+    transform-origin: left top;
   }
 
   .card .content {
@@ -356,6 +369,7 @@
   const NEXTIDKEY = "data-nextid";
   const MODRESIZERIGHT = 1;
   const MODRESIZEBOTTOM = 2;
+  const MODMOVECARDS = 4;
   const MINCARDWIDTH = 7;
   const MINCARDHEIGHT = 2;
   const CARDOFSX = 2;
@@ -373,11 +387,56 @@
   function getCardId(card) { return card.querySelector(".card-id"); } // Id from INFO, not actual id
   function getCardRef(card) { return card.querySelector(".card-ref"); } // Id from INFO, not actual id
   function getCardParent(card) { return card.querySelector(".card-parent"); }
-  function setCardParent(card, parent) {
-    let cp = getCardParent(card);
+  function getCardChildren(card) { return window[MCKEY].querySelectorAll(`.card[data-parent="${card.id}"]`) }
+  function getCardAllChildren(card) {
+    let seen = {};
+    seen[card.id] = true; // can't be a child of yourself (well you can... but)
+    let queue = Array.from(getCardChildren(card));
+    let result = [];
+    while(queue.length) {
+      let next = queue.pop();
+      if(next.id in seen) continue;
+      result.push(next);
+      queue.push(...Array.from(getCardChildren(next)));
+      seen[next.id] = true;
+    }
+    return result;
+  }
+  function setCardParent(card, parent) { // parent should be a string
+    let cp = getCardParent(card); // the element, not the value
+    let cpmenu = getCardMenu(card).querySelector(".set-parent");
     parent = parent || "";
     cp.textContent = parent;
     cp.href = "#" + parent;
+    card.setAttribute("data-parent", parent);
+    let con = card.parentNode.querySelector(`.card-connector[data-cardset="${card.id}"]`);
+    if(parent) {
+      let pelm = document.getElementById(parent);
+      if(!pelm) {
+        console.warn("Couldn't set card parent connector for " + parent + ", element doesn't exist");
+        return;
+      }
+      let cofs = getOffset(card);
+      let pofs = getOffset(pelm);
+      pofs.x += pofs.width / 2;
+      pofs.y += pofs.height / 2;
+      cofs.x += cofs.width / 2;
+      cofs.y += cofs.height / 2;
+      const xofs = pofs.x - cofs.x;
+      const yofs = pofs.y - cofs.y;
+      con.style.left = cofs.x + "em";
+      con.style.top = cofs.y + "em";
+      con.style.width = Math.abs(xofs) + "em";
+      con.style.height = Math.abs(yofs) + "em";
+      con.style.transform = `scale(${Math.sign(xofs)}, ${Math.sign(yofs)})`;
+      setUnhidden(con);
+      cpmenu.textContent = "Clear parent";
+      //console.log("Set card " + card.id + " parent");
+    } else {
+      cpmenu.textContent = "Set parent";
+      setHidden(con);
+      //console.log("Remove card " + card.id + " parent");
+    }
   }
 
   // Simple Html helpers
@@ -475,10 +534,20 @@
     return cdata;
   }
 
+  function deleteCard(card) {
+    // Need to remove the parent from all children
+    console.log("Deleting card " + card.id);
+    getCardChildren(card).forEach(c => setCardParent(c, null));
+    window[MCKEY].querySelectorAll(`[data-cardset="${card.id}"]`).forEach(e => removeSelf(e));
+    setUnsaved();
+  }
+
   function importCard(cdata) {
-    let card = copyTemplateSingle("template-card");
+    let cardsec = copyTemplateSafe("template-card");
+    let card = cardsec.firstElementChild;
     refreshCardId(cdata.id); // Make sure next card id is proper just in case id is huge
     card.id = "card_" + cdata.id;
+    Array.from(cardsec.children).forEach(c => c.setAttribute("data-cardset", card.id));
     card.setAttribute("data-color", cdata.color);
     getCardId(card).textContent = cdata.id;
     getCardRef(card).textContent = card.id;
@@ -496,7 +565,7 @@
     content.appendChild(copyTemplateSafe("template-" + cdata.type));
     let menu = getCardMenu(card);
     menu.insertBefore(copyTemplateSafe("template-" + cdata.type + "-menu"), menu.querySelector('.card-info'));
-    window[MCKEY].appendChild(card);
+    window[MCKEY].appendChild(cardsec);
     if(cdata.type == "text") {
       const editor = content.querySelector(".editor");
       editor.textContent = cdata.text;
@@ -586,8 +655,13 @@
           if(jsonData.file_version != "1") {
             throw "Invalid or unknown file version";
           }
-          window['main-container'].innerHTML = "";
+          window[MCKEY].innerHTML = "";
+          window[MCKEY].style = "";
           Object.values(jsonData.cards).forEach(cdata => importCard(cdata));
+          // After, some parents may need to be reconnected
+          document.querySelectorAll(".card").forEach(card => {
+            setCardParent(card, getCardParent(card).textContent);
+          });
           setSaved();
           window.location.hash = "";
         } catch (err) {
@@ -744,24 +818,31 @@
       if(event.button === 0) {
         if(isInFooter(event.target)) return;
         let card = getParentCard(event.target);
+        let cards = [];
         let mods = 0;
-        let cofs = null;
         if(card) {
+          cards.push({card:card, cofs:getOffset(card)});
           card.style.zIndex = findMaxCardIndex() + 1; // This will increase forever
-          cofs = getOffset(card);
-          if(event.target.classList.contains("right-resize")) mods = MODRESIZERIGHT;
-          else if(event.target.classList.contains("bottom-resize")) mods = MODRESIZEBOTTOM;
-          else if(event.target.classList.contains("corner-resize")) mods = MODRESIZERIGHT | MODRESIZEBOTTOM;
-          if(!mods && !event.target.classList.contains('draghandle')) return;
-          if(pendingCardAction) {
+          if(event.target.classList.contains("right-resize")) {
+            mods = MODRESIZERIGHT;
+          } else if(event.target.classList.contains("bottom-resize")) {
+            mods = MODRESIZEBOTTOM;
+          } else if(event.target.classList.contains("corner-resize")) {
+            mods = MODRESIZERIGHT | MODRESIZEBOTTOM;
+          } else if(event.target.classList.contains('draghandle')) {
+            mods = MODMOVECARDS;
+            getCardAllChildren(card).forEach(c => cards.push({card:c, cofs:getOffset(c)}));
+          } else if(pendingCardAction) {
             pendingCardAction(card);
+            return;
+          } else {
             return;
           }
         }
         lastBodyMouse = {
           x : event.clientX, xs: event.clientX,
           y : event.clientY, ys: event.clientY,
-          card: card, cofs: cofs,
+          cards: cards,
           mods: mods
         };
         event.preventDefault();
@@ -773,19 +854,25 @@
       if(lastBodyMouse) {
         addCard.offset = null; // any movement will reset the accum offset
         const mofs = getMainOffset();
-        if(lastBodyMouse.card) {
-          const cofs = getOffset(lastBodyMouse.card);
-          if(lastBodyMouse.mods) {
-            if(lastBodyMouse.mods & MODRESIZERIGHT)
-              lastBodyMouse.card.style.width = Math.max(lastBodyMouse.cofs.width + pxToRem(event.clientX - lastBodyMouse.xs) / mofs.fs, MINCARDWIDTH) + "em";
-            if(lastBodyMouse.mods & MODRESIZEBOTTOM)
-              lastBodyMouse.card.style.height = Math.max(lastBodyMouse.cofs.height + pxToRem(event.clientY - lastBodyMouse.ys) / mofs.fs, MINCARDHEIGHT) + "em";
-          } else {
-            lastBodyMouse.card.style.left = lastBodyMouse.cofs.x + pxToRem(event.clientX - lastBodyMouse.xs) / mofs.fs + "em";
-            lastBodyMouse.card.style.top = lastBodyMouse.cofs.y + pxToRem(event.clientY - lastBodyMouse.ys) / mofs.fs + "em";
-          }
+        if(lastBodyMouse.mods) { // Working on cards or something
+          const xofs = pxToRem(event.clientX - lastBodyMouse.xs) / mofs.fs;
+          const yofs = pxToRem(event.clientY - lastBodyMouse.ys) / mofs.fs;
+          lastBodyMouse.cards.forEach(c => {
+            if(lastBodyMouse.mods & MODRESIZERIGHT) {
+              c.card.style.width = Math.max(c.cofs.width + xofs, MINCARDWIDTH) + "em";
+            }
+            if(lastBodyMouse.mods & MODRESIZEBOTTOM) {
+              c.card.style.height = Math.max(c.cofs.height + yofs, MINCARDHEIGHT) + "em";
+            }
+            if(lastBodyMouse.mods & MODMOVECARDS) {
+              c.card.style.left = c.cofs.x + xofs + "em";
+              c.card.style.top = c.cofs.y + yofs + "em";
+              // HORRIBLE!!
+              setCardParent(c.card, c.card.getAttribute("data-parent"));
+            }
+          });
         }
-        else {
+        else { // Working solely on main
           main.style.left = mofs.x + (event.clientX - lastBodyMouse.x) + "px";
           main.style.top = mofs.y + (event.clientY - lastBodyMouse.y) + "px";
         }
@@ -809,12 +896,9 @@
     // If card already has a parent, need to unset it. Otherwise begin the
     // process of selecting a parent.
     let cp = getCardParent(card);
-    let cpmenu = getCardMenu(card).querySelector(".set-parent");
     if(cp.textContent) {
       if(confirm("Are you sure you want to detach this card from the parent?")) {
-        // Unsetting parent
         setCardParent(card, null);
-        cpmenu.textContent = "Set parent";
         setUnsaved();
       }
     } else {
@@ -827,8 +911,7 @@
           alert("Can't set self as parent!");
           return false;
         }
-        setCardParent(card, getCardRef(parent).textContent)
-        cpmenu.textContent = "Clear parent";
+        setCardParent(card, getCardRef(parent).textContent);
         setUnsaved();
       };
       setPendingCardAction(onClick);
@@ -877,7 +960,7 @@
             <a href="#" data-color="gray" onclick="setCardColor(event);"></a>
           </div>
           <a href="#" class="toggle-title" onclick="card=cardEvent(event); t=getCardTitle(card); te=getCardTitleEdit(card); te.value=t.textContent; toggleHidden(t); if(toggleHidden(te)){setHidden(getCardMenu(card));event.target.textContent='Edit title';setUnsaved();}else{event.target.textContent='Set title';te.focus()}">Edit title</a>
-          <a href="#" onclick="card=cardEvent(event); if(confirm('Really delete \''+getCardTitle(card).textContent+'\'?')){removeSelf(card);setUnsaved();}">Delete card</a>
+          <a href="#" onclick="card=cardEvent(event); if(confirm('Really delete \''+getCardTitle(card).textContent+'\'?')){deleteCard(card);}">Delete card</a>
           <a href="#" class="set-parent" onclick="card=cardEvent(event); menu_setUnsetParent(card); setHidden(getCardMenu(card));">Set Parent</a>
           <div class="card-info">
             <div><span>id:</span> <span class="card-id"></span></div>
@@ -893,6 +976,7 @@
       <div class="bottom-resize"></div>
       <div class="corner-resize"></div>
     </div>
+    <div class="card-connector no-interaction hidden"></div>
   </template>
 
   <template id="template-text">
