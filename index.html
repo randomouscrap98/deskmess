@@ -97,6 +97,10 @@
     background: var(--teal);
     transition: filter 0.1s ease-in-out;
     cursor: pointer;
+    display: flex; /* all for chrome */
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
   }
   button.control.unsaved, button.control.alert {
     background: var(--red);
@@ -115,7 +119,7 @@
     padding: 0.35em;
     position: absolute;
     font-size: 1em;
-    /*overflow: hidden;*/
+    overflow: hidden;
   }
   .card .top {
     flex: none;
@@ -125,7 +129,7 @@
     display: flex;
     align-items: baseline;
     flex-wrap: wrap;
-    gap: 1em;
+    gap: 0.4em;
     position: relative;
   }
   .card .top a:visited, .card .top a:link {
@@ -139,21 +143,24 @@
   }
   .card .top .titlearea {
     flex: 1;
-  }
-  .card .top .titlearea > * {
-    width: 100%;
-  }
-  .card .top .title {
+    display: flex;
     padding: 0 0.2em;
     border-radius: 0.5em;
+    gap: 0.4em;
+    align-items: baseline;
+  }
+  .card .top .title {
+    flex: 1;
   }
   .card .top .edit-title {
+    flex: 1;
     font-size: 0.9em;
     outline: none;
     border: 0.05em solid black;
     padding: 0.1em 0.25em;
   }
   .card .top time {
+    flex: none;
     font-size: 0.8em;
     opacity: 0.8;
   }
@@ -217,10 +224,8 @@
     position: absolute;
     margin: 0;
     padding: 0;
-    min-width: 0.1em;
-    min-height: 0.1em;
-    border-right: 0.1em solid rgba(127,127,127,0.5);
-    border-top: 0.1em solid rgba(127,127,127,0.5);
+    border-right: 0.15em solid rgba(127,127,127,0.5);
+    border-top: 0.15em solid rgba(127,127,127,0.5);
     transform-origin: left top;
   }
 
@@ -428,7 +433,7 @@
       con.style.top = cofs.y + "em";
       con.style.width = Math.abs(xofs) + "em";
       con.style.height = Math.abs(yofs) + "em";
-      con.style.transform = `scale(${Math.sign(xofs)}, ${Math.sign(yofs)})`;
+      con.style.transform = `scale(${Math.sign(xofs) || 1}, ${Math.sign(yofs) || 1})`;
       setUnhidden(con);
       cpmenu.textContent = "Clear parent";
       //console.log("Set card " + card.id + " parent");
@@ -460,6 +465,20 @@
     if(v > max) v = max;
     return v;
   }
+  function findParentOrSelf(currentElement, check) {
+    while (currentElement) {
+      if (check(currentElement)) {
+        return currentElement;
+      }
+      currentElement = currentElement.parentElement; // Move up the DOM tree.
+    }
+    return null;
+  }
+  function findDraghandle(ce) {
+    if(["input", "select", "button"].includes(ce.tagName.toLowerCase())) return null;
+    return findParentOrSelf(ce, (e) => e.classList.contains("draghandle"));
+  }
+
 
   function pxToRem(pxValue) { // ai generated
     const htmlFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize);
@@ -550,7 +569,9 @@
     Array.from(cardsec.children).forEach(c => c.setAttribute("data-cardset", card.id));
     card.setAttribute("data-color", cdata.color);
     getCardId(card).textContent = cdata.id;
-    getCardRef(card).textContent = card.id;
+    let cardref = getCardRef(card);
+    cardref.textContent = card.id;
+    cardref.href = "#" + card.id;
     getCardType(card).textContent = cdata.type;
     getCardFrom(card).textContent = cdata.from;
     getCardTitle(card).textContent = cdata.title;
@@ -564,17 +585,19 @@
     let content = getCardContent(card);
     content.appendChild(copyTemplateSafe("template-" + cdata.type));
     let menu = getCardMenu(card);
+    let typeicon = card.querySelector(".type-icon");
     menu.insertBefore(copyTemplateSafe("template-" + cdata.type + "-menu"), menu.querySelector('.card-info'));
     window[MCKEY].appendChild(cardsec);
     if(cdata.type == "text") {
+      typeicon.textContent = "📄"; // TODO: don't duplicate this symbol
       const editor = content.querySelector(".editor");
       editor.textContent = cdata.text;
       if(!cdata.is_edit) {
         menu.querySelector(".toggle-markdown").click();
         console.log("Showing markdown in " + cdata.id);
       }
-    }
-    if(cdata.type == "chat") {
+    } else if(cdata.type == "chat") {
+      typeicon.textContent = "💬"; // TODO: don't duplicate this symbol
       // Need to recreate all messages!
       let melem = content.querySelector(".messages");
       cdata.messages.forEach(m => {
@@ -672,16 +695,6 @@
     } else {
       console.log("Quit import (no files)");
     }
-  }
-
-  function findParentOrSelf(currentElement, check) {
-    while (currentElement) {
-      if (check(currentElement)) {
-        return currentElement;
-      }
-      currentElement = currentElement.parentElement; // Move up the DOM tree.
-    }
-    return null;
   }
 
   function getOffset(element) {
@@ -825,11 +838,14 @@
           card.style.zIndex = findMaxCardIndex() + 1; // This will increase forever
           if(event.target.classList.contains("right-resize")) {
             mods = MODRESIZERIGHT;
+            getCardChildren(card).forEach(c => cards.push({card:c, cofs:getOffset(c)}));
           } else if(event.target.classList.contains("bottom-resize")) {
             mods = MODRESIZEBOTTOM;
+            getCardChildren(card).forEach(c => cards.push({card:c, cofs:getOffset(c)}));
           } else if(event.target.classList.contains("corner-resize")) {
             mods = MODRESIZERIGHT | MODRESIZEBOTTOM;
-          } else if(event.target.classList.contains('draghandle')) {
+            getCardChildren(card).forEach(c => cards.push({card:c, cofs:getOffset(c)}));
+          } else if(findDraghandle(event.target)) {
             if(pendingCardAction) {
               pendingCardAction(card);
               return;
@@ -924,7 +940,7 @@
 <body>
 
   <footer>
-    <span class="version no-interaction">v0.4</span>
+    <span class="version no-interaction">v0.4.1</span>
     <div id="controls">
       <button class="control temp hidden" id="action-cancelpending" title="Cancel pending operation">❌</button>
       <button class="control" id="action-newtext" title="New text card">📄</button>
@@ -943,14 +959,15 @@
   <template id="template-card">
     <div class="card" data-topcard="" style="width: 25em; height: 30em;">
       <div class="top">
-        <div class="titlearea">
-          <div class="title draghandle">UNKNOWN</div>
+        <div class="titlearea draghandle">
+          <span class="type-icon">X</span>
+          <span class="title">UNKNOWN</span>
           <input type="text" class="edit-title hidden"
                 onkeydown="if(event.keyCode==13){card=cardEvent(event);menu=getCardMenu(card);menu.querySelector('.toggle-title').click()}" 
                 oninput="i=event.target; card=getParentCard(i); getCardTitle(card).textContent=i.value;"
                 onchange="event.target.setAttribute('value', event.target.value)">
+          <time></time>
         </div>
-        <time></time>
         <a href="#" onclick="card=cardEvent(event); toggleHidden(getCardMenu(card))">⚙️</a>
         <div class="menu hidden">
           <div class="colors">
@@ -965,7 +982,7 @@
           <a href="#" class="set-parent" onclick="card=cardEvent(event); menu_setUnsetParent(card); setHidden(getCardMenu(card));">Set Parent</a>
           <div class="card-info">
             <div><span>id:</span> <span class="card-id"></span></div>
-            <div><span>ref:</span> <span class="card-ref"></span></div>
+            <div><span>ref:</span> <a href="#" class="card-ref"></a></div>
             <div><span>type:</span> <span class="card-type"></span></div>
             <div><span>from:</span> <span class="card-from"></span></div>
             <div><span>parent:</span> <a href="#" class="card-parent"></a></div>
