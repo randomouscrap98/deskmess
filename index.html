@@ -18,6 +18,13 @@
     --purple-border: #784A88;
     --gray: #A8A8A8;
     --gray-border: #717171;
+    --menu-color: white;
+    --menu-infobg: #444;
+    --editor-bg: #EEE;
+    --editor-color: #333;
+    --bg: #F3F3F3;
+    --content-bg: white;
+    --content-color: #111;
   }
 
   body {
@@ -28,7 +35,7 @@
     height: 100vh;
     overflow: hidden;
     position: fixed;
-    background: #F3F3F3;
+    background: var(--bg);
   }
 
   .hidden {
@@ -109,7 +116,7 @@
   }
   .card .top {
     flex: none;
-    color: white;
+    color: var(--menu-color);
     padding-bottom: 0.25em;
     padding-right: 0.2em;
     display: flex;
@@ -119,7 +126,7 @@
     position: relative;
   }
   .card .top a:visited, .card .top a:link {
-    color: white;
+    color: var(--menu-color);
   }
   .card .top a:visited[href="#"], .card .top a:link[href="#"] {
     text-decoration: none;
@@ -152,7 +159,6 @@
     position: absolute;
     top: 100%;
     right: 0;
-    color: white;
     display: flex;
     flex-direction: column;
     padding: 0.1em;
@@ -171,7 +177,7 @@
   }
 
   .card .card-info {
-    background: #444;
+    background: var(--menu-infobg);
     font-size: 0.8em;
     margin-top: 0.1em;
   }
@@ -203,7 +209,8 @@
   }
 
   .card .content {
-    background: white;
+    background: var(--content-bg);
+    color: var(--content-color);
     flex: 1;
     overflow-x: hidden;
     overflow-y: auto;
@@ -216,8 +223,8 @@
     overflow-y: scroll;
     overflow-x: hidden;
     padding: 0.4em;
-    background: #EEE;
-    color: #333;
+    background: var(--editor-bg);
+    color: var(--editor-color);
     font-size: 0.8em;
     font-family: monospace, monospace;
     border-radius: 0;
@@ -248,7 +255,7 @@
     padding: 0.1em 0.2em;
   }
   .message-container:nth-child(odd) {
-    background-color: #F7F7F7;
+    background-color: rgba(127,127,127,0.07);
   }
   .message-container time {
     font-weight: bold;
