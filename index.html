@@ -321,6 +321,15 @@
   .markdown ul {
     padding-left: 1.5em;
   }
+  .markdown code {
+    /* font-family: 'DejaVu Sans', monospace; */
+    background: var(--editor-bg);
+    padding: 0.2em 0.3em;
+    border-radius: 0.2em;
+    font-size: 0.9em;
+    color: var(--teal-border);
+    white-space: nowrap;
+  }
   .markdown pre code {
     background: #333;
     color: #EEE;
@@ -1116,7 +1125,7 @@
 <body>
 
   <footer>
-    <span class="version no-interaction">v0.5.1</span>
+    <span class="version no-interaction">v0.5.2</span>
     <div id="controls">
       <button class="control temp hidden" id="action-cancelpending" title="Cancel pending operation">❌</button>
       <button class="control" id="action-newtext" title="New text card">📄</button>
