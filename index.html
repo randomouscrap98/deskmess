@@ -402,6 +402,7 @@
 
   // Simple Card helpers
   function getContainingCard(element) { return findParentOrSelf(element, (e) => e.hasAttribute("data-topcard")); }
+  function getContainingMenu(element) { return findParentOrSelf(element, (e) => e.classList.contains("menu")); }
   function getCardTitle(card) { return card.querySelector('.top .title'); }
   function getCardDate(card) { return card.querySelector('.top time'); }
   function getCardContent(card) { return card.querySelector(':scope > .content'); }
@@ -457,11 +458,9 @@
       con.style.transform = `scale(${Math.sign(xofs) || 1}, ${Math.sign(yofs) || 1})`;
       setUnhidden(con);
       cpmenu.textContent = "Clear parent";
-      //console.log("Set card " + card.id + " parent");
     } else {
       cpmenu.textContent = "Set parent";
       setHidden(con);
-      //console.log("Remove card " + card.id + " parent");
     }
   }
 
@@ -498,6 +497,13 @@
   function findDraghandle(ce) {
     if(["input", "select", "button"].includes(ce.tagName.toLowerCase())) return null;
     return findParentOrSelf(ce, (e) => e.classList.contains("draghandle"));
+  }
+  function getCurrentName() {
+    const parts = window.location.pathname.split('/');
+    if(parts.length === 0) return "deskmess";
+    const lastp = parts[parts.length - 1];
+    const lastd = lastp.lastIndexOf('.');
+    return lastd === -1 ? lastp: lastp.substring(0, lastd);
   }
 
   function pxToRem(pxValue) { // ai generated
@@ -670,7 +676,7 @@
     doc = "<!DOCTYPE html>\n" + doc;
     // Create a Blob object containing the HTML content
     var blob = new Blob([doc], {type: 'text/html'});
-    downloadBlob(blob, "deskmess.html");
+    downloadBlob(blob, getCurrentName() + ".html");
   }
 
   function downloadExport() {
@@ -684,7 +690,7 @@
       exp.cards[card.id] = exportCard(card);
     });
     var blob = new Blob([JSON.stringify(exp, null, 2)], {type: 'application/json'});
-    downloadBlob(blob, "deskmess.json");
+    downloadBlob(blob, getCurrentName() + ".json");
   }
 
   function importTrigger(event) {
@@ -779,7 +785,7 @@
   function setCardColor(event) {
     let card = cardEvent(event);
     card.setAttribute("data-color", event.target.getAttribute("data-color"));
-    setHidden(getCardMenu(card));
+    //setHidden(getCardMenu(card));
     setUnsaved();
   }
 
@@ -858,6 +864,7 @@
         let cards = [];
         let mods = 0;
         if(card) {
+          if(!getContainingMenu(event.target)) setHidden(getCardMenu(card));
           cards.push({card:card, cofs:getOffset(card), main: true});
           card.style.zIndex = findMaxCardIndex() + 1; // This will increase forever
           if(event.target.classList.contains("right-resize")) {
@@ -1062,7 +1069,7 @@
 <body>
 
   <footer>
-    <span class="version no-interaction">v0.5</span>
+    <span class="version no-interaction">v0.5.1</span>
     <div id="controls">
       <button class="control temp hidden" id="action-cancelpending" title="Cancel pending operation">❌</button>
       <button class="control" id="action-newtext" title="New text card">📄</button>
@@ -1100,9 +1107,9 @@
             <a href="#" data-color="purple" onclick="setCardColor(event);"></a>
             <a href="#" data-color="gray" onclick="setCardColor(event);"></a>
           </div>
-          <a href="#" class="toggle-title" onclick="card=cardEvent(event); t=getCardTitle(card); te=getCardTitleEdit(card); te.value=t.textContent; toggleHidden(t); if(toggleHidden(te)){setHidden(getCardMenu(card));event.target.textContent='Edit title';setUnsaved();}else{event.target.textContent='Set title';te.focus()}">Edit title</a>
+          <a href="#" class="toggle-title" onclick="card=cardEvent(event); t=getCardTitle(card); te=getCardTitleEdit(card); te.value=t.textContent; toggleHidden(t); if(toggleHidden(te)){event.target.textContent='Edit title';setUnsaved();}else{event.target.textContent='Set title';te.focus()}">Edit title</a>
           <a href="#" onclick="card=cardEvent(event); if(confirm('Really delete \''+getCardTitle(card).textContent+'\'?')){deleteCard(card);}">Delete card</a>
-          <a href="#" class="set-parent" onclick="card=cardEvent(event); menu_setUnsetParent(card); setHidden(getCardMenu(card));">Set Parent</a>
+          <a href="#" class="set-parent" onclick="card=cardEvent(event); menu_setUnsetParent(card);">Set Parent</a>
           <div class="card-info">
             <div><span>id:</span> <span class="card-id"></span></div>
             <div><span>ref:</span> <a href="#" class="card-ref"></a></div>
@@ -1126,10 +1133,9 @@
       oninput="setUnsaved(); text_autoMarkdown(event.target);"
       onchange="event.target.textContent=event.target.value;"></textarea>
   </template>
-      <!--onchange="event.target.textContent=event.target.value; text_updateMarkdown(getContainingCard(event.target))"></textarea>-->
 
   <template id="template-text-menu">
-    <a href="#" class="toggle-editor" onclick="card=cardEvent(event); setHidden(getCardMenu(card)); toggleHidden(getCardContent(card).querySelector('.editor'));">Toggle editor</a>
+    <a href="#" class="toggle-editor" onclick="card=cardEvent(event); toggleHidden(getCardContent(card).querySelector('.editor'));">Toggle editor</a>
   </template>
 
   <template id="template-chat">
@@ -1151,10 +1157,9 @@
       oninput="setUnsaved(); todo_autoGenerate(event.target);"
       onchange="event.target.textContent=event.target.value;"></textarea>
   </template>
-      <!--onchange="event.target.textContent=event.target.value; todo_updateAll(getContainingCard(event.target))"></textarea>-->
 
   <template id="template-todo-menu">
-    <a href="#" class="toggle-editor" onclick="card=cardEvent(event); setHidden(getCardMenu(card)); toggleHidden(getCardContent(card).querySelector('.editor'));">Toggle editor</a>
+    <a href="#" class="toggle-editor" onclick="card=cardEvent(event); toggleHidden(getCardContent(card).querySelector('.editor'));">Toggle editor</a>
   </template>
 
   <template id="template-todo-item">
