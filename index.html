@@ -101,6 +101,7 @@
   }
 
   #controls {
+    margin-right: 1em;
     display: flex;
     gap: 0.25em;
   }
@@ -365,6 +366,41 @@
     padding: 0.3em;
     font-family: monospace, monospace;
   }
+
+  /* Special rendering mode */
+  .page-view #main-container {
+    background: none;
+    border-radius: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    overflow-x: hidden;
+    overflow-y: auto;
+    top: unset !important;
+    left: unset !important;
+    padding: 0.5rem;
+    box-sizing: border-box;
+  }
+  .page-view .card-connector {
+    display: none;
+  }
+  .page-view .card {
+    position: relative;
+    margin: 0.5em;
+    top: unset !important;
+    left: unset !important;
+  }
+  /* SEVERE HACK TO ADD EXTRA SPACE, requires each card to have connector after */
+  .page-view #main-container > :last-child {
+    display: block !important;
+    height: 50vh;
+    width: 100%;
+    position: unset;
+    visibility: hidden;
+  }
+
 
   /* Standard colors */
   .card, .card.teal {
@@ -735,6 +771,7 @@
       app_version: getProductVersion(),
       export_date: new Date().toISOString(),
       dark_mode: controlEnabled(window['action-darkmode']),
+      page_view: controlEnabled(window['action-pageview']),
       cards: {}
     };
     document.querySelectorAll(".card").forEach(card => {
@@ -760,6 +797,7 @@
           window[MCKEY].innerHTML = "";
           window[MCKEY].style = "";
           setControl(window['action-darkmode'], jsonData.dark_mode);
+          setControl(window['action-pageview'], jsonData.page_view);
           Object.keys(jsonData.cards).forEach(key => importCard(jsonData.cards[key]));
           // After, some parents may need to be reconnected
           document.querySelectorAll(".card").forEach(card => {
@@ -914,7 +952,9 @@
 
     let lastBodyMouse = null;
     document.body.addEventListener("wheel", (event) => {
-      if(getContainingCard(event.target)) return;
+      if(getContainingCard(event.target)) { return; }
+      // NOTE: CAN'T do this, because need to scroll page now
+      if(controlEnabled(window["action-pageview"])) { return; }
       var delta = Math.max(-1, Math.min(1, (event.wheelDelta || -event.detail)));
       const mofs = getMainOffset();
       const xofs = event.clientX - mofs.x;
@@ -952,6 +992,8 @@
               pendingCardAction(card);
               return;
             }
+            // Don't do dragging if we're in pageview mode
+            if(controlEnabled(window["action-pageview"])) { return; }
             mods = MODMOVECARDS;
             getCardAllChildren(card).forEach(c => cards.push({card:c, cofs:getOffset(c)}));
           } else {
@@ -1172,14 +1214,14 @@
 <body>
 
   <footer>
-    <span class="version no-interaction">v0.5.2</span>
+    <span class="version no-interaction">v0.5.3</span>
     <div id="controls">
       <button class="control temp hidden" id="action-cancelpending" title="Cancel pending operation">❌</button>
       <button class="control" id="action-newtext" title="New text card">📄</button>
       <button class="control" id="action-newchat" title="New chat card">💬</button>
       <button class="control" id="action-newtodo" title="New todo card">✅</button>
       <button class="control" id="action-resetview" title="Reset view">🧭</button>
-      <button class="control deactivated hidden" id="action-pageview" title="View as page">📃</button>
+      <button class="control deactivated" id="action-pageview" title="View as page">📃</button>
       <button class="control deactivated" id="action-darkmode" title="Toggle darkmode">🌒</button>
       <button class="control" id="action-import" title="Import page">📥</button>
       <button class="control" id="action-export" title="Export page">📤</button>
