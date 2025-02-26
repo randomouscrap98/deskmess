@@ -705,8 +705,11 @@
     if(editor) {
       editor.textContent = cdata.text;
       let toggler = menu.querySelector(".toggle-editor");
-      if(!cdata.is_edit && toggler) {
-        toggler.click();
+      let toggler2 = card.querySelector(".toggle-editor-direct");
+      if(toggler && toggler2) {
+        setUnhidden(toggler);
+        setUnhidden(toggler2);
+        if(!cdata.is_edit) { toggler.click(); }
       }
     }
     if(cdata.type == "text") {
@@ -1069,14 +1072,11 @@
     let card = cardEvent(event);
     let t = getCardTitle(card);
     let te = getCardTitleEdit(card);
-    let toggle = card.querySelector(".toggle-title");
     te.value = t.textContent; 
     toggleHidden(t);
     if(toggleHidden(te)){
-      toggle.textContent='Edit title';
       setUnsaved();
     } else {
-      toggle.textContent='Set title';
       te.focus();
     }
   }
@@ -1214,7 +1214,7 @@
 <body>
 
   <footer>
-    <span class="version no-interaction">v0.5.3</span>
+    <span class="version no-interaction">v0.6</span>
     <div id="controls">
       <button class="control temp hidden" id="action-cancelpending" title="Cancel pending operation">❌</button>
       <button class="control" id="action-newtext" title="New text card">📄</button>
@@ -1243,6 +1243,7 @@
               onkeydown="title_keydown(event)" oninput="title_input(event)" onchange="setValueAttr(event)">
           <time></time>
         </div>
+        <a href="#" class="toggle-editor-direct hidden" onclick="toggleHidden(getCardEditor(cardEvent(event)))">📝</a>
         <a href="#" onclick="toggleHidden(getCardMenu(cardEvent(event)))">⚙️</a>
         <div class="menu hidden">
           <div class="colors">
@@ -1252,9 +1253,11 @@
             <a href="#" data-color="purple" onclick="setCardColor(event)"></a>
             <a href="#" data-color="gray" onclick="setCardColor(event)"></a>
           </div>
-          <a href="#" class="toggle-title" onclick="menu_toggleTitle(event)">Edit title</a>
-          <a href="#" onclick="menu_delete(event)">Delete card</a>
+          <a href="#" class="toggle-title" onclick="menu_toggleTitle(event)">Set title</a>
+          <a href="#" class="toggle-editor hidden" 
+            onclick="toggleHidden(getCardEditor(cardEvent(event)))">Toggle editor</a>
           <a href="#" class="set-parent" onclick="menu_setUnsetParent(event)">Set Parent</a>
+          <a href="#" onclick="menu_delete(event)">Delete card</a>
           <div class="card-info">
             <div>id: <span class="card-id"></span></div>
             <div>ref: <a href="#" class="card-ref"></a></div>
@@ -1280,8 +1283,6 @@
   </template>
 
   <template id="template-text-menu">
-    <a href="#" class="toggle-editor" 
-      onclick="toggleHidden(getCardEditor(cardEvent(event)))">Toggle editor</a>
   </template>
 
   <template id="template-chat">
@@ -1305,8 +1306,6 @@
   </template>
 
   <template id="template-todo-menu">
-    <a href="#" class="toggle-editor" 
-      onclick="toggleHidden(getCardEditor(cardEvent(event)))">Toggle editor</a>
   </template>
 
   <template id="template-todo-item">
