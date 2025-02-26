@@ -734,6 +734,7 @@
       file_version: "1",
       app_version: getProductVersion(),
       export_date: new Date().toISOString(),
+      dark_mode: controlEnabled(window['action-darkmode']),
       cards: {}
     };
     document.querySelectorAll(".card").forEach(card => {
@@ -758,6 +759,7 @@
           }
           window[MCKEY].innerHTML = "";
           window[MCKEY].style = "";
+          setControl(window['action-darkmode'], jsonData.dark_mode);
           Object.keys(jsonData.cards).forEach(key => importCard(jsonData.cards[key]));
           // After, some parents may need to be reconnected
           document.querySelectorAll(".card").forEach(card => {
@@ -867,6 +869,13 @@
       event.target.classList.add("deactivated");
       document.body.classList.remove(classname);
     }
+  }
+  function controlEnabled(element) {
+    return !element.classList.contains("deactivated");
+  }
+  function setControl(element, state) {
+    if((state || false) != (controlEnabled(element) || false))
+      element.click();
   }
 
   window.addEventListener("hashchange", function(event) {
