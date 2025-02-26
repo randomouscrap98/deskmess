@@ -113,6 +113,7 @@
   button.control {
     width: 2em;
     height: 2em;
+    font-size: 1em;
     border: none;
     border-radius: 50%;
     background: var(--teal);
@@ -769,6 +770,12 @@
   }
 
   function downloadExport() {
+    const exp = exportPage();
+    var blob = new Blob([exp], {type: 'application/json'});
+    downloadBlob(blob, getCurrentName() + ".json");
+  }
+
+  function exportPage() {
     let exp = {
       file_version: "1",
       app_version: getProductVersion(),
@@ -780,8 +787,7 @@
     document.querySelectorAll(".card").forEach(card => {
       exp.cards[card.id] = exportCard(card);
     });
-    var blob = new Blob([JSON.stringify(exp, null, 2)], {type: 'application/json'});
-    downloadBlob(blob, getCurrentName() + ".json");
+    return JSON.stringify(exp);
   }
 
   function importTrigger(event) {
@@ -789,33 +795,34 @@
     if(file && confirm("Importing will OVERWRITE all existing data on this page! This is intended for version upgrades!\n\nAre you sure you want to remove all data and import?")) {
       console.log("User is importing " + file.name);
       const reader = new FileReader();
-      // Set up the onload function to parse and use the JSON data
-      reader.onload = function(e) {
-        try {
-          const jsonData = JSON.parse(e.target.result);
-          console.log('Parsed JSON successfully');
-          if(jsonData.file_version != "1") {
-            throw "Invalid or unknown file version";
-          }
-          window[MCKEY].innerHTML = "";
-          window[MCKEY].style = "";
-          setControl(window['action-darkmode'], jsonData.dark_mode);
-          setControl(window['action-pageview'], jsonData.page_view);
-          Object.keys(jsonData.cards).forEach(key => importCard(jsonData.cards[key]));
-          // After, some parents may need to be reconnected
-          document.querySelectorAll(".card").forEach(card => {
-            setCardParent(card, getCardParent(card).textContent);
-          });
-          setSaved();
-          window.location.hash = "";
-        } catch (err) {
-          console.error(err, e.stack);
-          alert(`Couldn't parse file: ${err}`);
-        }
-      };
+      reader.onload = (e) => importPage(e.target.result);
       reader.readAsText(file);
     } else {
       console.log("Quit import (no files)");
+    }
+  }
+
+  function importPage(page) {
+    try {
+      const jsonData = JSON.parse(page);
+      console.log('Parsed JSON successfully');
+      if(jsonData.file_version != "1") {
+        throw "Invalid or unknown file version";
+      }
+      window[MCKEY].innerHTML = "";
+      window[MCKEY].style = "";
+      setControl(window['action-darkmode'], jsonData.dark_mode);
+      setControl(window['action-pageview'], jsonData.page_view);
+      Object.keys(jsonData.cards).forEach(key => importCard(jsonData.cards[key]));
+      // After, some parents may need to be reconnected
+      document.querySelectorAll(".card").forEach(card => {
+        setCardParent(card, getCardParent(card).textContent);
+      });
+      setSaved();
+      window.location.hash = "";
+    } catch (err) {
+      console.error(err, err.stack);
+      alert(`Couldn't parse import: ${err}`);
     }
   }
 
@@ -919,6 +926,51 @@
       element.click();
   }
 
+  // Open the exports db, creating the db + table if it doesn't exist.
+  function exportsDbWork(success) {
+    const request = indexedDB.open("exportsDb", 1);
+
+    request.onupgradeneeded = function(event) {
+        const db = event.target.result;
+        // Create an object store for "exports" if it doesn't exist
+        if (!db.objectStoreNames.contains('exports')) {
+            db.createObjectStore('exports', { keyPath: 'name' });
+        }
+    };
+    request.onsuccess = function(event) {
+      success(event.target.result);
+    };
+
+    request.onerror = function(event) {
+      console.error('Error opening IndexedDB', event.target.errorCode);
+      alert("Couldn't open underlying database");
+    };
+  }
+
+  function exportsDbGet(name, success) {
+    exportsDbWork((db) => {
+      // Load the local query value from IndexedDB
+      const transaction = db.transaction(['exports'], 'readonly');
+      const store = transaction.objectStore('exports');
+      const request = store.get(name);
+      request.onsuccess = function(event) {
+        if(success) success(event.target.result);
+      };
+    });
+  }
+
+  function exportsDbPut(name, value, success) {
+    exportsDbWork((db) => {
+      const transaction = db.transaction(['exports'], 'readwrite');
+      const store = transaction.objectStore('exports');
+      const object = { name: name, value: value };
+      const request = store.put(object);
+      request.onsuccess = function(event) {
+        if(success) success(event); // ??
+      };
+    });
+  }
+
   window.addEventListener("hashchange", function(event) {
     const cid = window.location.hash.substring(1);
     if(!cid) return;
@@ -935,12 +987,41 @@
   document.addEventListener("DOMContentLoaded", function () {
     let main = window[MCKEY];
 
+    // First, check query. If local exists, we do something else
+    const urlParams = new URLSearchParams(window.location.search);
+    let localParam = urlParams.get('local');
+
+    if(localParam) {
+      if(main.innerHTML !== "" && !confirm("You're trying to load a browser save on top of an existing save. Your original file will not be modified. Are you sure you want to load over existing data?")) {
+        localParam = null;
+      }
+    }
+
+    if(localParam) {
+      window["action-save"].addEventListener("click", () => { exportsDbPut(localParam, exportPage(), (e) => {
+        setSaved();
+        console.log(`Saved to ${localParam}`);
+      })});
+      window["action-export"].addEventListener("click", () => {downloadExport();});
+      window["action-import"].addEventListener("click", () => window['import-file'].click());
+      exportsDbGet(localParam, (value) => {
+        if(value) {
+          importPage(value.value);
+        } else {
+          alert(`You are creating a new browser-backed save at ${localParam}. Auto saves are enabled and manual saves are stored in the browser. Bookmark this page for future use!`);
+          window["action-save"].click();
+        }
+        setInterval(() => window["action-save"].click(), 60000);
+      });
+    } else {
+      window["action-save"].addEventListener("click", () => {removePendingCardAction(); setSaved(); downloadPage();});
+      window["action-export"].addEventListener("click", () => {downloadExport(); setSaved();});
+      window["action-import"].addEventListener("click", () => window['import-file'].click());
+    }
+
     window["action-pageview"].addEventListener("click", (event) => toggleControl(event, "page-view"));
     window["action-darkmode"].addEventListener("click", (event) => toggleControl(event, "dark-mode"));
     window["action-cancelpending"].addEventListener("click", () => {removePendingCardAction();});
-    window["action-save"].addEventListener("click", () => {removePendingCardAction(); setSaved(); downloadPage();});
-    window["action-export"].addEventListener("click", () => {downloadExport(); setSaved();});
-    window["action-import"].addEventListener("click", () => window['import-file'].click());
     window["action-newtext"].addEventListener("click", () => addCard("text"));
     window["action-newchat"].addEventListener("click", () => addCard("chat"));
     window["action-newtodo"].addEventListener("click", () => addCard("todo"));
@@ -1213,6 +1294,8 @@
 
 <body>
 
+  <div id="main-container" style="font-size: 1rem" data-nextid="1"></div>
+
   <footer>
     <span class="version no-interaction">v0.6</span>
     <div id="controls">
@@ -1230,8 +1313,6 @@
     <input type="file" title="Select a JSON file to import" accept=".json" id="import-file" class="hidden" onchange="importTrigger(event)" />
   </footer>
 
-  <div id="main-container" style="font-size: 1rem" data-nextid="1">
-  </div>
 
   <template id="template-card">
     <div class="card" data-topcard="">
