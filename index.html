@@ -26,6 +26,26 @@
     --content-bg: white;
     --content-color: #111;
   }
+  .dark-mode {
+    --editor-bg: #333;
+    --editor-color: #AAA;
+    --bg: #111;
+    --content-bg: #222;
+    --content-color: #DDD;
+    --teal: #367370;
+    --teal-border: #205050;
+    --blue: #346393;
+    --blue-border: #203a6f;
+    --red: #AC4D4D;
+    --red-border: #7e3131;
+    --purple: #784A88;
+    --purple-border: #603065;
+    --gray: #717171;
+    --gray-border: #484848;
+  }
+  .dark-mode a:link { color: lightskyblue; }
+  .dark-mode a:visited { color: orchid; }
+  .dark-mode .top > a { filter: brightness(1.5); /* NOT SURE ABOUT THIS */ }
 
   body {
     font-family: sans-serif;
@@ -77,7 +97,7 @@
   }
   footer .version {
     font-size: 0.6em;
-    opacity: 0.5;
+    color: rgba(127,127,127,0.75);
   }
 
   #controls {
@@ -105,7 +125,7 @@
   button.control.unsaved, button.control.alert {
     background: var(--red);
   }
-  button.control.temp {
+  button.control.temp, button.control.deactivated {
     background: var(--gray);
   }
 
@@ -149,6 +169,9 @@
   }
   .card .top > * {
     flex: none;
+  }
+  .card .top .type-icon {
+    cursor: pointer;
   }
   .card .top .titlearea {
     flex: 1;
@@ -312,23 +335,25 @@
     padding: 0.5em;
     line-height: 1.4;
   }
+  .markdown > :first-child {
+    margin-top: 0;
+  }
   .markdown p {
     margin: 1em 0;
-  }
-  .markdown p:first-child {
-    margin: 0;
   }
   .markdown ul {
     padding-left: 1.5em;
   }
-  .markdown code {
-    /* font-family: 'DejaVu Sans', monospace; */
+  .content code {
+    font-family: 'Courier New', monospace;
     background: var(--editor-bg);
     padding: 0.2em 0.3em;
     border-radius: 0.2em;
     font-size: 0.9em;
-    color: var(--teal-border);
-    white-space: nowrap;
+    /*color: var(--teal-border);*/
+    color: var(--editor-color);
+    vertical-align: baseline;
+    padding-bottom: 0.05em;
   }
   .markdown pre code {
     background: #333;
@@ -834,6 +859,16 @@
     setHidden(window["action-cancelpending"]);
   }
 
+  function toggleControl(event, classname) {
+    if(event.target.classList.contains("deactivated")) {
+      event.target.classList.remove("deactivated");
+      document.body.classList.add(classname);
+    } else {
+      event.target.classList.add("deactivated");
+      document.body.classList.remove(classname);
+    }
+  }
+
   window.addEventListener("hashchange", function(event) {
     const cid = window.location.hash.substring(1);
     if(!cid) return;
@@ -850,6 +885,8 @@
   document.addEventListener("DOMContentLoaded", function () {
     let main = window[MCKEY];
 
+    window["action-pageview"].addEventListener("click", (event) => toggleControl(event, "page-view"));
+    window["action-darkmode"].addEventListener("click", (event) => toggleControl(event, "dark-mode"));
     window["action-cancelpending"].addEventListener("click", () => {removePendingCardAction();});
     window["action-save"].addEventListener("click", () => {removePendingCardAction(); setSaved(); downloadPage();});
     window["action-export"].addEventListener("click", () => {downloadExport(); setSaved();});
@@ -981,13 +1018,14 @@
     let card = cardEvent(event);
     let t = getCardTitle(card);
     let te = getCardTitleEdit(card);
+    let toggle = card.querySelector(".toggle-title");
     te.value = t.textContent; 
     toggleHidden(t);
     if(toggleHidden(te)){
-      event.target.textContent='Edit title';
+      toggle.textContent='Edit title';
       setUnsaved();
     } else {
-      event.target.textContent='Set title';
+      toggle.textContent='Set title';
       te.focus();
     }
   }
@@ -1132,6 +1170,8 @@
       <button class="control" id="action-newchat" title="New chat card">💬</button>
       <button class="control" id="action-newtodo" title="New todo card">✅</button>
       <button class="control" id="action-resetview" title="Reset view">🧭</button>
+      <button class="control deactivated hidden" id="action-pageview" title="View as page">📃</button>
+      <button class="control deactivated" id="action-darkmode" title="Toggle darkmode">🌒</button>
       <button class="control" id="action-import" title="Import page">📥</button>
       <button class="control" id="action-export" title="Export page">📤</button>
       <button class="control" id="action-save" title="Save page">💾</button>
@@ -1146,7 +1186,7 @@
     <div class="card" data-topcard="">
       <div class="top">
         <div class="titlearea draghandle">
-          <span class="type-icon no-interaction">X</span>
+          <span class="type-icon" onclick="menu_toggleTitle(event)">X</span>
           <span class="title">UNKNOWN</span>
           <input type="text" class="edit-title hidden" 
               onkeydown="title_keydown(event)" oninput="title_input(event)" onchange="setValueAttr(event)">
