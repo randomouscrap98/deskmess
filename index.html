@@ -782,6 +782,7 @@
       export_date: new Date().toISOString(),
       dark_mode: controlEnabled(window['action-darkmode']),
       page_view: controlEnabled(window['action-pageview']),
+      grid_snap: controlEnabled(window['action-gridsnap']),
       cards: {}
     };
     document.querySelectorAll(".card").forEach(card => {
@@ -802,7 +803,7 @@
     }
   }
 
-  function importPage(page) {
+  function importPage(page, forceSaveState) {
     try {
       const jsonData = JSON.parse(page);
       console.log('Parsed JSON successfully');
@@ -813,13 +814,18 @@
       window[MCKEY].style = "";
       setControl(window['action-darkmode'], jsonData.dark_mode);
       setControl(window['action-pageview'], jsonData.page_view);
+      setControl(window['action-gridsnap'], jsonData.grid_snap);
       Object.keys(jsonData.cards).forEach(key => importCard(jsonData.cards[key]));
       // After, some parents may need to be reconnected
       document.querySelectorAll(".card").forEach(card => {
         setCardParent(card, getCardParent(card).textContent);
       });
-      setSaved();
+      // TODO: this is bad
+      if(forceSaveState === undefined) forceSaveState = !getLocalName();
+      if(forceSaveState) setSaved();
+      else setUnsaved();
       window.location.hash = "";
+      console.log('Successfully imported data');
     } catch (err) {
       console.error(err, err.stack);
       alert(`Couldn't parse import: ${err}`);
@@ -971,6 +977,20 @@
     });
   }
 
+  function getLocalName() {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get('local');
+  }
+
+  function snapEm(value) {
+    // TODO: slow
+    if(controlEnabled(window["action-gridsnap"])) {
+      return Math.round(value);
+    } else {
+      return value;
+    }
+  }
+
   window.addEventListener("hashchange", function(event) {
     const cid = window.location.hash.substring(1);
     if(!cid) return;
@@ -988,8 +1008,7 @@
     let main = window[MCKEY];
 
     // First, check query. If local exists, we do something else
-    const urlParams = new URLSearchParams(window.location.search);
-    let localParam = urlParams.get('local');
+    let localParam = getLocalName();
 
     if(localParam) {
       if(main.innerHTML !== "" && !confirm("You're trying to load a browser save on top of an existing save. Your original file will not be modified. Are you sure you want to load over existing data?")) {
@@ -1006,7 +1025,7 @@
       window["action-import"].addEventListener("click", () => window['import-file'].click());
       exportsDbGet(localParam, (value) => {
         if(value) {
-          importPage(value.value);
+          importPage(value.value, true);
         } else {
           alert(`You are creating a new browser-backed save at ${localParam}. Auto saves are enabled and manual saves are stored in the browser. Bookmark this page for future use!`);
           window["action-save"].click();
@@ -1019,6 +1038,7 @@
       window["action-import"].addEventListener("click", () => window['import-file'].click());
     }
 
+    window["action-gridsnap"].addEventListener("click", (event) => toggleControl(event, "grid-snap"));
     window["action-pageview"].addEventListener("click", (event) => toggleControl(event, "page-view"));
     window["action-darkmode"].addEventListener("click", (event) => toggleControl(event, "dark-mode"));
     window["action-cancelpending"].addEventListener("click", () => {removePendingCardAction();});
@@ -1105,15 +1125,15 @@
           lastBodyMouse.cards.forEach(c => {
             if(c.main) {
               if(lastBodyMouse.mods & MODRESIZERIGHT) {
-                c.card.style.width = Math.max(c.cofs.width + xofs, MINCARDWIDTH) + "em";
+                c.card.style.width = snapEm(Math.max(c.cofs.width + xofs, MINCARDWIDTH)) + "em";
               }
               if(lastBodyMouse.mods & MODRESIZEBOTTOM) {
-                c.card.style.height = Math.max(c.cofs.height + yofs, MINCARDHEIGHT) + "em";
+                c.card.style.height = snapEm(Math.max(c.cofs.height + yofs, MINCARDHEIGHT)) + "em";
               }
             }
             if(lastBodyMouse.mods & MODMOVECARDS) {
-              c.card.style.left = c.cofs.x + xofs + "em";
-              c.card.style.top = c.cofs.y + yofs + "em";
+              c.card.style.left = snapEm(c.cofs.x + xofs) + "em";
+              c.card.style.top = snapEm(c.cofs.y + yofs) + "em";
             }
             // HORRIBLE!!
             setCardParent(c.card, c.card.getAttribute("data-parent"));
@@ -1297,13 +1317,14 @@
   <div id="main-container" style="font-size: 1rem" data-nextid="1"></div>
 
   <footer>
-    <span class="version no-interaction">v0.6</span>
+    <span class="version no-interaction">v0.6.1</span>
     <div id="controls">
       <button class="control temp hidden" id="action-cancelpending" title="Cancel pending operation">❌</button>
       <button class="control" id="action-newtext" title="New text card">📄</button>
       <button class="control" id="action-newchat" title="New chat card">💬</button>
       <button class="control" id="action-newtodo" title="New todo card">✅</button>
       <button class="control" id="action-resetview" title="Reset view">🧭</button>
+      <button class="control deactivated" id="action-gridsnap" title="Snap to grid">📐</button>
       <button class="control deactivated" id="action-pageview" title="View as page">📃</button>
       <button class="control deactivated" id="action-darkmode" title="Toggle darkmode">🌒</button>
       <button class="control" id="action-import" title="Import page">📥</button>
