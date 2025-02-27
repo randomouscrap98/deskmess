@@ -1,0 +1,1479 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Desk Mess</title>
+
+<style>
+  :root {
+    --teal: #20B2AA;
+    --teal-border: #367370;
+    --blue: #5F92C8;
+    --blue-border: #346393;
+    --red: #DD6D6D;
+    --red-border: #AC4D4D;
+    --purple: #AB7CBB;
+    --purple-border: #784A88;
+    --gray: #A8A8A8;
+    --gray-border: #717171;
+    --menu-color: white;
+    --menu-infobg: #444;
+    --editor-bg: #EEE;
+    --editor-color: #333;
+    --bg: #F3F3F3;
+    --content-bg: white;
+    --content-color: #111;
+  }
+  .dark-mode {
+    --editor-bg: #333;
+    --editor-color: #AAA;
+    --bg: #111;
+    --content-bg: #222;
+    --content-color: #DDD;
+    --teal: #367370;
+    --teal-border: #205050;
+    --blue: #346393;
+    --blue-border: #203a6f;
+    --red: #AC4D4D;
+    --red-border: #7e3131;
+    --purple: #784A88;
+    --purple-border: #603065;
+    --gray: #717171;
+    --gray-border: #484848;
+  }
+  .dark-mode a:link { color: lightskyblue; }
+  .dark-mode a:visited { color: orchid; }
+  .dark-mode .top > a { filter: brightness(1.5); /* NOT SURE ABOUT THIS */ }
+
+  body {
+    font-family: sans-serif;
+    padding: 0;
+    margin: 0;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    position: fixed;
+    background: var(--bg);
+  }
+
+  .hidden {
+    display: none !important;
+  }
+
+  @keyframes bgChange {
+    0% { background-color: transparent; }
+    50% { background-color: rgba(127,255,0,0.5); }
+    100% { background-color: transparent; }
+  }
+
+  #main-container {
+    width: 1em;
+    height: 1em;
+    position: absolute;
+    background: rgba(127,127,127,0.15);
+    border-radius: 50%;
+    margin: 0.5em;
+  }
+  #main-container.pending-action .card .top .draghandle {
+    animation: bgChange 0.75s infinite;
+  }
+
+  .no-interaction {
+    pointer-events: none; /* Disables all mouse events */
+    user-select: none;    /* Prevents text selection */
+  }
+
+  footer {
+    position: fixed;
+    bottom: 0;
+    right: 0;
+    display: flex;
+    align-items: flex-end;
+    gap: 0.25em;
+    padding: 0.25em;
+    z-index: 100000000;
+  }
+  footer .version {
+    font-size: 0.6em;
+    color: rgba(127,127,127,0.75);
+  }
+
+  #controls {
+    margin-right: 1em;
+    display: flex;
+    gap: 0.25em;
+  }
+
+  .draghandle {
+    cursor: grab;
+  }
+
+  button.control {
+    width: 2em;
+    height: 2em;
+    font-size: 1em;
+    border: none;
+    border-radius: 50%;
+    background: var(--teal);
+    transition: filter 0.1s ease-in-out;
+    cursor: pointer;
+    display: flex; /* all for chrome */
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+  }
+  button.control.unsaved, button.control.alert {
+    background: var(--red);
+  }
+  button.control.temp, button.control.deactivated {
+    background: var(--gray);
+  }
+
+  button.control:hover {
+    filter: brightness(1.2);
+  }
+
+  .card {
+    display: flex;
+    flex-direction: column;
+    padding: 0.35em;
+    position: absolute;
+    font-size: 1em;
+    overflow: hidden;
+  }
+
+  .card input[type="checkbox"] {
+    width: 1em;
+    height: 1em;
+    font-size: 1em;
+    margin: 0;
+    cursor: pointer;
+  }
+
+  .card .top {
+    flex: none;
+    color: var(--menu-color);
+    padding-bottom: 0.25em;
+    padding-right: 0.2em;
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0.4em;
+    position: relative;
+  }
+  .card .top a:visited, .card .top a:link {
+    color: var(--menu-color);
+  }
+  .card .top a:visited[href="#"], .card .top a:link[href="#"] {
+    text-decoration: none;
+  }
+  .card .top > * {
+    flex: none;
+  }
+  .card .top .type-icon {
+    cursor: pointer;
+  }
+  .card .top .titlearea {
+    flex: 1;
+    display: flex;
+    padding: 0 0.2em;
+    border-radius: 0.5em;
+    gap: 0.4em;
+    align-items: baseline;
+  }
+  .card .top .title {
+    flex: 1;
+  }
+  .card .top .edit-title {
+    flex: 1;
+    font-size: 0.9em;
+    outline: none;
+    border: 0.05em solid black;
+    padding: 0.1em 0.25em;
+  }
+  .card .top time {
+    flex: none;
+    font-size: 0.8em;
+    opacity: 0.8;
+  }
+
+  .card .top .menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 0.1em;
+    z-index: 1;
+  }
+  .card .top .menu > * {
+    padding: 0.1em;
+    transition: background 0.1s ease-in-out;
+  }
+  .card .menu .colors {
+    display: flex;
+    gap: 0.14em;
+  }
+  .card .menu .colors a {
+    width: 1em;
+    height: 1em;
+  }
+
+  .card .card-info {
+    background: var(--menu-infobg);
+    font-size: 0.8em;
+    margin-top: 0.1em;
+  }
+
+  .card .right-resize {
+    position: absolute;
+    height: calc(100% - 0.3em);
+    width: 0.2em;
+    top: 0;
+    right: 0;
+    cursor: ew-resize;
+
+  }
+  .card .bottom-resize {
+    position: absolute;
+    width: calc(100% - 0.3em);
+    height: 0.2em;
+    bottom: 0;
+    left: 0;
+    cursor: ns-resize;
+  }
+  .card .corner-resize {
+    position: absolute;
+    width: 0.3em;
+    height: 0.3em;
+    bottom: 0;
+    right: 0;
+    cursor: se-resize;
+  }
+
+  .card-connector {
+    z-index: -1;
+    display: block;
+    position: absolute;
+    margin: 0;
+    padding: 0;
+    border-right: 0.15em solid rgba(127,127,127,0.5);
+    border-top: 0.15em solid rgba(127,127,127,0.5);
+    transform-origin: left top;
+  }
+
+  .card .content {
+    background: var(--content-bg);
+    color: var(--content-color);
+    flex: 1;
+    overflow-x: hidden;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .card .content .card-main {
+    flex: 1;
+    margin: 0;
+    overflow-y: scroll;
+    overflow-x: hidden;
+  }
+
+  .card .content .editor {
+    margin: 0;
+    border: 0.2em inset #777;
+    overflow-y: scroll;
+    overflow-x: hidden;
+    padding: 0.4em;
+    background: var(--editor-bg);
+    color: var(--editor-color);
+    font-size: 0.8em;
+    font-family: monospace, monospace;
+    border-radius: 0;
+    outline: none;
+    flex: none;
+    resize: vertical;
+    min-height: 4em;
+  }
+
+  .card .content .messages {
+    font-size: 0.93em; /* very silly */
+  }
+  .message-container {
+    padding: 0.15em 0.25em;
+  }
+  .message-container:nth-child(odd) {
+    background-color: rgba(127,127,127,0.07);
+  }
+  .message-container time {
+    font-weight: bold;
+  }
+  .message-container time::after {
+    content: ": ";
+  }
+
+  .todo-list { }
+  .todo-list .todo-item {
+    margin: 0.1em;
+    display: flex;
+    gap: 0.35em;
+    align-items: center;
+    padding: 0.1em 0.2em;
+  }
+  .todo-list .todo-item:nth-child(odd) {
+    background-color: rgba(127,127,127,0.07);
+  }
+  .todo-list .todo-item .todo-text {
+    flex: 1;
+  }
+  .todo-list .todo-item time {
+    font-size: 0.8em;
+    opacity: 0.5;
+  }
+
+  .card .content .markdown {
+    padding: 0.5em;
+    line-height: 1.4;
+  }
+  .markdown > :first-child {
+    margin-top: 0;
+  }
+  .markdown p {
+    margin: 1em 0;
+  }
+  .markdown ul {
+    padding-left: 1.5em;
+  }
+  .content code {
+    font-family: 'Courier New', monospace;
+    background: var(--editor-bg);
+    padding: 0.2em 0.3em;
+    border-radius: 0.2em;
+    font-size: 0.9em;
+    /*color: var(--teal-border);*/
+    color: var(--editor-color);
+    vertical-align: baseline;
+    padding-bottom: 0.05em;
+  }
+  .markdown pre code {
+    background: #333;
+    color: #EEE;
+    display: block;
+    max-height: 20em;
+    overflow-y: auto;
+    overflow-x: auto;
+    padding: 0.3em;
+    font-family: monospace, monospace;
+  }
+
+  /* Special rendering mode */
+  .page-view #main-container {
+    background: none;
+    border-radius: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    overflow-x: hidden;
+    overflow-y: auto;
+    top: unset !important;
+    left: unset !important;
+    padding: 0.5rem;
+    box-sizing: border-box;
+  }
+  .page-view .card-connector {
+    display: none;
+  }
+  .page-view .card {
+    position: relative;
+    margin: 0.5em;
+    top: unset !important;
+    left: unset !important;
+  }
+  /* SEVERE HACK TO ADD EXTRA SPACE, requires each card to have connector after */
+  .page-view #main-container > :last-child {
+    display: block !important;
+    height: 50vh;
+    width: 100%;
+    position: unset;
+    visibility: hidden;
+  }
+
+
+  /* Standard colors */
+  .card, .card.teal {
+    background: var(--teal);
+    border: 0.1em solid var(--teal-border);
+  }
+  /* class for main card content? I don't know... */
+  .card .card-main, .card.teal .card-main { border: 0.15em solid var(--teal-border); }
+  .card .top .menu, .card.teal .top .menu { background: var(--teal-border); }
+  .card .top .menu > a:hover, .card.teal .top .menu > a:hover { background: var(--teal); }
+  .card .menu .colors a[data-color="teal"] { background: var(--teal); }
+  /* Blue */
+  .card[data-color="blue"] {
+    background: var(--blue);
+    border: 0.1em solid var(--blue-border);
+  }
+  .card[data-color="blue"] .card-main { border: 0.15em solid var(--blue-border); }
+  .card[data-color="blue"] .top .menu { background: var(--blue-border); }
+  .card[data-color="blue"] .top .menu > a:hover { background: var(--blue); }
+  .card .menu .colors a[data-color="blue"] { background: var(--blue); }
+  /* Red */
+  .card[data-color="red"] {
+    background: var(--red);
+    border: 0.1em solid var(--red-border);
+  }
+  .card[data-color="red"] .card-main { border: 0.15em solid var(--red-border); }
+  .card[data-color="red"] .top .menu { background: var(--red-border); }
+  .card[data-color="red"] .top .menu > a:hover { background: var(--red); }
+  .card .menu .colors a[data-color="red"] { background: var(--red); }
+  /* Purple */
+  .card[data-color="purple"] {
+    background: var(--purple);
+    border: 0.1em solid var(--purple-border);
+  }
+  .card[data-color="purple"] .card-main { border: 0.15em solid var(--purple-border); }
+  .card[data-color="purple"] .top .menu { background: var(--purple-border); }
+  .card[data-color="purple"] .top .menu > a:hover { background: var(--purple); }
+  .card .menu .colors a[data-color="purple"] { background: var(--purple); }
+  /* Gray */
+  .card[data-color="gray"] {
+    background: var(--gray);
+    border: 0.1em solid var(--gray-border);
+  }
+  .card[data-color="gray"] .card-main { border: 0.15em solid var(--gray-border); }
+  .card[data-color="gray"] .top .menu { background: var(--gray-border); }
+  .card[data-color="gray"] .top .menu > a:hover { background: var(--gray); }
+  .card .menu .colors a[data-color="gray"] { background: var(--gray); }
+
+</style>
+
+<script>
+    // got from https://github.com/markedjs/marked
+    // marked v15.0.7 - a markdown parser Copyright (c) 2011-2025, Christopher Jeffrey. (MIT Licensed) https://github.com/markedjs/marked
+    !function (e, t) {"object" == typeof exports && "undefined" != typeof module ? t(exports) : "function" == typeof define && define.amd ? define(["exports"], t) : t((e = "undefined" != typeof globalThis ? globalThis : e || self).marked = {})}(this, (function (e) {
+      "use strict"; function t() {return {async: !1, breaks: !1, extensions: null, gfm: !0, hooks: null, pedantic: !1, renderer: null, silent: !1, tokenizer: null, walkTokens: null}} function n(t) {e.defaults = t} e.defaults = {async: !1, breaks: !1, extensions: null, gfm: !0, hooks: null, pedantic: !1, renderer: null, silent: !1, tokenizer: null, walkTokens: null}; const s = {exec: () => null}; function r(e, t = "") {let n = "string" == typeof e ? e : e.source; const s = {replace: (e, t) => {let r = "string" == typeof t ? t : t.source; return r = r.replace(i.caret, "$1"), n = n.replace(e, r), s}, getRegex: () => new RegExp(n, t)}; return s} const i = {codeRemoveIndent: /^(?: {1,4}| {0,3}\t)/gm, outputLinkReplace: /\\([\[\]])/g, indentCodeCompensation: /^(\s+)(?:```)/, beginningSpace: /^\s+/, endingHash: /#$/, startingSpaceChar: /^ /, endingSpaceChar: / $/, nonSpaceChar: /[^ ]/, newLineCharGlobal: /\n/g, tabCharGlobal: /\t/g, multipleSpaceGlobal: /\s+/g, blankLine: /^[ \t]*$/, doubleBlankLine: /\n[ \t]*\n[ \t]*$/, blockquoteStart: /^ {0,3}>/, blockquoteSetextReplace: /\n {0,3}((?:=+|-+) *)(?=\n|$)/g, blockquoteSetextReplace2: /^ {0,3}>[ \t]?/gm, listReplaceTabs: /^\t+/, listReplaceNesting: /^ {1,4}(?=( {4})*[^ ])/g, listIsTask: /^\[[ xX]\] /, listReplaceTask: /^\[[ xX]\] +/, anyLine: /\n.*\n/, hrefBrackets: /^<(.*)>$/, tableDelimiter: /[:|]/, tableAlignChars: /^\||\| *$/g, tableRowBlankLine: /\n[ \t]*$/, tableAlignRight: /^ *-+: *$/, tableAlignCenter: /^ *:-+: *$/, tableAlignLeft: /^ *:-+ *$/, startATag: /^<a /i, endATag: /^<\/a>/i, startPreScriptTag: /^<(pre|code|kbd|script)(\s|>)/i, endPreScriptTag: /^<\/(pre|code|kbd|script)(\s|>)/i, startAngleBracket: /^</, endAngleBracket: />$/, pedanticHrefTitle: /^([^'"]*[^\s])\s+(['"])(.*)\2/, unicodeAlphaNumeric: /[\p{L}\p{N}]/u, escapeTest: /[&<>"']/, escapeReplace: /[&<>"']/g, escapeTestNoEncode: /[<>"']|&(?!(#\d{1,7}|#[Xx][a-fA-F0-9]{1,6}|\w+);)/, escapeReplaceNoEncode: /[<>"']|&(?!(#\d{1,7}|#[Xx][a-fA-F0-9]{1,6}|\w+);)/g, unescapeTest: /&(#(?:\d+)|(?:#x[0-9A-Fa-f]+)|(?:\w+));?/gi, caret: /(^|[^\[])\^/g, percentDecode: /%25/g, findPipe: /\|/g, splitPipe: / \|/, slashPipe: /\\\|/g, carriageReturn: /\r\n|\r/g, spaceLine: /^ +$/gm, notSpaceStart: /^\S*/, endingNewline: /\n$/, listItemRegex: e => new RegExp(`^( {0,3}${e})((?:[\t ][^\\n]*)?(?:\\n|$))`), nextBulletRegex: e => new RegExp(`^ {0,${Math.min(3, e - 1)}}(?:[*+-]|\\d{1,9}[.)])((?:[ \t][^\\n]*)?(?:\\n|$))`), hrRegex: e => new RegExp(`^ {0,${Math.min(3, e - 1)}}((?:- *){3,}|(?:_ *){3,}|(?:\\* *){3,})(?:\\n+|$)`), fencesBeginRegex: e => new RegExp(`^ {0,${Math.min(3, e - 1)}}(?:\`\`\`|~~~)`), headingBeginRegex: e => new RegExp(`^ {0,${Math.min(3, e - 1)}}#`), htmlBeginRegex: e => new RegExp(`^ {0,${Math.min(3, e - 1)}}<(?:[a-z].*>|!--)`, "i")}, l = /^ {0,3}((?:-[\t ]*){3,}|(?:_[ \t]*){3,}|(?:\*[ \t]*){3,})(?:\n+|$)/, o = /(?:[*+-]|\d{1,9}[.)])/, a = /^(?!bull |blockCode|fences|blockquote|heading|html|table)((?:.|\n(?!\s*?\n|bull |blockCode|fences|blockquote|heading|html|table))+?)\n {0,3}(=+|-+) *(?:\n+|$)/, c = r(a).replace(/bull/g, o).replace(/blockCode/g, /(?: {4}| {0,3}\t)/).replace(/fences/g, / {0,3}(?:`{3,}|~{3,})/).replace(/blockquote/g, / {0,3}>/).replace(/heading/g, / {0,3}#{1,6}/).replace(/html/g, / {0,3}<[^\n>]+>\n/).replace(/\|table/g, "").getRegex(), h = r(a).replace(/bull/g, o).replace(/blockCode/g, /(?: {4}| {0,3}\t)/).replace(/fences/g, / {0,3}(?:`{3,}|~{3,})/).replace(/blockquote/g, / {0,3}>/).replace(/heading/g, / {0,3}#{1,6}/).replace(/html/g, / {0,3}<[^\n>]+>\n/).replace(/table/g, / {0,3}\|?(?:[:\- ]*\|)+[\:\- ]*\n/).getRegex(), p = /^([^\n]+(?:\n(?!hr|heading|lheading|blockquote|fences|list|html|table| +\n)[^\n]+)*)/, u = /(?!\s*\])(?:\\.|[^\[\]\\])+/, g = r(/^ {0,3}\[(label)\]: *(?:\n[ \t]*)?([^<\s][^\s]*|<.*?>)(?:(?: +(?:\n[ \t]*)?| *\n[ \t]*)(title))? *(?:\n+|$)/).replace("label", u).replace("title", /(?:"(?:\\"?|[^"\\])*"|'[^'\n]*(?:\n[^'\n]+)*\n?'|\([^()]*\))/).getRegex(), k = r(/^( {0,3}bull)([ \t][^\n]+?)?(?:\n|$)/).replace(/bull/g, o).getRegex(), d = "address|article|aside|base|basefont|blockquote|body|caption|center|col|colgroup|dd|details|dialog|dir|div|dl|dt|fieldset|figcaption|figure|footer|form|frame|frameset|h[1-6]|head|header|hr|html|iframe|legend|li|link|main|menu|menuitem|meta|nav|noframes|ol|optgroup|option|p|param|search|section|summary|table|tbody|td|tfoot|th|thead|title|tr|track|ul", f =/<!--(?:-?>|[\s\S]*?(?:-->|$))/,x=r("^ {0,3}(?:<(script|pre|style|textarea)[\\s>][\\s\\S]*?(?:</\\1>[^\\n]*\\n+|$)|comment[^\\n]*(\\n+|$)|<\\?[\\s\\S]*?(?:\\?>\\n*|$)|<![A-Z][\\s\\S]*?(?:>\\n*|$)|<!\\[CDATA\\[[\\s\\S]*?(?:\\]\\]>\\n*|$)|</?(tag)(?: +|\\n|/?>)[\\s\\S]*?(?:(?:\\n[ \t]*)+\\n|$)|<(?!script|pre|style|textarea)([a-z][\\w-]*)(?:attribute)*? */?>(?=[ \\t]*(?:\\n|$))[\\s\\S]*?(?:(?:\\n[ \t]*)+\\n|$)|</(?!script|pre|style|textarea)[a-z][\\w-]*\\s*>(?=[ \\t]*(?:\\n|$))[\\s\\S]*?(?:(?:\\n[ \t]*)+\\n|$))","i").replace("comment",f).replace("tag",d).replace("attribute",/ +[a-zA-Z:_][\w.:-]*(?: *= *"[^"\n]*"| *= *'[^'\n]*'| *= *[^\s"'=<>`]+)?/).getRegex(),b=r(p).replace("hr",l).replace("heading"," {0,3}#{1,6}(?:\\s|$)").replace("|lheading","").replace("|table","").replace("blockquote"," {0,3}>").replace("fences"," {0,3}(?:`{3,}(?=[^`\\n]*\\n)|~{3,})[^\\n]*\\n").replace("list"," {0,3}(?:[*+-]|1[.)]) ").replace("html","</?(?:tag)(?: +|\\n|/?>)|<(?:script|pre|style|textarea|!--)").replace("tag",d).getRegex(),w={blockquote:r(/^( {0,3}> ?(paragraph|[^\n]*)(?:\n|$))+/).replace("paragraph",b).getRegex(),code:/^((?: {4}| {0,3}\t)[^\n]+(?:\n(?:[ \t]*(?:\n|$))*)?)+/,def:g,fences:/^ {0,3}(`{3,}(?=[^`\n]*(?:\n|$))|~{3,})([^\n]*)(?:\n|$)(?:|([\s\S]*?)(?:\n|$))(?: {0,3}\1[~`]* *(?=\n|$)|$)/,heading:/^ {0,3}(#{1,6})(?=\s|$)(.*)(?:\n+|$)/,hr:l,html:x,lheading:c,list:k,newline:/^(?:[ \t]*(?:\n|$))+/,paragraph:b,table:s,text:/^[^\n]+/},m=r("^ *([^\\n ].*)\\n {0,3}((?:\\| *)?:?-+:? *(?:\\| *:?-+:? *)*(?:\\| *)?)(?:\\n((?:(?! *\\n|hr|heading|blockquote|code|fences|list|html).*(?:\\n|$))*)\\n*|$)").replace("hr",l).replace("heading"," {0,3}#{1,6}(?:\\s|$)").replace("blockquote"," {0,3}>").replace("code","(?: {4}| {0,3}\t)[^\\n]").replace("fences"," {0,3}(?:`{3,}(?=[^`\\n]*\\n)|~{3,})[^\\n]*\\n").replace("list"," {0,3}(?:[*+-]|1[.)]) ").replace("html","</?(?:tag)(?: +|\\n|/?>)|<(?:script|pre|style|textarea|!--)").replace("tag",d).getRegex(),y={...w,lheading:h,table:m,paragraph:r(p).replace("hr",l).replace("heading"," {0,3}#{1,6}(?:\\s|$)").replace("|lheading","").replace("table",m).replace("blockquote"," {0,3}>").replace("fences"," {0,3}(?:`{3,}(?=[^`\\n]*\\n)|~{3,})[^\\n]*\\n").replace("list"," {0,3}(?:[*+-]|1[.)]) ").replace("html","</?(?:tag)(?: +|\\n|/?>)|<(?:script|pre|style|textarea|!--)").replace("tag",d).getRegex()},$={...w,html:r("^ *(?:comment *(?:\\n|\\s*$)|<(tag)[\\s\\S]+?</\\1> *(?:\\n{2,}|\\s*$)|<tag(?:\"[^\"]*\"|'[^']*'|\\s[^'\"/>\\s]*)*?/?> *(?:\\n{2,}|\\s*$))").replace("comment",f).replace(/tag/g,"(?!(?:a|em|strong|small|s|cite|q|dfn|abbr|data|time|code|var|samp|kbd|sub|sup|i|b|u|mark|ruby|rt|rp|bdi|bdo|span|br|wbr|ins|del|img)\\b)\\w+(?!:|[^\\w\\s@]*@)\\b").getRegex(),def:/^ *\[([^\]]+)\]: *<?([^\s>]+)>?(?: +(["(][^\n]+[")]))? *(?:\n+|$)/,heading:/^(#{1,6})(.*)(?:\n+|$)/,fences:s,lheading:/^(.+?)\n {0,3}(=+|-+) *(?:\n+|$)/,paragraph:r(p).replace("hr",l).replace("heading"," *#{1,6} *[^\n]").replace("lheading",c).replace("|table","").replace("blockquote"," {0,3}>").replace("|fences","").replace("|list","").replace("|html","").replace("|tag","").getRegex()},R=/^( {2,}|\\)\n(?!\s*$)/,S=/[\p{P}\p{S}]/u,T=/[\s\p{P}\p{S}]/u,z=/[^\s\p{P}\p{S}]/u,A=r(/^((?![*_])punctSpace)/,"u").replace(/punctSpace/g,T).getRegex(),_=/(?!~)[\p{P}\p{S}]/u,P=/^(?:\*+(?:((?!\*)punct)|[^\s*]))|^_+(?:((?!_)punct)|([^\s_]))/,I=r(P,"u").replace(/punct/g,S).getRegex(),L=r(P,"u").replace(/punct/g,_).getRegex(),B="^[^_*]*?__[^_*]*?\\*[^_*]*?(?=__)|[^*]+(?=[^*])|(?!\\*)punct(\\*+)(?=[\\s]|$)|notPunctSpace(\\*+)(?!\\*)(?=punctSpace|$)|(?!\\*)punctSpace(\\*+)(?=notPunctSpace)|[\\s](\\*+)(?!\\*)(?=punct)|(?!\\*)punct(\\*+)(?!\\*)(?=punct)|notPunctSpace(\\*+)(?=notPunctSpace)",C=r(B,"gu").replace(/notPunctSpace/g,z).replace(/punctSpace/g,T).replace(/punct/g,S).getRegex(),q=r(B,"gu").replace(/notPunctSpace/g,/(?:[^\s\p{P}\p{S}]|~)/u).replace(/punctSpace/g,/(?!~)[\s\p{P}\p{S}]/u).replace(/punct/g,_).getRegex(),E=r("^[^_*]*?\\*\\*[^_*]*?_[^_*]*?(?=\\*\\*)|[^_]+(?=[^_])|(?!_)punct(_+)(?=[\\s]|$)|notPunctSpace(_+)(?!_)(?=punctSpace|$)|(?!_)punctSpace(_+)(?=notPunctSpace)|[\\s](_+)(?!_)(?=punct)|(?!_)punct(_+)(?!_)(?=punct)","gu").replace(/notPunctSpace/g,z).replace(/punctSpace/g,T).replace(/punct/g,S).getRegex(),Z=r(/\\(punct)/,"gu").replace(/punct/g,S).getRegex(),v=r(/^<(scheme:[^\s\x00-\x1f<>]*|email)>/).replace("scheme",/[a-zA-Z][a-zA-Z0-9+.-]{1,31}/).replace("email",/[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+(@)[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+(?![-_])/).getRegex(),D=r(f).replace("(?:--\x3e|$)","--\x3e").getRegex(),M=r("^comment|^</[a-zA-Z][\\w:-]*\\s*>|^<[a-zA-Z][\\w-]*(?:attribute)*?\\s*/?>|^<\\?[\\s\\S]*?\\?>|^<![a-zA-Z]+\\s[\\s\\S]*?>|^<!\\[CDATA\\[[\\s\\S]*?\\]\\]>").replace("comment",D).replace("attribute",/\s+[a-zA-Z:_][\w.:-]*(?:\s*=\s*"[^"]*"|\s*=\s*'[^']*'|\s*=\s*[^\s"'=<>`]+)?/).getRegex(),O=/(?:\[(?:\\.|[^\[\]\\])*\]|\\.|`[^`]*`|[^\[\]\\`])*?/,Q=r(/^!?\[(label)\]\(\s*(href)(?:\s+(title))?\s*\)/).replace("label",O).replace("href",/<(?:\\.|[^\n<>\\])+>|[^\s\x00-\x1f]*/).replace("title",/"(?:\\"?|[^"\\])*"|'(?:\\'?|[^'\\])*'|\((?:\\\)?|[^)\\])*\)/).getRegex(),j=r(/^!?\[(label)\]\[(ref)\]/).replace("label",O).replace("ref",u).getRegex(),N=r(/^!?\[(ref)\](?:\[\])?/).replace("ref",u).getRegex(),G={_backpedal:s,anyPunctuation:Z,autolink:v,blockSkip:/\[[^[\]]*?\]\((?:\\.|[^\\\(\)]|\((?:\\.|[^\\\(\)])*\))*\)|`[^`]*?`|<[^<>]*?>/g,br:R,code:/^(`+)([^`]|[^`][\s\S]*?[^`])\1(?!`)/,del:s,emStrongLDelim:I,emStrongRDelimAst:C,emStrongRDelimUnd:E,escape:/^\\([!"#$%&'()*+,\-./:;<=>?@\[\]\\^_`{|}~])/,link:Q,nolink:N,punctuation:A,reflink:j,reflinkSearch:r("reflink|nolink(?!\\()","g").replace("reflink",j).replace("nolink",N).getRegex(),tag:M,text:/^(`+|[^`])(?:(?= {2,}\n)|[\s\S]*?(?:(?=[\\<!\[`*_]|\b_|$)|[^ ](?= {2,}\n)))/,url:s},H={...G,link:r(/^!?\[(label)\]\((.*?)\)/).replace("label",O).getRegex(),reflink:r(/^!?\[(label)\]\s*\[([^\]]*)\]/).replace("label",O).getRegex()},X={...G,emStrongRDelimAst:q,emStrongLDelim:L,url:r(/^((?:ftp|https?):\/\/|www\.)(?:[a-zA-Z0-9\-]+\.?)+[^\s<]*|^email/,"i").replace("email",/[A-Za-z0-9._+-]+(@)[a-zA-Z0-9-_]+(?:\.[a-zA-Z0-9-_]*[a-zA-Z0-9])+(?![-_])/).getRegex(),_backpedal:/(?:[^?!.,:;*_'"~()&]+|\([^)]*\)|&(?![a-zA-Z0-9]+;$)|[?!.,:;*_'"~)]+(?!$))+/,del:/^(~~?)(?=[^\s~])((?:\\.|[^\\])*?(?:\\.|[^\s~\\]))\1(?=[^~]|$)/,text:/^([`~]+|[^`~])(?:(?= {2,}\n)|(?=[a-zA-Z0-9.!#$%&'*+\/=?_`{\|}~-]+@)|[\s\S]*?(?:(?=[\\<!\[`*~_]|\b_|https?:\/\/|ftp:\/\/|www\.|$)|[^ ](?= {2,}\n)|[^a-zA-Z0-9.!#$%&'*+\/=?_`{\|}~-](?=[a-zA-Z0-9.!#$%&'*+\/=?_`{\|}~-]+@)))/},F={...X,br:r(R).replace("{2,}","*").getRegex(),text:r(X.text).replace("\\b_","\\b_| {2,}\\n").replace(/\{2,\}/g,"*").getRegex()},U={normal:w,gfm:y,pedantic:$},J={normal:G,gfm:X,breaks:F,pedantic:H},K={"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"},V=e=>K[e];function W(e,t){if(t){if(i.escapeTest.test(e))return e.replace(i.escapeReplace,V)}else if(i.escapeTestNoEncode.test(e))return e.replace(i.escapeReplaceNoEncode,V);return e}function Y(e){try{e=encodeURI(e).replace(i.percentDecode,"%")}catch{return null}return e}function ee(e,t){const n=e.replace(i.findPipe,((e,t,n)=>{let s=!1,r=t;for(;--r>=0&&"\\"===n[r];)s=!s;return s?"|":" |"})).split(i.splitPipe);let s=0;if(n[0].trim()||n.shift(),n.length>0&&!n.at(-1)?.trim()&&n.pop(),t)if(n.length>t)n.splice(t);else for(;n.length<t;)n.push("");for(;s<n.length;s++)n[s]=n[s].trim().replace(i.slashPipe,"|");return n}function te(e,t,n){const s=e.length;if(0===s)return"";let r=0;for(;r<s;){if(e.charAt(s-r-1)!==t)break;r++}return e.slice(0,s-r)}function ne(e,t,n,s,r){const i=t.href,l=t.title||null,o=e[1].replace(r.other.outputLinkReplace,"$1");if("!"!==e[0].charAt(0)){s.state.inLink=!0;const e={type:"link",raw:n,href:i,title:l,text:o,tokens:s.inlineTokens(o)};return s.state.inLink=!1,e}return{type:"image",raw:n,href:i,title:l,text:o}}class se{options;rules;lexer;constructor(t){this.options=t||e.defaults}space(e){const t=this.rules.block.newline.exec(e);if(t&&t[0].length>0)return{type:"space",raw:t[0]}}code(e){const t=this.rules.block.code.exec(e);if(t){const e=t[0].replace(this.rules.other.codeRemoveIndent,"");return{type:"code",raw:t[0],codeBlockStyle:"indented",text:this.options.pedantic?e:te(e,"\n")}}}fences(e){const t=this.rules.block.fences.exec(e);if(t){const e=t[0],n=function(e,t,n){const s=e.match(n.other.indentCodeCompensation);if(null===s)return t;const r=s[1];return t.split("\n").map((e=>{const t=e.match(n.other.beginningSpace);if(null===t)return e;const[s]=t;return s.length>=r.length?e.slice(r.length):e})).join("\n")}(e,t[3]||"",this.rules);return{type:"code",raw:e,lang:t[2]?t[2].trim().replace(this.rules.inline.anyPunctuation,"$1"):t[2],text:n}}}heading(e){const t=this.rules.block.heading.exec(e);if(t){let e=t[2].trim();if(this.rules.other.endingHash.test(e)){const t=te(e,"#");this.options.pedantic?e=t.trim():t&&!this.rules.other.endingSpaceChar.test(t)||(e=t.trim())}return{type:"heading",raw:t[0],depth:t[1].length,text:e,tokens:this.lexer.inline(e)}}}hr(e){const t=this.rules.block.hr.exec(e);if(t)return{type:"hr",raw:te(t[0],"\n")}}blockquote(e){const t=this.rules.block.blockquote.exec(e);if(t){let e=te(t[0],"\n").split("\n"),n="",s="";const r=[];for(;e.length>0;){let t=!1;const i=[];let l;for(l=0;l<e.length;l++)if(this.rules.other.blockquoteStart.test(e[l]))i.push(e[l]),t=!0;else{if(t)break;i.push(e[l])}e=e.slice(l);const o=i.join("\n"),a=o.replace(this.rules.other.blockquoteSetextReplace,"\n    $1").replace(this.rules.other.blockquoteSetextReplace2,"");n=n?`${n}\n${o}`:o,s=s?`${s}\n${a}`:a;const c=this.lexer.state.top;if(this.lexer.state.top=!0,this.lexer.blockTokens(a,r,!0),this.lexer.state.top=c,0===e.length)break;const h=r.at(-1);if("code"===h?.type)break;if("blockquote"===h?.type){const t=h,i=t.raw+"\n"+e.join("\n"),l=this.blockquote(i);r[r.length-1]=l,n=n.substring(0,n.length-t.raw.length)+l.raw,s=s.substring(0,s.length-t.text.length)+l.text;break}if("list"!==h?.type);else{const t=h,i=t.raw+"\n"+e.join("\n"),l=this.list(i);r[r.length-1]=l,n=n.substring(0,n.length-h.raw.length)+l.raw,s=s.substring(0,s.length-t.raw.length)+l.raw,e=i.substring(r.at(-1).raw.length).split("\n")}}return{type:"blockquote",raw:n,tokens:r,text:s}}}list(e){let t=this.rules.block.list.exec(e);if(t){let n=t[1].trim();const s=n.length>1,r={type:"list",raw:"",ordered:s,start:s?+n.slice(0,-1):"",loose:!1,items:[]};n=s?`\\d{1,9}\\${n.slice(-1)}`:`\\${n}`,this.options.pedantic&&(n=s?n:"[*+-]");const i=this.rules.other.listItemRegex(n);let l=!1;for(;e;){let n=!1,s="",o="";if(!(t=i.exec(e)))break;if(this.rules.block.hr.test(e))break;s=t[0],e=e.substring(s.length);let a=t[2].split("\n",1)[0].replace(this.rules.other.listReplaceTabs,(e=>" ".repeat(3*e.length))),c=e.split("\n",1)[0],h=!a.trim(),p=0;if(this.options.pedantic?(p=2,o=a.trimStart()):h?p=t[1].length+1:(p=t[2].search(this.rules.other.nonSpaceChar),p=p>4?1:p,o=a.slice(p),p+=t[1].length),h&&this.rules.other.blankLine.test(c)&&(s+=c+"\n",e=e.substring(c.length+1),n=!0),!n){const t=this.rules.other.nextBulletRegex(p),n=this.rules.other.hrRegex(p),r=this.rules.other.fencesBeginRegex(p),i=this.rules.other.headingBeginRegex(p),l=this.rules.other.htmlBeginRegex(p);for(;e;){const u=e.split("\n",1)[0];let g;if(c=u,this.options.pedantic?(c=c.replace(this.rules.other.listReplaceNesting,"  "),g=c):g=c.replace(this.rules.other.tabCharGlobal,"    "),r.test(c))break;if(i.test(c))break;if(l.test(c))break;if(t.test(c))break;if(n.test(c))break;if(g.search(this.rules.other.nonSpaceChar)>=p||!c.trim())o+="\n"+g.slice(p);else{if(h)break;if(a.replace(this.rules.other.tabCharGlobal,"    ").search(this.rules.other.nonSpaceChar)>=4)break;if(r.test(a))break;if(i.test(a))break;if(n.test(a))break;o+="\n"+c}h||c.trim()||(h=!0),s+=u+"\n",e=e.substring(u.length+1),a=g.slice(p)}}r.loose||(l?r.loose=!0:this.rules.other.doubleBlankLine.test(s)&&(l=!0));let u,g=null;this.options.gfm&&(g=this.rules.other.listIsTask.exec(o),g&&(u="[ ] "!==g[0],o=o.replace(this.rules.other.listReplaceTask,""))),r.items.push({type:"list_item",raw:s,task:!!g,checked:u,loose:!1,text:o,tokens:[]}),r.raw+=s}const o=r.items.at(-1);if(!o)return;o.raw=o.raw.trimEnd(),o.text=o.text.trimEnd(),r.raw=r.raw.trimEnd();for(let e=0;e<r.items.length;e++)if(this.lexer.state.top=!1,r.items[e].tokens=this.lexer.blockTokens(r.items[e].text,[]),!r.loose){const t=r.items[e].tokens.filter((e=>"space"===e.type)),n=t.length>0&&t.some((e=>this.rules.other.anyLine.test(e.raw)));r.loose=n}if(r.loose)for(let e=0;e<r.items.length;e++)r.items[e].loose=!0;return r}}html(e){const t=this.rules.block.html.exec(e);if(t){return{type:"html",block:!0,raw:t[0],pre:"pre"===t[1]||"script"===t[1]||"style"===t[1],text:t[0]}}}def(e){const t=this.rules.block.def.exec(e);if(t){const e=t[1].toLowerCase().replace(this.rules.other.multipleSpaceGlobal," "),n=t[2]?t[2].replace(this.rules.other.hrefBrackets,"$1").replace(this.rules.inline.anyPunctuation,"$1"):"",s=t[3]?t[3].substring(1,t[3].length-1).replace(this.rules.inline.anyPunctuation,"$1"):t[3];return{type:"def",tag:e,raw:t[0],href:n,title:s}}}table(e){const t=this.rules.block.table.exec(e);if(!t)return;if(!this.rules.other.tableDelimiter.test(t[2]))return;const n=ee(t[1]),s=t[2].replace(this.rules.other.tableAlignChars,"").split("|"),r=t[3]?.trim()?t[3].replace(this.rules.other.tableRowBlankLine,"").split("\n"):[],i={type:"table",raw:t[0],header:[],align:[],rows:[]};if(n.length===s.length){for(const e of s)this.rules.other.tableAlignRight.test(e)?i.align.push("right"):this.rules.other.tableAlignCenter.test(e)?i.align.push("center"):this.rules.other.tableAlignLeft.test(e)?i.align.push("left"):i.align.push(null);for(let e=0;e<n.length;e++)i.header.push({text:n[e],tokens:this.lexer.inline(n[e]),header:!0,align:i.align[e]});for(const e of r)i.rows.push(ee(e,i.header.length).map(((e,t)=>({text:e,tokens:this.lexer.inline(e),header:!1,align:i.align[t]}))));return i}}lheading(e){const t=this.rules.block.lheading.exec(e);if(t)return{type:"heading",raw:t[0],depth:"="===t[2].charAt(0)?1:2,text:t[1],tokens:this.lexer.inline(t[1])}}paragraph(e){const t=this.rules.block.paragraph.exec(e);if(t){const e="\n"===t[1].charAt(t[1].length-1)?t[1].slice(0,-1):t[1];return{type:"paragraph",raw:t[0],text:e,tokens:this.lexer.inline(e)}}}text(e){const t=this.rules.block.text.exec(e);if(t)return{type:"text",raw:t[0],text:t[0],tokens:this.lexer.inline(t[0])}}escape(e){const t=this.rules.inline.escape.exec(e);if(t)return{type:"escape",raw:t[0],text:t[1]}}tag(e){const t=this.rules.inline.tag.exec(e);if(t)return!this.lexer.state.inLink&&this.rules.other.startATag.test(t[0])?this.lexer.state.inLink=!0:this.lexer.state.inLink&&this.rules.other.endATag.test(t[0])&&(this.lexer.state.inLink=!1),!this.lexer.state.inRawBlock&&this.rules.other.startPreScriptTag.test(t[0])?this.lexer.state.inRawBlock=!0:this.lexer.state.inRawBlock&&this.rules.other.endPreScriptTag.test(t[0])&&(this.lexer.state.inRawBlock=!1),{type:"html",raw:t[0],inLink:this.lexer.state.inLink,inRawBlock:this.lexer.state.inRawBlock,block:!1,text:t[0]}}link(e){const t=this.rules.inline.link.exec(e);if(t){const e=t[2].trim();if(!this.options.pedantic&&this.rules.other.startAngleBracket.test(e)){if(!this.rules.other.endAngleBracket.test(e))return;const t=te(e.slice(0,-1),"\\");if((e.length-t.length)%2==0)return}else{const e=function(e,t){if(-1===e.indexOf(t[1]))return-1;let n=0;for(let s=0;s<e.length;s++)if("\\"===e[s])s++;else if(e[s]===t[0])n++;else if(e[s]===t[1]&&(n--,n<0))return s;return-1}(t[2],"()");if(e>-1){const n=(0===t[0].indexOf("!")?5:4)+t[1].length+e;t[2]=t[2].substring(0,e),t[0]=t[0].substring(0,n).trim(),t[3]=""}}let n=t[2],s="";if(this.options.pedantic){const e=this.rules.other.pedanticHrefTitle.exec(n);e&&(n=e[1],s=e[3])}else s=t[3]?t[3].slice(1,-1):"";return n=n.trim(),this.rules.other.startAngleBracket.test(n)&&(n=this.options.pedantic&&!this.rules.other.endAngleBracket.test(e)?n.slice(1):n.slice(1,-1)),ne(t,{href:n?n.replace(this.rules.inline.anyPunctuation,"$1"):n,title:s?s.replace(this.rules.inline.anyPunctuation,"$1"):s},t[0],this.lexer,this.rules)}}reflink(e,t){let n;if((n=this.rules.inline.reflink.exec(e))||(n=this.rules.inline.nolink.exec(e))){const e=t[(n[2]||n[1]).replace(this.rules.other.multipleSpaceGlobal," ").toLowerCase()];if(!e){const e=n[0].charAt(0);return{type:"text",raw:e,text:e}}return ne(n,e,n[0],this.lexer,this.rules)}}emStrong(e,t,n=""){let s=this.rules.inline.emStrongLDelim.exec(e);if(!s)return;if(s[3]&&n.match(this.rules.other.unicodeAlphaNumeric))return;if(!(s[1]||s[2]||"")||!n||this.rules.inline.punctuation.exec(n)){const n=[...s[0]].length-1;let r,i,l=n,o=0;const a="*"===s[0][0]?this.rules.inline.emStrongRDelimAst:this.rules.inline.emStrongRDelimUnd;for(a.lastIndex=0,t=t.slice(-1*e.length+n);null!=(s=a.exec(t));){if(r=s[1]||s[2]||s[3]||s[4]||s[5]||s[6],!r)continue;if(i=[...r].length,s[3]||s[4]){l+=i;continue}if((s[5]||s[6])&&n%3&&!((n+i)%3)){o+=i;continue}if(l-=i,l>0)continue;i=Math.min(i,i+l+o);const t=[...s[0]][0].length,a=e.slice(0,n+s.index+t+i);if(Math.min(n,i)%2){const e=a.slice(1,-1);return{type:"em",raw:a,text:e,tokens:this.lexer.inlineTokens(e)}}const c=a.slice(2,-2);return{type:"strong",raw:a,text:c,tokens:this.lexer.inlineTokens(c)}}}}codespan(e){const t=this.rules.inline.code.exec(e);if(t){let e=t[2].replace(this.rules.other.newLineCharGlobal," ");const n=this.rules.other.nonSpaceChar.test(e),s=this.rules.other.startingSpaceChar.test(e)&&this.rules.other.endingSpaceChar.test(e);return n&&s&&(e=e.substring(1,e.length-1)),{type:"codespan",raw:t[0],text:e}}}br(e){const t=this.rules.inline.br.exec(e);if(t)return{type:"br",raw:t[0]}}del(e){const t=this.rules.inline.del.exec(e);if(t)return{type:"del",raw:t[0],text:t[2],tokens:this.lexer.inlineTokens(t[2])}}autolink(e){const t=this.rules.inline.autolink.exec(e);if(t){let e,n;return"@"===t[2]?(e=t[1],n="mailto:"+e):(e=t[1],n=e),{type:"link",raw:t[0],text:e,href:n,tokens:[{type:"text",raw:e,text:e}]}}}url(e){let t;if(t=this.rules.inline.url.exec(e)){let e,n;if("@"===t[2])e=t[0],n="mailto:"+e;else{let s;do{s=t[0],t[0]=this.rules.inline._backpedal.exec(t[0])?.[0]??""}while(s!==t[0]);e=t[0],n="www."===t[1]?"http://"+t[0]:t[0]}return{type:"link",raw:t[0],text:e,href:n,tokens:[{type:"text",raw:e,text:e}]}}}inlineText(e){const t=this.rules.inline.text.exec(e);if(t){const e=this.lexer.state.inRawBlock;return{type:"text",raw:t[0],text:t[0],escaped:e}}}}class re{tokens;options;state;tokenizer;inlineQueue;constructor(t){this.tokens=[],this.tokens.links=Object.create(null),this.options=t||e.defaults,this.options.tokenizer=this.options.tokenizer||new se,this.tokenizer=this.options.tokenizer,this.tokenizer.options=this.options,this.tokenizer.lexer=this,this.inlineQueue=[],this.state={inLink:!1,inRawBlock:!1,top:!0};const n={other:i,block:U.normal,inline:J.normal};this.options.pedantic?(n.block=U.pedantic,n.inline=J.pedantic):this.options.gfm&&(n.block=U.gfm,this.options.breaks?n.inline=J.breaks:n.inline=J.gfm),this.tokenizer.rules=n}static get rules(){return{block:U,inline:J}}static lex(e,t){return new re(t).lex(e)}static lexInline(e,t){return new re(t).inlineTokens(e)}lex(e){e=e.replace(i.carriageReturn,"\n"),this.blockTokens(e,this.tokens);for(let e=0;e<this.inlineQueue.length;e++){const t=this.inlineQueue[e];this.inlineTokens(t.src,t.tokens)}return this.inlineQueue=[],this.tokens}blockTokens(e,t=[],n=!1){for(this.options.pedantic&&(e=e.replace(i.tabCharGlobal,"    ").replace(i.spaceLine,""));e;){let s;if(this.options.extensions?.block?.some((n=>!!(s=n.call({lexer:this},e,t))&&(e=e.substring(s.raw.length),t.push(s),!0))))continue;if(s=this.tokenizer.space(e)){e=e.substring(s.raw.length);const n=t.at(-1);1===s.raw.length&&void 0!==n?n.raw+="\n":t.push(s);continue}if(s=this.tokenizer.code(e)){e=e.substring(s.raw.length);const n=t.at(-1);"paragraph"===n?.type||"text"===n?.type?(n.raw+="\n"+s.raw,n.text+="\n"+s.text,this.inlineQueue.at(-1).src=n.text):t.push(s);continue}if(s=this.tokenizer.fences(e)){e=e.substring(s.raw.length),t.push(s);continue}if(s=this.tokenizer.heading(e)){e=e.substring(s.raw.length),t.push(s);continue}if(s=this.tokenizer.hr(e)){e=e.substring(s.raw.length),t.push(s);continue}if(s=this.tokenizer.blockquote(e)){e=e.substring(s.raw.length),t.push(s);continue}if(s=this.tokenizer.list(e)){e=e.substring(s.raw.length),t.push(s);continue}if(s=this.tokenizer.html(e)){e=e.substring(s.raw.length),t.push(s);continue}if(s=this.tokenizer.def(e)){e=e.substring(s.raw.length);const n=t.at(-1);"paragraph"===n?.type||"text"===n?.type?(n.raw+="\n"+s.raw,n.text+="\n"+s.raw,this.inlineQueue.at(-1).src=n.text):this.tokens.links[s.tag]||(this.tokens.links[s.tag]={href:s.href,title:s.title});continue}if(s=this.tokenizer.table(e)){e=e.substring(s.raw.length),t.push(s);continue}if(s=this.tokenizer.lheading(e)){e=e.substring(s.raw.length),t.push(s);continue}let r=e;if(this.options.extensions?.startBlock){let t=1/0;const n=e.slice(1);let s;this.options.extensions.startBlock.forEach((e=>{s=e.call({lexer:this},n),"number"==typeof s&&s>=0&&(t=Math.min(t,s))})),t<1/0&&t>=0&&(r=e.substring(0,t+1))}if(this.state.top&&(s=this.tokenizer.paragraph(r))){const i=t.at(-1);n&&"paragraph"===i?.type?(i.raw+="\n"+s.raw,i.text+="\n"+s.text,this.inlineQueue.pop(),this.inlineQueue.at(-1).src=i.text):t.push(s),n=r.length!==e.length,e=e.substring(s.raw.length)}else if(s=this.tokenizer.text(e)){e=e.substring(s.raw.length);const n=t.at(-1);"text"===n?.type?(n.raw+="\n"+s.raw,n.text+="\n"+s.text,this.inlineQueue.pop(),this.inlineQueue.at(-1).src=n.text):t.push(s)}else if(e){const t="Infinite loop on byte: "+e.charCodeAt(0);if(this.options.silent){console.error(t);break}throw new Error(t)}}return this.state.top=!0,t}inline(e,t=[]){return this.inlineQueue.push({src:e,tokens:t}),t}inlineTokens(e,t=[]){let n=e,s=null;if(this.tokens.links){const e=Object.keys(this.tokens.links);if(e.length>0)for(;null!=(s=this.tokenizer.rules.inline.reflinkSearch.exec(n));)e.includes(s[0].slice(s[0].lastIndexOf("[")+1,-1))&&(n=n.slice(0,s.index)+"["+"a".repeat(s[0].length-2)+"]"+n.slice(this.tokenizer.rules.inline.reflinkSearch.lastIndex))}for(;null!=(s=this.tokenizer.rules.inline.blockSkip.exec(n));)n=n.slice(0,s.index)+"["+"a".repeat(s[0].length-2)+"]"+n.slice(this.tokenizer.rules.inline.blockSkip.lastIndex);for(;null!=(s=this.tokenizer.rules.inline.anyPunctuation.exec(n));)n=n.slice(0,s.index)+"++"+n.slice(this.tokenizer.rules.inline.anyPunctuation.lastIndex);let r=!1,i="";for(;e;){let s;if(r||(i=""),r=!1,this.options.extensions?.inline?.some((n=>!!(s=n.call({lexer:this},e,t))&&(e=e.substring(s.raw.length),t.push(s),!0))))continue;if(s=this.tokenizer.escape(e)){e=e.substring(s.raw.length),t.push(s);continue}if(s=this.tokenizer.tag(e)){e=e.substring(s.raw.length),t.push(s);continue}if(s=this.tokenizer.link(e)){e=e.substring(s.raw.length),t.push(s);continue}if(s=this.tokenizer.reflink(e,this.tokens.links)){e=e.substring(s.raw.length);const n=t.at(-1);"text"===s.type&&"text"===n?.type?(n.raw+=s.raw,n.text+=s.text):t.push(s);continue}if(s=this.tokenizer.emStrong(e,n,i)){e=e.substring(s.raw.length),t.push(s);continue}if(s=this.tokenizer.codespan(e)){e=e.substring(s.raw.length),t.push(s);continue}if(s=this.tokenizer.br(e)){e=e.substring(s.raw.length),t.push(s);continue}if(s=this.tokenizer.del(e)){e=e.substring(s.raw.length),t.push(s);continue}if(s=this.tokenizer.autolink(e)){e=e.substring(s.raw.length),t.push(s);continue}if(!this.state.inLink&&(s=this.tokenizer.url(e))){e=e.substring(s.raw.length),t.push(s);continue}let l=e;if(this.options.extensions?.startInline){let t=1/0;const n=e.slice(1);let s;this.options.extensions.startInline.forEach((e=>{s=e.call({lexer:this},n),"number"==typeof s&&s>=0&&(t=Math.min(t,s))})),t<1/0&&t>=0&&(l=e.substring(0,t+1))}if(s=this.tokenizer.inlineText(l)){e=e.substring(s.raw.length),"_"!==s.raw.slice(-1)&&(i=s.raw.slice(-1)),r=!0;const n=t.at(-1);"text"===n?.type?(n.raw+=s.raw,n.text+=s.text):t.push(s)}else if(e){const t="Infinite loop on byte: "+e.charCodeAt(0);if(this.options.silent){console.error(t);break}throw new Error(t)}}return t}}class ie{options;parser;constructor(t){this.options=t||e.defaults}space(e){return""}code({text:e,lang:t,escaped:n}){const s=(t||"").match(i.notSpaceStart)?.[0],r=e.replace(i.endingNewline,"")+"\n";return s?'<pre><code class="language-'+W(s)+'">'+(n?r:W(r,!0))+"</code></pre>\n":"<pre><code>"+(n?r:W(r,!0))+"</code></pre>\n"}blockquote({tokens:e}){return`<blockquote>\n${this.parser.parse(e)}</blockquote>\n`}html({text:e}){return e}heading({tokens:e,depth:t}){return`<h${t}>${this.parser.parseInline(e)}</h${t}>\n`}hr(e){return"<hr>\n"}list(e){const t=e.ordered,n=e.start;let s="";for(let t=0;t<e.items.length;t++){const n=e.items[t];s+=this.listitem(n)}const r=t?"ol":"ul";return"<"+r+(t&&1!==n?' start="'+n+'"':"")+">\n"+s+"</"+r+">\n"}listitem(e){let t="";if(e.task){const n=this.checkbox({checked:!!e.checked});e.loose?"paragraph"===e.tokens[0]?.type?(e.tokens[0].text=n+" "+e.tokens[0].text,e.tokens[0].tokens&&e.tokens[0].tokens.length>0&&"text"===e.tokens[0].tokens[0].type&&(e.tokens[0].tokens[0].text=n+" "+W(e.tokens[0].tokens[0].text),e.tokens[0].tokens[0].escaped=!0)):e.tokens.unshift({type:"text",raw:n+" ",text:n+" ",escaped:!0}):t+=n+" "}return t+=this.parser.parse(e.tokens,!!e.loose),`<li>${t}</li>\n`}checkbox({checked:e}){return"<input "+(e?'checked="" ':"")+'disabled="" type="checkbox">'}paragraph({tokens:e}){return`<p>${this.parser.parseInline(e)}</p>\n`}table(e){let t="",n="";for(let t=0;t<e.header.length;t++)n+=this.tablecell(e.header[t]);t+=this.tablerow({text:n});let s="";for(let t=0;t<e.rows.length;t++){const r=e.rows[t];n="";for(let e=0;e<r.length;e++)n+=this.tablecell(r[e]);s+=this.tablerow({text:n})}return s&&(s=`<tbody>${s}</tbody>`),"<table>\n<thead>\n"+t+"</thead>\n"+s+"</table>\n"}tablerow({text:e}){return`<tr>\n${e}</tr>\n`}tablecell(e){const t=this.parser.parseInline(e.tokens),n=e.header?"th":"td";return(e.align?`<${n} align="${e.align}">`:`<${n}>`)+t+`</${n}>\n`}strong({tokens:e}){return`<strong>${this.parser.parseInline(e)}</strong>`}em({tokens:e}){return`<em>${this.parser.parseInline(e)}</em>`}codespan({text:e}){return`<code>${W(e,!0)}</code>`}br(e){return"<br>"}del({tokens:e}){return`<del>${this.parser.parseInline(e)}</del>`}link({href:e,title:t,tokens:n}){const s=this.parser.parseInline(n),r=Y(e);if(null===r)return s;let i='<a href="'+(e=r)+'"';return t&&(i+=' title="'+W(t)+'"'),i+=">"+s+"</a>",i}image({href:e,title:t,text:n}){const s=Y(e);if(null===s)return W(n);let r=`<img src="${e=s}" alt="${n}"`;return t&&(r+=` title="${W(t)}"`),r+=">",r}text(e){return"tokens"in e&&e.tokens?this.parser.parseInline(e.tokens):"escaped"in e&&e.escaped?e.text:W(e.text)}}class le{strong({text:e}){return e}em({text:e}){return e}codespan({text:e}){return e}del({text:e}){return e}html({text:e}){return e}text({text:e}){return e}link({text:e}){return""+e}image({text:e}){return""+e}br(){return""}}class oe{options;renderer;textRenderer;constructor(t){this.options=t||e.defaults,this.options.renderer=this.options.renderer||new ie,this.renderer=this.options.renderer,this.renderer.options=this.options,this.renderer.parser=this,this.textRenderer=new le}static parse(e,t){return new oe(t).parse(e)}static parseInline(e,t){return new oe(t).parseInline(e)}parse(e,t=!0){let n="";for(let s=0;s<e.length;s++){const r=e[s];if(this.options.extensions?.renderers?.[r.type]){const e=r,t=this.options.extensions.renderers[e.type].call({parser:this},e);if(!1!==t||!["space","hr","heading","code","table","blockquote","list","html","paragraph","text"].includes(e.type)){n+=t||"";continue}}const i=r;switch(i.type){case"space":n+=this.renderer.space(i);continue;case"hr":n+=this.renderer.hr(i);continue;case"heading":n+=this.renderer.heading(i);continue;case"code":n+=this.renderer.code(i);continue;case"table":n+=this.renderer.table(i);continue;case"blockquote":n+=this.renderer.blockquote(i);continue;case"list":n+=this.renderer.list(i);continue;case"html":n+=this.renderer.html(i);continue;case"paragraph":n+=this.renderer.paragraph(i);continue;case"text":{let r=i,l=this.renderer.text(r);for(;s+1<e.length&&"text"===e[s+1].type;)r=e[++s],l+="\n"+this.renderer.text(r);n+=t?this.renderer.paragraph({type:"paragraph",raw:l,text:l,tokens:[{type:"text",raw:l,text:l,escaped:!0}]}):l;continue}default:{const e='Token with "'+i.type+'" type was not found.';if(this.options.silent)return console.error(e),"";throw new Error(e)}}}return n}parseInline(e,t=this.renderer){let n="";for(let s=0;s<e.length;s++){const r=e[s];if(this.options.extensions?.renderers?.[r.type]){const e=this.options.extensions.renderers[r.type].call({parser:this},r);if(!1!==e||!["escape","html","link","image","strong","em","codespan","br","del","text"].includes(r.type)){n+=e||"";continue}}const i=r;switch(i.type){case"escape":case"text":n+=t.text(i);break;case"html":n+=t.html(i);break;case"link":n+=t.link(i);break;case"image":n+=t.image(i);break;case"strong":n+=t.strong(i);break;case"em":n+=t.em(i);break;case"codespan":n+=t.codespan(i);break;case"br":n+=t.br(i);break;case"del":n+=t.del(i);break;default:{const e='Token with "'+i.type+'" type was not found.';if(this.options.silent)return console.error(e),"";throw new Error(e)}}}return n}}class ae{options;block;constructor(t){this.options=t||e.defaults}static passThroughHooks=new Set(["preprocess","postprocess","processAllTokens"]);preprocess(e){return e}postprocess(e){return e}processAllTokens(e){return e}provideLexer(){return this.block?re.lex:re.lexInline}provideParser(){return this.block?oe.parse:oe.parseInline}}class ce{defaults={async:!1,breaks:!1,extensions:null,gfm:!0,hooks:null,pedantic:!1,renderer:null,silent:!1,tokenizer:null,walkTokens:null};options=this.setOptions;parse=this.parseMarkdown(!0);parseInline=this.parseMarkdown(!1);Parser=oe;Renderer=ie;TextRenderer=le;Lexer=re;Tokenizer=se;Hooks=ae;constructor(...e){this.use(...e)}walkTokens(e,t){let n=[];for(const s of e)switch(n=n.concat(t.call(this,s)),s.type){case"table":{const e=s;for(const s of e.header)n=n.concat(this.walkTokens(s.tokens,t));for(const s of e.rows)for(const e of s)n=n.concat(this.walkTokens(e.tokens,t));break}case"list":{const e=s;n=n.concat(this.walkTokens(e.items,t));break}default:{const e=s;this.defaults.extensions?.childTokens?.[e.type]?this.defaults.extensions.childTokens[e.type].forEach((s=>{const r=e[s].flat(1/0);n=n.concat(this.walkTokens(r,t))})):e.tokens&&(n=n.concat(this.walkTokens(e.tokens,t)))}}return n}use(...e){const t=this.defaults.extensions||{renderers:{},childTokens:{}};return e.forEach((e=>{const n={...e};if(n.async=this.defaults.async||n.async||!1,e.extensions&&(e.extensions.forEach((e=>{if(!e.name)throw new Error("extension name required");if("renderer"in e){const n=t.renderers[e.name];t.renderers[e.name]=n?function(...t){let s=e.renderer.apply(this,t);return!1===s&&(s=n.apply(this,t)),s}:e.renderer}if("tokenizer"in e){if(!e.level||"block"!==e.level&&"inline"!==e.level)throw new Error("extension level must be 'block' or 'inline'");const n=t[e.level];n?n.unshift(e.tokenizer):t[e.level]=[e.tokenizer],e.start&&("block"===e.level?t.startBlock?t.startBlock.push(e.start):t.startBlock=[e.start]:"inline"===e.level&&(t.startInline?t.startInline.push(e.start):t.startInline=[e.start]))}"childTokens"in e&&e.childTokens&&(t.childTokens[e.name]=e.childTokens)})),n.extensions=t),e.renderer){const t=this.defaults.renderer||new ie(this.defaults);for(const n in e.renderer){if(!(n in t))throw new Error(`renderer '${n}' does not exist`);if(["options","parser"].includes(n))continue;const s=n,r=e.renderer[s],i=t[s];t[s]=(...e)=>{let n=r.apply(t,e);return!1===n&&(n=i.apply(t,e)),n||""}}n.renderer=t}if(e.tokenizer){const t=this.defaults.tokenizer||new se(this.defaults);for(const n in e.tokenizer){if(!(n in t))throw new Error(`tokenizer '${n}' does not exist`);if(["options","rules","lexer"].includes(n))continue;const s=n,r=e.tokenizer[s],i=t[s];t[s]=(...e)=>{let n=r.apply(t,e);return!1===n&&(n=i.apply(t,e)),n}}n.tokenizer=t}if(e.hooks){const t=this.defaults.hooks||new ae;for(const n in e.hooks){if(!(n in t))throw new Error(`hook '${n}' does not exist`);if(["options","block"].includes(n))continue;const s=n,r=e.hooks[s],i=t[s];ae.passThroughHooks.has(n)?t[s]=e=>{if(this.defaults.async)return Promise.resolve(r.call(t,e)).then((e=>i.call(t,e)));const n=r.call(t,e);return i.call(t,n)}:t[s]=(...e)=>{let n=r.apply(t,e);return!1===n&&(n=i.apply(t,e)),n}}n.hooks=t}if(e.walkTokens){const t=this.defaults.walkTokens,s=e.walkTokens;n.walkTokens=function(e){let n=[];return n.push(s.call(this,e)),t&&(n=n.concat(t.call(this,e))),n}}this.defaults={...this.defaults,...n}})),this}setOptions(e){return this.defaults={...this.defaults,...e},this}lexer(e,t){return re.lex(e,t??this.defaults)}parser(e,t){return oe.parse(e,t??this.defaults)}parseMarkdown(e){return(t,n)=>{const s={...n},r={...this.defaults,...s},i=this.onError(!!r.silent,!!r.async);if(!0===this.defaults.async&&!1===s.async)return i(new Error("marked(): The async option was set to true by an extension. Remove async: false from the parse options object to return a Promise."));if(null==t)return i(new Error("marked(): input parameter is undefined or null"));if("string"!=typeof t)return i(new Error("marked(): input parameter is of type "+Object.prototype.toString.call(t)+", string expected"));r.hooks&&(r.hooks.options=r,r.hooks.block=e);const l=r.hooks?r.hooks.provideLexer():e?re.lex:re.lexInline,o=r.hooks?r.hooks.provideParser():e?oe.parse:oe.parseInline;if(r.async)return Promise.resolve(r.hooks?r.hooks.preprocess(t):t).then((e=>l(e,r))).then((e=>r.hooks?r.hooks.processAllTokens(e):e)).then((e=>r.walkTokens?Promise.all(this.walkTokens(e,r.walkTokens)).then((()=>e)):e)).then((e=>o(e,r))).then((e=>r.hooks?r.hooks.postprocess(e):e)).catch(i);try{r.hooks&&(t=r.hooks.preprocess(t));let e=l(t,r);r.hooks&&(e=r.hooks.processAllTokens(e)),r.walkTokens&&this.walkTokens(e,r.walkTokens);let n=o(e,r);return r.hooks&&(n=r.hooks.postprocess(n)),n}catch(e){return i(e)}}}onError(e,t){return n=>{if(n.message+="\nPlease report this to https://github.com/markedjs/marked.",e){const e="<p>An error occurred:</p><pre>"+W(n.message+"",!0)+"</pre>";return t?Promise.resolve(e):e}if(t)return Promise.reject(n);throw n}}}const he=new ce;function pe(e,t){return he.parse(e,t)}pe.options=pe.setOptions=function(e){return he.setOptions(e),pe.defaults=he.defaults,n(pe.defaults),pe},pe.getDefaults=t,pe.defaults=e.defaults,pe.use=function(...e){return he.use(...e),pe.defaults=he.defaults,n(pe.defaults),pe},pe.walkTokens=function(e,t){return he.walkTokens(e,t)},pe.parseInline=he.parseInline,pe.Parser=oe,pe.parser=oe.parse,pe.Renderer=ie,pe.TextRenderer=le,pe.Lexer=re,pe.lexer=re.lex,pe.Tokenizer=se,pe.Hooks=ae,pe.parse=pe;const ue=pe.options,ge=pe.setOptions,ke=pe.use,de=pe.walkTokens,fe=pe.parseInline,xe=pe,be=oe.parse,we=re.lex;e.Hooks=ae,e.Lexer=re,e.Marked=ce,e.Parser=oe,e.Renderer=ie,e.TextRenderer=le,e.Tokenizer=se,e.getDefaults=t,e.lexer=we,e.marked=pe,e.options=ue,e.parse=xe,e.parseInline=fe,e.parser=be,e.setOptions=ge,e.use=ke,e.walkTokens=de}));
+</script>
+
+<script>
+  const MCKEY = "main-container";
+  const NEXTIDKEY = "data-nextid";
+  const MODRESIZERIGHT = 1;
+  const MODRESIZEBOTTOM = 2;
+  const MODMOVECARDS = 4;
+  const MINCARDWIDTH = 7;
+  const MINCARDHEIGHT = 2;
+  const CARDOFSX = 2;
+  const CARDOFSY = 2;
+  const AUTOMARKDOWNDELAY = 300; // ms
+
+  // Simple Card helpers
+  function getContainingCard(element) { return findParentOrSelf(element, (e) => e.hasAttribute("data-topcard")); }
+  function getContainingMenu(element) { return findParentOrSelf(element, (e) => e.classList.contains("menu")); }
+  function getCardTitle(card) { return card.querySelector('.top .title'); }
+  function getCardDate(card) { return card.querySelector('.top time'); }
+  function getCardContent(card) { return card.querySelector(':scope > .content'); }
+  function getCardEditor(card) { return card.querySelector('.content .editor'); }
+  function getCardMenu(card) { return card.querySelector('.menu'); }
+  function getCardTitleEdit(card) { return card.querySelector('.edit-title'); }
+  function getCardFrom(card) { return card.querySelector(".card-from"); }
+  function getCardType(card) { return card.querySelector(".card-type"); }
+  function getCardId(card) { return card.querySelector(".card-id"); } // Id from INFO, not actual id
+  function getCardRef(card) { return card.querySelector(".card-ref"); } // Id from INFO, not actual id
+  function getCardParent(card) { return card.querySelector(".card-parent"); }
+  function getCardChildren(card) { return window[MCKEY].querySelectorAll(`.card[data-parent="${card.id}"]`) }
+  function getCardAllChildren(card) {
+    let seen = {};
+    seen[card.id] = true; // can't be a child of yourself (well you can... but)
+    let queue = Array.from(getCardChildren(card));
+    let result = [];
+    while(queue.length) {
+      let next = queue.pop();
+      if(next.id in seen) continue;
+      result.push(next);
+      queue.push(...Array.from(getCardChildren(next)));
+      seen[next.id] = true;
+    }
+    return result;
+  }
+  function setCardParent(card, parent) { // parent should be a string
+    let cp = getCardParent(card); // the element, not the value
+    let cpmenu = getCardMenu(card).querySelector(".set-parent");
+    parent = parent || "";
+    cp.textContent = parent;
+    cp.href = "#" + parent;
+    card.setAttribute("data-parent", parent);
+    let con = card.parentNode.querySelector(`.card-connector[data-cardset="${card.id}"]`);
+    if(parent) {
+      let pelm = document.getElementById(parent);
+      if(!pelm) {
+        console.warn("Couldn't set card parent connector for " + parent + ", element doesn't exist");
+        return;
+      }
+      let cofs = getOffset(card);
+      let pofs = getOffset(pelm);
+      pofs.x += pofs.width / 2;
+      pofs.y += pofs.height / 2;
+      cofs.x += cofs.width / 2;
+      cofs.y += cofs.height / 2;
+      const xofs = pofs.x - cofs.x;
+      const yofs = pofs.y - cofs.y;
+      con.style.left = cofs.x + "em";
+      con.style.top = cofs.y + "em";
+      con.style.width = Math.abs(xofs) + "em";
+      con.style.height = Math.abs(yofs) + "em";
+      con.style.transform = `scale(${Math.sign(xofs) || 1}, ${Math.sign(yofs) || 1})`;
+      setUnhidden(con);
+      cpmenu.textContent = "Clear parent";
+    } else {
+      cpmenu.textContent = "Set parent";
+      setHidden(con);
+    }
+  }
+
+  // Simple Html helpers
+  function removeSelf(element) { element.parentNode.removeChild(element); }
+  function toggleHidden(element) { return element.classList.toggle('hidden'); }
+  function setHidden(element) { return element.classList.add('hidden'); }
+  function setUnhidden(element) { return element.classList.remove('hidden'); }
+  function isHidden(element) { return element.classList.contains('hidden'); }
+  function copyTemplateSingle(name) { 
+    let result = document.getElementById(name).content.cloneNode(true).firstElementChild; 
+    removeWhitespaceNodes(result);
+    return result;
+  }
+  function copyTemplateSafe(name) {
+    let t = document.getElementById(name);
+    if(!t) return document.createDocumentFragment();
+    let result = t.content.cloneNode(true);
+    removeWhitespaceNodes(result);
+    return result;
+  }
+  function getProductVersion() { return document.querySelector("footer .version").textContent; }
+  function toggleHiddenChildren(element) { let hid = null; Array.from(element.children).forEach(e => hid = toggleHidden(e)); return hid; }
+  function isInFooter(element) { return findParentOrSelf(element, (e) => e.nodeName.toLowerCase() == 'footer'); }
+  function clamp(v, min, max) {
+    if(min > max) { const tmp = min; min = max; max = tmp; }
+    if(v < min) v = min;
+    if(v > max) v = max;
+    return v;
+  }
+  function findParentOrSelf(currentElement, check) {
+    while (currentElement) {
+      if (check(currentElement)) {
+        return currentElement;
+      }
+      currentElement = currentElement.parentElement; // Move up the DOM tree.
+    }
+    return null;
+  }
+  function findDraghandle(ce) {
+    if(["input", "select", "button"].includes(ce.tagName.toLowerCase())) return null;
+    return findParentOrSelf(ce, (e) => e.classList.contains("draghandle"));
+  }
+  function getCurrentName() {
+    const parts = window.location.pathname.split('/');
+    if(parts.length === 0) return "deskmess";
+    const lastp = parts[parts.length - 1];
+    const lastd = lastp.lastIndexOf('.');
+    return lastd === -1 ? lastp: lastp.substring(0, lastd);
+  }
+  function removeWhitespaceNodes(parentNode) {
+    for (var i = parentNode.childNodes.length - 1; i >= 0; --i) { 
+      var child = parentNode.childNodes[i];
+      if (child.nodeType === Node.TEXT_NODE && !/\S/.test(child.nodeValue)) {
+        parentNode.removeChild(child);
+      } else if (child.nodeType === Node.ELEMENT_NODE) {
+        removeWhitespaceNodes(child);
+      }
+    }
+  }
+
+  function pxToRem(pxValue) { // ai generated
+    const htmlFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize);
+    return pxValue / htmlFontSize;
+  }
+  function pxToEm(pxValue,emTarget) {
+    const fontSize = parseFloat(getComputedStyle(emTarget).fontSize);
+    return pxValue / fontSize;
+  }
+  function remToPx(remValue) {
+    const htmlFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize);
+    return remValue * htmlFontSize;
+  }
+  function emToRem(emValue, emTarget) {
+    const htmlFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize);
+    const targetFontSize = parseFloat(getComputedStyle(emTarget).fontSize);
+    return emValue * targetFontSize / htmlFontSize;
+  }
+
+  function nextCardId() {
+    const nextid = parseInt(window[MCKEY].getAttribute(NEXTIDKEY));
+    window[MCKEY].setAttribute(NEXTIDKEY, nextid + 1);
+    return nextid;
+  }
+  function refreshCardId(id) {
+    const nextid = parseInt(window[MCKEY].getAttribute(NEXTIDKEY));
+    const maxid = Math.max(parseInt(id) + 1, nextid);
+    window[MCKEY].setAttribute(NEXTIDKEY, maxid);
+    return maxid;
+  }
+
+  function downloadBlob(blob, name) {
+    // Create an anchor element to create the download link
+    var a = document.createElement('a');
+    a.download = name;
+    a.href = URL.createObjectURL(blob);
+    a.style.display = "none";
+    // Append the anchor to the body and trigger the click event
+    document.body.appendChild(a);
+    a.click();
+    // Clean up - remove the anchor element and revoke the object URL
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(a.href);
+  }
+
+  function exportCard(card) {
+    const ofs = getOffset(card);
+    let cdata = {
+      title: getCardTitle(card).textContent,
+      date: getCardDate(card).getAttribute('datetime'),
+      color: card.getAttribute("data-color"),
+      id: getCardId(card).textContent,
+      ref: getCardRef(card).textContent,
+      parent: getCardParent(card).textContent,
+      x: ofs.x,
+      y: ofs.y,
+      z: ofs.z,
+      width: ofs.width,
+      height: ofs.height,
+      type: getCardType(card).textContent,
+      from: getCardFrom(card).textContent
+    };
+    const editor = getCardEditor(card);
+    if(editor) {
+      cdata.text = editor.value;
+      cdata.is_edit = !isHidden(editor);
+    }
+    if(cdata.type == "chat") {
+      cdata.messages = Array.from(card.querySelectorAll(".content .message-container")).map(
+        emsg => parseMessage(emsg));
+    }
+    return cdata;
+  }
+
+  function deleteCard(card) {
+    // Need to remove the parent from all children
+    console.log("Deleting card " + card.id);
+    getCardChildren(card).forEach(c => setCardParent(c, null));
+    window[MCKEY].querySelectorAll(`[data-cardset="${card.id}"]`).forEach(e => removeSelf(e));
+    setUnsaved();
+  }
+
+  const TYPEICONS = { text: "📄", chat: "💬", todo: "✅" }; // TODO: don't duplicate these
+  function importCard(cdata) {
+    let cardsec = copyTemplateSafe("template-card");
+    let card = cardsec.firstElementChild;
+    refreshCardId(cdata.id); // Make sure next card id is proper just in case id is huge
+    card.id = "card_" + cdata.id;
+    Array.from(cardsec.children).forEach(c => c.setAttribute("data-cardset", card.id));
+    card.setAttribute("data-color", cdata.color);
+    getCardId(card).textContent = cdata.id;
+    let cardref = getCardRef(card);
+    cardref.textContent = card.id;
+    cardref.href = "#" + card.id;
+    card.querySelector(".type-icon").textContent = TYPEICONS[cdata.type];
+    getCardType(card).textContent = cdata.type;
+    getCardFrom(card).textContent = cdata.from;
+    getCardTitle(card).textContent = cdata.title;
+    setCardParent(card, cdata.parent); // bit more complicated...
+    setDateElement(getCardDate(card), cdata.date);
+    card.style.zIndex = cdata.z;
+    card.style.left = cdata.x + "em";
+    card.style.top = cdata.y + "em";
+    card.style.width = cdata.width + "em";
+    card.style.height = cdata.height + "em";
+    let content = getCardContent(card);
+    content.appendChild(copyTemplateSafe("template-" + cdata.type));
+    let menu = getCardMenu(card);
+    menu.insertBefore(copyTemplateSafe("template-" + cdata.type + "-menu"), menu.querySelector('.card-info'));
+    window[MCKEY].appendChild(cardsec);
+    const editor = getCardEditor(card);
+    if(editor) {
+      editor.textContent = cdata.text;
+      let toggler = menu.querySelector(".toggle-editor");
+      let toggler2 = card.querySelector(".toggle-editor-direct");
+      if(toggler && toggler2) {
+        setUnhidden(toggler);
+        setUnhidden(toggler2);
+        if(!cdata.is_edit) { toggler.click(); }
+      }
+    }
+    if(cdata.type == "text") {
+      text_updateMarkdown(card); // TODO: right now, this wastes cpu by doing markdown twice
+    } else if(cdata.type == "todo") {
+      todo_updateAll(card);
+    } else if(cdata.type == "chat") {
+      // Need to recreate all messages!
+      let melem = content.querySelector(".messages");
+      cdata.messages.forEach(m => {
+        melem.appendChild(createMessage(m.message, m.date));
+      });
+      // Do we scroll to the bottom here? I guess...
+      melem.scrollTop = melem.scrollHeight;
+    }
+  }
+
+  function addCard(type) {
+    if(addCard.offset) { // horrible, I don't care though :)
+      addCard.offset.x += CARDOFSX;
+      addCard.offset.y += CARDOFSY;
+    } else {
+      addCard.offset = { x: CARDOFSX, y: CARDOFSY };
+    }
+    const mofs = getMainOffset();
+    const nextid = nextCardId();
+    let cdata = {
+      title: "Card " + nextid,
+      date: new Date().toISOString(),
+      color: "teal",
+      id: nextid,
+      x: addCard.offset.x - pxToEm(mofs.x, window[MCKEY]),
+      y: addCard.offset.y - pxToEm(mofs.y, window[MCKEY]),
+      z: findMaxCardIndex() + 1, // TODO: could this get slow?
+      parent: "",
+      width: 25,
+      height: 30,
+      type: type,
+      from: getProductVersion(),
+      is_edit: true,
+      text: ""
+    };
+    if(cdata.type == "chat") {
+      cdata.messages = [];
+    }
+    importCard(cdata);
+    setUnsaved();
+  }
+
+  function downloadPage() {
+    // Get the HTML of the current page
+    var doc = document.documentElement.outerHTML;
+    doc = "<!DOCTYPE html>\n" + doc;
+    // Create a Blob object containing the HTML content
+    var blob = new Blob([doc], {type: 'text/html'});
+    downloadBlob(blob, getCurrentName() + ".html");
+  }
+
+  function downloadExport() {
+    const exp = exportPage();
+    var blob = new Blob([exp], {type: 'application/json'});
+    downloadBlob(blob, getCurrentName() + ".json");
+  }
+
+  function exportPage() {
+    let exp = {
+      file_version: "1",
+      app_version: getProductVersion(),
+      export_date: new Date().toISOString(),
+      dark_mode: controlEnabled(window['action-darkmode']),
+      page_view: controlEnabled(window['action-pageview']),
+      grid_snap: controlEnabled(window['action-gridsnap']),
+      cards: {}
+    };
+    document.querySelectorAll(".card").forEach(card => {
+      exp.cards[card.id] = exportCard(card);
+    });
+    return JSON.stringify(exp);
+  }
+
+  function importTrigger(event) {
+    const file = event.target.files[0];
+    if(file && confirm("Importing will OVERWRITE all existing data on this page! This is intended for version upgrades!\n\nAre you sure you want to remove all data and import?")) {
+      console.log("User is importing " + file.name);
+      const reader = new FileReader();
+      reader.onload = (e) => importPage(e.target.result);
+      reader.readAsText(file);
+    } else {
+      console.log("Quit import (no files)");
+    }
+  }
+
+  function importPage(page, forceSaveState) {
+    try {
+      const jsonData = JSON.parse(page);
+      console.log('Parsed JSON successfully');
+      if(jsonData.file_version != "1") {
+        throw "Invalid or unknown file version";
+      }
+      window[MCKEY].innerHTML = "";
+      window[MCKEY].style = "";
+      setControl(window['action-darkmode'], jsonData.dark_mode);
+      setControl(window['action-pageview'], jsonData.page_view);
+      setControl(window['action-gridsnap'], jsonData.grid_snap);
+      Object.keys(jsonData.cards).forEach(key => importCard(jsonData.cards[key]));
+      // After, some parents may need to be reconnected
+      document.querySelectorAll(".card").forEach(card => {
+        setCardParent(card, getCardParent(card).textContent);
+      });
+      // TODO: this is bad
+      if(forceSaveState === undefined) forceSaveState = !getLocalName();
+      if(forceSaveState) setSaved();
+      else setUnsaved();
+      window.location.hash = "";
+      console.log('Successfully imported data');
+    } catch (err) {
+      console.error(err, err.stack);
+      alert(`Couldn't parse import: ${err}`);
+    }
+  }
+
+  function getOffset(element) {
+    return {
+        x : parseFloat(element.style.left) || 0,
+        y : parseFloat(element.style.top) || 0,
+        z : parseFloat(element.style.zIndex) || 0,
+        width: parseFloat(element.style.width) || 1,
+        height: parseFloat(element.style.height) || 1,
+        fs : parseFloat(element.style.fontSize) || 1
+    }
+  }
+
+  function getMainOffset() {
+    return getOffset(window[MCKEY]);
+  }
+
+  function setDateElement(tm, datetime) {
+    const now = new Date(datetime);
+    tm.setAttribute("datetime", now.toISOString());
+    tm.setAttribute("title", now.toISOString());
+    tm.textContent = now.toLocaleDateString();
+  }
+
+  function findMaxCardIndex() {
+    const cards = window[MCKEY].querySelectorAll(":scope > [data-topcard]");
+    let maxZ = 0;
+    cards.forEach(card => {
+      maxZ = Math.max(maxZ, parseFloat(card.style.zIndex));
+    });
+    return maxZ;
+  }
+
+  function createMessage(message, date) {
+    date = date || new Date().toISOString();
+    let emsg = copyTemplateSingle("template-message");
+    setDateElement(emsg.querySelector('time'), date);
+    let emsgmsg = emsg.querySelector('.message');
+    emsgmsg.innerHTML = marked.parseInline(message);
+    emsgmsg.setAttribute("data-message", message);
+    return emsg;
+  }
+
+  function parseMessage(emsg) {
+    return {
+      date: emsg.querySelector('time').getAttribute("datetime"),
+      message: emsg.querySelector('.message').getAttribute("data-message")
+    }
+  }
+
+  function sendMessage(card, message) {
+    let emsg = createMessage(message);
+    let content = getCardContent(card);
+    let messages = content.querySelector(".messages");
+    messages.appendChild(emsg);
+    messages.scrollTop = messages.scrollHeight;
+    setUnsaved();
+  }
+  function setCardColor(event) {
+    let card = cardEvent(event);
+    card.setAttribute("data-color", event.target.getAttribute("data-color"));
+    //setHidden(getCardMenu(card));
+    setUnsaved();
+  }
+
+  function setSaved() { window["action-save"].classList.remove("unsaved"); }
+  function setUnsaved() { window["action-save"].classList.add("unsaved"); }
+  function isUnsaved() { return window["action-save"].classList.contains("unsaved"); }
+
+  let pendingCardAction = null;
+  function setPendingCardAction(action) {
+    pendingCardAction = (card) => {
+      console.log("Performing pending card action");
+      action(card);
+      removePendingCardAction();
+    };
+    window[MCKEY].classList.add("pending-action");
+    setUnhidden(window["action-cancelpending"]);
+  }
+  function removePendingCardAction() {
+    pendingCardAction = null;
+    window[MCKEY].classList.remove("pending-action");
+    setHidden(window["action-cancelpending"]);
+  }
+
+  function toggleControl(event, classname) {
+    if(event.target.classList.contains("deactivated")) {
+      event.target.classList.remove("deactivated");
+      document.body.classList.add(classname);
+    } else {
+      event.target.classList.add("deactivated");
+      document.body.classList.remove(classname);
+    }
+  }
+  function controlEnabled(element) {
+    return !element.classList.contains("deactivated");
+  }
+  function setControl(element, state) {
+    if((state || false) != (controlEnabled(element) || false))
+      element.click();
+  }
+
+  // Open the exports db, creating the db + table if it doesn't exist.
+  function exportsDbWork(success) {
+    const request = indexedDB.open("exportsDb", 1);
+
+    request.onupgradeneeded = function(event) {
+        const db = event.target.result;
+        // Create an object store for "exports" if it doesn't exist
+        if (!db.objectStoreNames.contains('exports')) {
+            db.createObjectStore('exports', { keyPath: 'name' });
+        }
+    };
+    request.onsuccess = function(event) {
+      success(event.target.result);
+    };
+
+    request.onerror = function(event) {
+      console.error('Error opening IndexedDB', event.target.errorCode);
+      alert("Couldn't open underlying database");
+    };
+  }
+
+  function exportsDbGet(name, success) {
+    exportsDbWork((db) => {
+      // Load the local query value from IndexedDB
+      const transaction = db.transaction(['exports'], 'readonly');
+      const store = transaction.objectStore('exports');
+      const request = store.get(name);
+      request.onsuccess = function(event) {
+        if(success) success(event.target.result);
+      };
+    });
+  }
+
+  function exportsDbPut(name, value, success) {
+    exportsDbWork((db) => {
+      const transaction = db.transaction(['exports'], 'readwrite');
+      const store = transaction.objectStore('exports');
+      const object = { name: name, value: value };
+      const request = store.put(object);
+      request.onsuccess = function(event) {
+        if(success) success(event); // ??
+      };
+    });
+  }
+
+  function getLocalName() {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get('local');
+  }
+
+  function snapEm(value) {
+    // TODO: slow
+    if(controlEnabled(window["action-gridsnap"])) {
+      return Math.round(value);
+    } else {
+      return value;
+    }
+  }
+
+  window.addEventListener("hashchange", function(event) {
+    const cid = window.location.hash.substring(1);
+    if(!cid) return;
+    const card = document.getElementById(cid);
+    if(card) {
+      const ofs = getOffset(card);
+      console.log("Focusing card " + cid, ofs);
+      let mc = window[MCKEY];
+      mc.style.left = remToPx(CARDOFSX - emToRem(ofs.x, mc)) + "px";
+      mc.style.top = remToPx(CARDOFSY - emToRem(ofs.y, mc)) + "px";
+    }
+  });
+
+  document.addEventListener("DOMContentLoaded", function () {
+    let main = window[MCKEY];
+
+    // First, check query. If local exists, we do something else
+    let localParam = getLocalName();
+
+    if(localParam) {
+      if(main.innerHTML !== "" && !confirm("You're trying to load a browser save on top of an existing save. Your original file will not be modified. Are you sure you want to load over existing data?")) {
+        localParam = null;
+      }
+    }
+
+    if(localParam) {
+      window["action-save"].addEventListener("click", () => { exportsDbPut(localParam, exportPage(), (e) => {
+        setSaved();
+        console.log(`Saved to ${localParam}`);
+      })});
+      window["action-export"].addEventListener("click", () => {downloadExport();});
+      window["action-import"].addEventListener("click", () => window['import-file'].click());
+      exportsDbGet(localParam, (value) => {
+        if(value) {
+          importPage(value.value, true);
+        } else {
+          alert(`You are creating a new browser-backed save at ${localParam}. Auto saves are enabled and manual saves are stored in the browser. Bookmark this page for future use!`);
+          window["action-save"].click();
+        }
+        setInterval(() => window["action-save"].click(), 60000);
+      });
+    } else {
+      window["action-save"].addEventListener("click", () => {removePendingCardAction(); setSaved(); downloadPage();});
+      window["action-export"].addEventListener("click", () => {downloadExport(); setSaved();});
+      window["action-import"].addEventListener("click", () => window['import-file'].click());
+    }
+
+    window["action-gridsnap"].addEventListener("click", (event) => toggleControl(event, "grid-snap"));
+    window["action-pageview"].addEventListener("click", (event) => toggleControl(event, "page-view"));
+    window["action-darkmode"].addEventListener("click", (event) => toggleControl(event, "dark-mode"));
+    window["action-cancelpending"].addEventListener("click", () => {removePendingCardAction();});
+    window["action-newtext"].addEventListener("click", () => addCard("text"));
+    window["action-newchat"].addEventListener("click", () => addCard("chat"));
+    window["action-newtodo"].addEventListener("click", () => addCard("todo"));
+    window["action-resetview"].addEventListener("click", () => main.style = "");
+
+    window.addEventListener('beforeunload', function (event) {
+      if (isUnsaved()) {
+        event.preventDefault();
+        event.returnValue = ''; // Chrome requires returnValue to be set
+      }
+    });
+
+    let lastBodyMouse = null;
+    document.body.addEventListener("wheel", (event) => {
+      if(getContainingCard(event.target)) { return; }
+      // NOTE: CAN'T do this, because need to scroll page now
+      if(controlEnabled(window["action-pageview"])) { return; }
+      var delta = Math.max(-1, Math.min(1, (event.wheelDelta || -event.detail)));
+      const mofs = getMainOffset();
+      const xofs = event.clientX - mofs.x;
+      const yofs = event.clientY - mofs.y;
+      const newfs = Math.max(mofs.fs * (delta < 0 ? 0.8 : 1.2), 0.1);
+      const ratio = newfs / mofs.fs;
+      main.style.fontSize = newfs + "em";
+      // Put canvas at user pointer minus original relative offset scaled by zoom.
+      // So, if user was at 0,0, new canvas location would simply be under cursor.
+      // Basically, want to preserve the relative offset into canvas underneath cursor
+      main.style.left = (event.clientX - xofs * ratio) + "px";
+      main.style.top = (event.clientY - yofs * ratio) + "px";
+    });
+    document.body.addEventListener("mousedown", (event) => {
+      if(event.button === 0) {
+        if(isInFooter(event.target)) return;
+        let card = getContainingCard(event.target);
+        let cards = [];
+        let mods = 0;
+        if(card) {
+          if(!getContainingMenu(event.target)) setHidden(getCardMenu(card));
+          cards.push({card:card, cofs:getOffset(card), main: true});
+          card.style.zIndex = findMaxCardIndex() + 1; // This will increase forever
+          if(event.target.classList.contains("right-resize")) {
+            mods = MODRESIZERIGHT;
+            getCardChildren(card).forEach(c => cards.push({card:c, cofs:getOffset(c)}));
+          } else if(event.target.classList.contains("bottom-resize")) {
+            mods = MODRESIZEBOTTOM;
+            getCardChildren(card).forEach(c => cards.push({card:c, cofs:getOffset(c)}));
+          } else if(event.target.classList.contains("corner-resize")) {
+            mods = MODRESIZERIGHT | MODRESIZEBOTTOM;
+            getCardChildren(card).forEach(c => cards.push({card:c, cofs:getOffset(c)}));
+          } else if(findDraghandle(event.target)) {
+            if(pendingCardAction) {
+              pendingCardAction(card);
+              return;
+            }
+            // Don't do dragging if we're in pageview mode
+            if(controlEnabled(window["action-pageview"])) { return; }
+            mods = MODMOVECARDS;
+            getCardAllChildren(card).forEach(c => cards.push({card:c, cofs:getOffset(c)}));
+          } else {
+            return;
+          }
+        }
+        lastBodyMouse = {
+          x : event.clientX, xs: event.clientX,
+          y : event.clientY, ys: event.clientY,
+          cards: cards,
+          mods: mods
+        };
+        event.preventDefault();
+        window.location.hash = ""; // to make life easier for people 
+        return false;
+      }
+    });
+    document.body.addEventListener("mousemove", (event) => {
+      if(lastBodyMouse) {
+        addCard.offset = null; // any movement will reset the accum offset
+        const mofs = getMainOffset();
+        if(lastBodyMouse.mods) { // Working on cards or something
+          const xofs = pxToRem(event.clientX - lastBodyMouse.xs) / mofs.fs;
+          const yofs = pxToRem(event.clientY - lastBodyMouse.ys) / mofs.fs;
+          lastBodyMouse.cards.forEach(c => {
+            if(c.main) {
+              if(lastBodyMouse.mods & MODRESIZERIGHT) {
+                c.card.style.width = snapEm(Math.max(c.cofs.width + xofs, MINCARDWIDTH)) + "em";
+              }
+              if(lastBodyMouse.mods & MODRESIZEBOTTOM) {
+                c.card.style.height = snapEm(Math.max(c.cofs.height + yofs, MINCARDHEIGHT)) + "em";
+              }
+            }
+            if(lastBodyMouse.mods & MODMOVECARDS) {
+              c.card.style.left = snapEm(c.cofs.x + xofs) + "em";
+              c.card.style.top = snapEm(c.cofs.y + yofs) + "em";
+            }
+            // HORRIBLE!!
+            setCardParent(c.card, c.card.getAttribute("data-parent"));
+          });
+        }
+        else { // Working solely on main
+          main.style.left = mofs.x + (event.clientX - lastBodyMouse.x) + "px";
+          main.style.top = mofs.y + (event.clientY - lastBodyMouse.y) + "px";
+        }
+        lastBodyMouse.x = event.clientX;
+        lastBodyMouse.y = event.clientY;
+      }
+    });
+    document.body.addEventListener("mouseup", (event) => {
+      if(event.button === 0) {
+        if(lastBodyMouse) {
+          lastBodyMouse = null;
+          event.preventDefault();
+        }
+      }
+    });
+  });
+
+  function cardEvent(event) { event.preventDefault(); return getContainingCard(event.target); }
+  function setValueAttr(event) { event.target.setAttribute('value', event.target.value); }
+
+  function title_keydown(event) {
+    if(event.keyCode==13){
+      getCardMenu(cardEvent(event)).querySelector('.toggle-title').click()
+    }
+  }
+  function title_input(event) {
+    getCardTitle(getContainingCard(event.target)).textContent = event.target.value;
+  }
+
+  function menu_toggleTitle(event) {
+    let card = cardEvent(event);
+    let t = getCardTitle(card);
+    let te = getCardTitleEdit(card);
+    te.value = t.textContent; 
+    toggleHidden(t);
+    if(toggleHidden(te)){
+      setUnsaved();
+    } else {
+      te.focus();
+    }
+  }
+  function menu_delete(event) {
+    let card = cardEvent(event);
+    if(confirm('Really delete \''+getCardTitle(card).textContent+'\'?')) {
+      deleteCard(card);
+    }
+  }
+  function menu_setUnsetParent(event) {
+    let card = cardEvent(event);
+    // If card already has a parent, need to unset it. Otherwise begin the
+    // process of selecting a parent.
+    let cp = getCardParent(card);
+    if(cp.textContent) {
+      if(confirm("Are you sure you want to detach this card from the parent?")) {
+        setCardParent(card, null);
+        setUnsaved();
+      }
+    } else {
+      // Need to enable the special... kinda weird "click on parent to set" thing.
+      // Setting the menu and the parent will only happen after the fact.
+      let onClick = (parent) => {
+        const pref = getCardRef(parent).textContent;
+        const cref = getCardRef(card).textContent;
+        if(pref == cref) {
+          alert("Can't set self as parent!");
+          return false;
+        }
+        setCardParent(card, getCardRef(parent).textContent);
+        setUnsaved();
+      };
+      setPendingCardAction(onClick);
+      console.log("User must now select a parent card");
+    }
+  }
+
+  function text_updateMarkdown(card) {
+    let content = getCardContent(card);
+    content.querySelector(".markdown").innerHTML =
+      marked.parse(getCardEditor(card).value);
+    console.log("Updating markdown in " + card.id);
+  }
+
+  function todo_parseLine(line) {
+    const matches = line.match(/^(.*?)(\s+\(done\s*([0-9:tTzZ.-]+)?\))?$/);
+    if(!matches) return null;
+    let [_, text, doneSection, doneDate] = matches;
+    return {
+      done: doneSection ? true : false,
+      date: doneDate ? new Date(doneDate) : null,
+      text: text.trim()
+    };
+  }
+  function todo_createLine(data) {
+    if(data.done) {
+      if(data.date)
+        return data.text + " (done " + data.date.toISOString() + ")";
+      else
+        return data.text + " (done)";
+    } else {
+      return data.text;
+    }
+  }
+
+  function todo_renderItem(data, refid) {
+    let item = copyTemplateSafe("template-todo-item");
+    item.firstElementChild.setAttribute("data-refid", refid);
+    let ttext = item.querySelector(".todo-text");
+    ttext.innerHTML = marked.parseInline(data.text);
+    ttext.setAttribute("data-raw", data.text);
+    if(data.done) {
+      ttext.style.textDecoration = "line-through";
+      item.querySelector("input").setAttribute('checked', true);
+      if(data.date)
+        setDateElement(item.querySelector("time"), data.date.toISOString());
+    }
+    return item;
+  }
+
+  function todo_updateAll(card) {
+    let content = getCardContent(card);
+    let editor = getCardEditor(card);
+    let list = content.querySelector(".todo-list");
+    list.innerHTML = "";
+    let lines = editor.value.split('\n'); //.filter(line => line.trim() !== '');
+    for(let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if(!line) continue;
+      const parsed = todo_parseLine(line);
+      if(!parsed) {
+        console.warn("Couldn't parse todo line: " + line);
+        continue;
+      }
+      list.appendChild(todo_renderItem(parsed, i));
+    }
+  }
+  function todo_changeState(checkbox) {
+    let card = getContainingCard(checkbox);
+    let editor = getCardEditor(card);
+    let item = findParentOrSelf(checkbox, (e) => e.classList.contains("todo-item"));
+    const linenum = parseInt(item.getAttribute("data-refid"));
+    let data = {
+      text: item.querySelector('.todo-text').getAttribute("data-raw"),
+      done: checkbox.checked
+    };
+    if(data.done) data.date = new Date();
+    let newItem = todo_renderItem(data, linenum);
+    item.parentNode.replaceChild(newItem, item);
+    let lines = editor.value.split('\n');
+    lines[linenum] = todo_createLine(data);
+    let text = lines.join('\n');
+    editor.value = text;
+    editor.textContent = text;
+    setUnsaved();
+  }
+
+  function newAutoGenerate(fn) {
+    let autoTimeout = null;
+    return (editor) => {
+      if(autoTimeout !== null) {
+        clearTimeout(autoTimeout);
+      }
+      autoTimeout = setTimeout(() => {
+        fn(getContainingCard(editor))
+      }, AUTOMARKDOWNDELAY);
+    }
+  }
+
+  let text_autoMarkdown = newAutoGenerate(text_updateMarkdown);
+  let todo_autoGenerate = newAutoGenerate(todo_updateAll);
+
+</script>
+
+</head><body>
+
+  <div id="main-container" style="left: -15px; top: -4px;" data-nextid="7" class=""><div class="card" data-topcard="" id="card_1" data-cardset="card_1" data-color="teal" data-parent="" style="z-index: 84; left: 2em; top: 2em; width: 32.1875em; height: 23em;"><div class="top"><div class="titlearea draghandle"><span class="type-icon" onclick="menu_toggleTitle(event)">📄</span><span class="title">Introduction</span><input type="text" class="edit-title hidden" onkeydown="title_keydown(event)" oninput="title_input(event)" onchange="setValueAttr(event)" value="Introduction"><time datetime="2025-02-26T23:53:58.971Z" title="2025-02-26T23:53:58.971Z">2/26/2025</time></div><a href="#" class="toggle-editor-direct" onclick="toggleHidden(getCardEditor(cardEvent(event)))">📝</a><a href="#" onclick="toggleHidden(getCardMenu(cardEvent(event)))">⚙️</a><div class="menu hidden"><div class="colors"><a href="#" data-color="teal" onclick="setCardColor(event)"></a><a href="#" data-color="blue" onclick="setCardColor(event)"></a><a href="#" data-color="red" onclick="setCardColor(event)"></a><a href="#" data-color="purple" onclick="setCardColor(event)"></a><a href="#" data-color="gray" onclick="setCardColor(event)"></a></div><a href="#" class="toggle-title" onclick="menu_toggleTitle(event)">Set title</a><a href="#" class="toggle-editor" onclick="toggleHidden(getCardEditor(cardEvent(event)))">Toggle editor</a><a href="#" class="set-parent" onclick="menu_setUnsetParent(event)">Set parent</a><a href="#" onclick="menu_delete(event)">Delete card</a><div class="card-info"><div>id: <span class="card-id">1</span></div><div>ref: <a href="#card_1" class="card-ref">card_1</a></div><div>type: <span class="card-type">text</span></div><div>from: <span class="card-from">v0.6.1</span></div><div>parent: <a href="#" class="card-parent"></a></div></div></div></div><div class="content"><div class="markdown card-main"><h2>Desk Mess</h2>
+<p>A local-only, simple, lightweight visual project planner and notetaking app inspired by <a href="https://tiddlywiki.com/">tiddlywiki</a> and the like.</p>
+<p>Create cards (like windows) anywhere and link them together to form trees. The current cards are:</p>
+<ul>
+<li>Markdown page, like the one you see here</li>
+<li>Chat page, for things like <a href="https://en.wikipedia.org/wiki/Rubber_duck_debugging">rubberducking</a></li>
+<li>Todo list, tracking date of completion</li>
+</ul>
+<p>You can also leave yourself <a href="#card_2">links to cards</a> to help with cross-referencing.</p>
+</div><textarea class="editor hidden" style="height: 33%" oninput="setUnsaved(); text_autoMarkdown(event.target);" onchange="event.target.textContent=event.target.value;">## Desk Mess
+
+A local-only, simple, lightweight visual project planner and notetaking app inspired by [tiddlywiki](https://tiddlywiki.com/) and the like.
+
+Create cards (like windows) anywhere and link them together to form trees. The current cards are:
+- Markdown page, like the one you see here
+- Chat page, for things like [rubberducking](https://en.wikipedia.org/wiki/Rubber_duck_debugging)
+- Todo list, tracking date of completion
+
+You can also leave yourself [links to cards](#card_2) to help with cross-referencing.</textarea></div><div class="right-resize"></div><div class="bottom-resize"></div><div class="corner-resize"></div></div><div class="card-connector no-interaction hidden" data-cardset="card_1"></div><div class="card" data-topcard="" id="card_2" data-cardset="card_2" data-color="blue" data-parent="card_1" style="z-index: 71; left: 38em; top: 2.125em; width: 28.875em; height: 16.5em;"><div class="top"><div class="titlearea draghandle"><span class="type-icon" onclick="menu_toggleTitle(event)">📄</span><span class="title">Navigation</span><input type="text" class="edit-title hidden" onkeydown="title_keydown(event)" oninput="title_input(event)" onchange="setValueAttr(event)" value="Navigation"><time datetime="2025-02-26T23:59:27.656Z" title="2025-02-26T23:59:27.656Z">2/26/2025</time></div><a href="#" class="toggle-editor-direct" onclick="toggleHidden(getCardEditor(cardEvent(event)))">📝</a><a href="#" onclick="toggleHidden(getCardMenu(cardEvent(event)))">⚙️</a><div class="menu hidden"><div class="colors"><a href="#" data-color="teal" onclick="setCardColor(event)"></a><a href="#" data-color="blue" onclick="setCardColor(event)"></a><a href="#" data-color="red" onclick="setCardColor(event)"></a><a href="#" data-color="purple" onclick="setCardColor(event)"></a><a href="#" data-color="gray" onclick="setCardColor(event)"></a></div><a href="#" class="toggle-title" onclick="menu_toggleTitle(event)">Set title</a><a href="#" class="toggle-editor" onclick="toggleHidden(getCardEditor(cardEvent(event)))">Toggle editor</a><a href="#" class="set-parent" onclick="menu_setUnsetParent(event)">Clear parent</a><a href="#" onclick="menu_delete(event)">Delete card</a><div class="card-info"><div>id: <span class="card-id">2</span></div><div>ref: <a href="#card_2" class="card-ref">card_2</a></div><div>type: <span class="card-type">text</span></div><div>from: <span class="card-from">v0.6.1</span></div><div>parent: <a href="#card_1" class="card-parent">card_1</a></div></div></div></div><div class="content"><div class="markdown card-main"><ul>
+<li>Drag card titles to move them around<ul>
+<li>Dragging a parent card drags all children as well</li>
+</ul>
+</li>
+<li>You can resize cards along the right and bottom edge</li>
+<li>Drag on the background to pan the view</li>
+<li>Scroll on the background to zoom in and out</li>
+<li>Click the 🧭 icon at the bottom right to reset view</li>
+<li>Use 📐 to toggle grid snapping. Cards won't re-snap until moved and resized</li>
+<li>Toggle a "list" view with 📃</li>
+</ul>
+</div><textarea class="editor hidden" style="height: 33%" oninput="setUnsaved(); text_autoMarkdown(event.target);" onchange="event.target.textContent=event.target.value;">- Drag card titles to move them around
+  - Dragging a parent card drags all children as well
+- You can resize cards along the right and bottom edge
+- Drag on the background to pan the view
+- Scroll on the background to zoom in and out
+- Click the 🧭 icon at the bottom right to reset view
+- Use 📐 to toggle grid snapping. Cards won't re-snap until moved and resized
+- Toggle a "list" view with 📃</textarea></div><div class="right-resize"></div><div class="bottom-resize"></div><div class="corner-resize"></div></div><div class="card-connector no-interaction" data-cardset="card_2" style="left: 52.4375em; top: 10.375em; width: 34.3438em; height: 3.125em; transform: scale(-1, 1);"></div><div class="card" data-topcard="" id="card_3" data-cardset="card_3" data-color="purple" data-parent="card_1" style="z-index: 220; left: 69.6875em; top: 5.8125em; width: 25em; height: 30em;"><div class="top"><div class="titlearea draghandle"><span class="type-icon" onclick="menu_toggleTitle(event)">💬</span><span class="title">Functionality</span><input type="text" class="edit-title hidden" onkeydown="title_keydown(event)" oninput="title_input(event)" onchange="setValueAttr(event)" value="Functionality"><time datetime="2025-02-27T00:03:46.276Z" title="2025-02-27T00:03:46.276Z">2/26/2025</time></div><a href="#" class="toggle-editor-direct" onclick="toggleHidden(getCardEditor(cardEvent(event)))">📝</a><a href="#" onclick="toggleHidden(getCardMenu(cardEvent(event)))">⚙️</a><div class="menu hidden"><div class="colors"><a href="#" data-color="teal" onclick="setCardColor(event)"></a><a href="#" data-color="blue" onclick="setCardColor(event)"></a><a href="#" data-color="red" onclick="setCardColor(event)"></a><a href="#" data-color="purple" onclick="setCardColor(event)"></a><a href="#" data-color="gray" onclick="setCardColor(event)"></a></div><a href="#" class="toggle-title" onclick="menu_toggleTitle(event)">Set title</a><a href="#" class="toggle-editor" onclick="toggleHidden(getCardEditor(cardEvent(event)))">Toggle editor</a><a href="#" class="set-parent" onclick="menu_setUnsetParent(event)">Clear parent</a><a href="#" onclick="menu_delete(event)">Delete card</a><div class="card-info"><div>id: <span class="card-id">3</span></div><div>ref: <a href="#card_3" class="card-ref">card_3</a></div><div>type: <span class="card-type">chat</span></div><div>from: <span class="card-from">v0.6.1</span></div><div>parent: <a href="#card_1" class="card-parent">card_1</a></div></div></div></div><div class="content"><div class="messages card-main"><div class="message-container"><time datetime="2025-02-27T00:05:12.744Z" title="2025-02-27T00:05:12.744Z">2/26/2025</time><span class="message" data-message="Create new cards with 📄 (new page), 💬 (new chat), and ✅ (new todo)">Create new cards with 📄 (new page), 💬 (new chat), and ✅ (new todo)</span></div><div class="message-container"><time datetime="2025-02-27T00:05:31.693Z" title="2025-02-27T00:05:31.693Z">2/26/2025</time><span class="message" data-message="Change title by clicking on the icon to the left of the title">Change title by clicking on the icon to the left of the title</span></div><div class="message-container"><time datetime="2025-02-27T00:05:59.475Z" title="2025-02-27T00:05:59.475Z">2/26/2025</time><span class="message" data-message="Toggle the editor for a card with the 📝 icon on the right">Toggle the editor for a card with the 📝 icon on the right</span></div><div class="message-container"><time datetime="2025-02-27T00:06:32.013Z" title="2025-02-27T00:06:32.013Z">2/26/2025</time><span class="message" data-message="Change card color, set parent, delete card, and get information with ⚙️ on the right">Change card color, set parent, delete card, and get information with ⚙️ on the right</span></div></div><textarea class="editor" onkeydown="if(event.keyCode===13 &amp;&amp; !event.shiftKey){card=cardEvent(event); sendMessage(card,event.target.value); event.target.value='';}"></textarea></div><div class="right-resize"></div><div class="bottom-resize"></div><div class="corner-resize"></div></div><div class="card-connector no-interaction" data-cardset="card_3" style="left: 82.1875em; top: 20.8125em; width: 64.0938em; height: 7.3125em; transform: scale(-1);"></div><div class="card" data-topcard="" id="card_4" data-cardset="card_4" data-color="gray" data-parent="card_3" style="z-index: 203; left: 42.5em; top: 21.375em; width: 25em; height: 14.5em;"><div class="top"><div class="titlearea draghandle"><span class="type-icon" onclick="menu_toggleTitle(event)">✅</span><span class="title">Goals</span><input type="text" class="edit-title hidden" onkeydown="title_keydown(event)" oninput="title_input(event)" onchange="setValueAttr(event)" value="Goals"><time datetime="2025-02-27T00:06:49.104Z" title="2025-02-27T00:06:49.104Z">2/26/2025</time></div><a href="#" class="toggle-editor-direct" onclick="toggleHidden(getCardEditor(cardEvent(event)))">📝</a><a href="#" onclick="toggleHidden(getCardMenu(cardEvent(event)))">⚙️</a><div class="menu hidden"><div class="colors"><a href="#" data-color="teal" onclick="setCardColor(event)"></a><a href="#" data-color="blue" onclick="setCardColor(event)"></a><a href="#" data-color="red" onclick="setCardColor(event)"></a><a href="#" data-color="purple" onclick="setCardColor(event)"></a><a href="#" data-color="gray" onclick="setCardColor(event)"></a></div><a href="#" class="toggle-title" onclick="menu_toggleTitle(event)">Set title</a><a href="#" class="toggle-editor" onclick="toggleHidden(getCardEditor(cardEvent(event)))">Toggle editor</a><a href="#" class="set-parent" onclick="menu_setUnsetParent(event)">Clear parent</a><a href="#" onclick="menu_delete(event)">Delete card</a><div class="card-info"><div>id: <span class="card-id">4</span></div><div>ref: <a href="#card_4" class="card-ref">card_4</a></div><div>type: <span class="card-type">todo</span></div><div>from: <span class="card-from">v0.6.1</span></div><div>parent: <a href="#card_3" class="card-parent">card_3</a></div></div></div></div><div class="content"><div class="todo-list card-main"><div class="todo-item" data-refid="0"><input type="checkbox" onchange="todo_changeState(event.target)" checked="true"><span class="todo-text" data-raw="Add colored cards" style="text-decoration: line-through;">Add colored cards</span><time datetime="2025-02-24T00:07:08.055Z" title="2025-02-24T00:07:08.055Z">2/23/2025</time></div><div class="todo-item" data-refid="1"><input type="checkbox" onchange="todo_changeState(event.target)" checked="true"><span class="todo-text" data-raw="Add grid snapping" style="text-decoration: line-through;">Add grid snapping</span><time datetime="2025-02-27T00:07:30.399Z" title="2025-02-27T00:07:30.399Z">2/26/2025</time></div><div class="todo-item" data-refid="3"><input type="checkbox" onchange="todo_changeState(event.target)"><span class="todo-text" data-raw="You can leave blank lines in todo editor">You can leave blank lines in todo editor</span><time></time></div></div><textarea class="editor" style="height: 33%" oninput="setUnsaved(); todo_autoGenerate(event.target);" onchange="event.target.textContent=event.target.value;">Add colored cards (done 2025-02-24T00:07:08.055Z)
+Add grid snapping (done 2025-02-27T00:07:30.399Z)
+
+You can leave blank lines in todo editor
+
+</textarea></div><div class="right-resize"></div><div class="bottom-resize"></div><div class="corner-resize"></div></div><div class="card-connector no-interaction" data-cardset="card_4" style="left: 55em; top: 28.625em; width: 27.1875em; height: 7.8125em; transform: scale(1, -1);"></div><div class="card" data-topcard="" id="card_5" data-cardset="card_5" data-color="red" data-parent="" style="z-index: 219; left: 1.625em; top: 27.375em; width: 38.75em; height: 23em;"><div class="top"><div class="titlearea draghandle"><span class="type-icon" onclick="menu_toggleTitle(event)">📄</span><span class="title">Saving</span><input type="text" class="edit-title hidden" onkeydown="title_keydown(event)" oninput="title_input(event)" onchange="setValueAttr(event)" value="Saving"><time datetime="2025-02-27T00:08:52.464Z" title="2025-02-27T00:08:52.464Z">2/26/2025</time></div><a href="#" class="toggle-editor-direct" onclick="toggleHidden(getCardEditor(cardEvent(event)))">📝</a><a href="#" onclick="toggleHidden(getCardMenu(cardEvent(event)))">⚙️</a><div class="menu hidden"><div class="colors"><a href="#" data-color="teal" onclick="setCardColor(event)"></a><a href="#" data-color="blue" onclick="setCardColor(event)"></a><a href="#" data-color="red" onclick="setCardColor(event)"></a><a href="#" data-color="purple" onclick="setCardColor(event)"></a><a href="#" data-color="gray" onclick="setCardColor(event)"></a></div><a href="#" class="toggle-title" onclick="menu_toggleTitle(event)">Set title</a><a href="#" class="toggle-editor" onclick="toggleHidden(getCardEditor(cardEvent(event)))">Toggle editor</a><a href="#" class="set-parent" onclick="menu_setUnsetParent(event)">Set parent</a><a href="#" onclick="menu_delete(event)">Delete card</a><div class="card-info"><div>id: <span class="card-id">5</span></div><div>ref: <a href="#card_5" class="card-ref">card_5</a></div><div>type: <span class="card-type">text</span></div><div>from: <span class="card-from">v0.6.1</span></div><div>parent: <a href="#" class="card-parent"></a></div></div></div></div><div class="content"><div class="markdown card-main"><h2>NOTES ABOUT SAVING</h2>
+<p>This is a local-first app. It makes no contact with any server. </p>
+<p>You can save a full, working copy of the page exactly as is with the 💾 control at the bottom right. You can even save a copy of this very page! They are unfortunately always a new file on your system due to browser security features. See <a href="#card_6">Alt saving</a> for an alternative save method (still local).</p>
+<p>Saved files will never change versions or get styling/scripting updates, because they are always just copies which contain the full app as-is when saving.</p>
+<p>If you wish to update, export just the data with 📤, then grab the <a href="https://github.com/randomouscrap98/deskmess">latest index.html</a> and import with 📥</p>
+</div><textarea class="editor hidden" style="height: 33%" oninput="setUnsaved(); text_autoMarkdown(event.target);" onchange="event.target.textContent=event.target.value;">## NOTES ABOUT SAVING
+
+This is a local-first app. It makes no contact with any server. 
+
+You can save a full, working copy of the page exactly as is with the 💾 control at the bottom right. You can even save a copy of this very page! They are unfortunately always a new file on your system due to browser security features. See [Alt saving](#card_6) for an alternative save method (still local).
+
+Saved files will never change versions or get styling/scripting updates, because they are always just copies which contain the full app as-is when saving.
+
+If you wish to update, export just the data with 📤, then grab the [latest index.html](https://github.com/randomouscrap98/deskmess) and import with 📥</textarea></div><div class="right-resize"></div><div class="bottom-resize"></div><div class="corner-resize"></div></div><div class="card-connector no-interaction hidden" data-cardset="card_5"></div><div class="card" data-topcard="" id="card_6" data-cardset="card_6" data-color="red" data-parent="card_5" style="z-index: 221; left: 42.4375em; top: 37.75em; width: 54.5em; height: 19.5em;"><div class="top"><div class="titlearea draghandle"><span class="type-icon" onclick="menu_toggleTitle(event)">📄</span><span class="title">Alt saving</span><input type="text" class="edit-title hidden" onkeydown="title_keydown(event)" oninput="title_input(event)" onchange="setValueAttr(event)" value="Alt saving"><time datetime="2025-02-27T00:13:37.963Z" title="2025-02-27T00:13:37.963Z">2/26/2025</time></div><a href="#" class="toggle-editor-direct" onclick="toggleHidden(getCardEditor(cardEvent(event)))">📝</a><a href="#" onclick="toggleHidden(getCardMenu(cardEvent(event)))">⚙️</a><div class="menu hidden"><div class="colors"><a href="#" data-color="teal" onclick="setCardColor(event)"></a><a href="#" data-color="blue" onclick="setCardColor(event)"></a><a href="#" data-color="red" onclick="setCardColor(event)"></a><a href="#" data-color="purple" onclick="setCardColor(event)"></a><a href="#" data-color="gray" onclick="setCardColor(event)"></a></div><a href="#" class="toggle-title" onclick="menu_toggleTitle(event)">Set title</a><a href="#" class="toggle-editor" onclick="toggleHidden(getCardEditor(cardEvent(event)))">Toggle editor</a><a href="#" class="set-parent" onclick="menu_setUnsetParent(event)">Clear parent</a><a href="#" onclick="menu_delete(event)">Delete card</a><div class="card-info"><div>id: <span class="card-id">6</span></div><div>ref: <a href="#card_6" class="card-ref">card_6</a></div><div>type: <span class="card-type">text</span></div><div>from: <span class="card-from">v0.6.1</span></div><div>parent: <a href="#card_5" class="card-parent">card_5</a></div></div></div></div><div class="content"><div class="markdown card-main"><p>There is <strong>no autosaving</strong> by default. Using the normal method, you're responsible for saving and keeping track of local copies. </p>
+<p>If this is a bit too much, you can save your files using the browser's <a href="https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API">local storage</a> by adding <code>?local=name</code> (replace name with whatever you like). This will:</p>
+<ul>
+<li>Enable auto saving every minute to the browser</li>
+<li>Override 💾 to save into the browser</li>
+</ul>
+<p>You can use this feature without downloading index.html and it's still all saved locally! Try out the <a href="deskmess.html">blank page</a> and add your <code>?local=name</code> to the url. Bookmark the page and you can come back to it, just make sure to <strong>use the same browser</strong> and <strong>don't clear local storage</strong>.</p>
+</div><textarea class="editor hidden" style="height: 33%" oninput="setUnsaved(); text_autoMarkdown(event.target);" onchange="event.target.textContent=event.target.value;">There is **no autosaving** by default. Using the normal method, you're responsible for saving and keeping track of local copies. 
+
+If this is a bit too much, you can save your files using the browser's [local storage](https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API) by adding `?local=name` (replace name with whatever you like). This will:
+- Enable auto saving every minute to the browser
+- Override 💾 to save into the browser
+
+You can use this feature without downloading index.html and it's still all saved locally! Try out the [blank page](deskmess.html) and add your `?local=name` to the url. Bookmark the page and you can come back to it, just make sure to **use the same browser** and **don't clear local storage**.</textarea></div><div class="right-resize"></div><div class="bottom-resize"></div><div class="corner-resize"></div></div><div class="card-connector no-interaction" data-cardset="card_6" style="left: 69.6875em; top: 47.5em; width: 48.6875em; height: 8.625em; transform: scale(-1);"></div></div>
+
+  <footer>
+    <span class="version no-interaction">v0.6.1</span>
+    <div id="controls">
+      <button class="control temp hidden" id="action-cancelpending" title="Cancel pending operation">❌</button>
+      <button class="control" id="action-newtext" title="New text card">📄</button>
+      <button class="control" id="action-newchat" title="New chat card">💬</button>
+      <button class="control" id="action-newtodo" title="New todo card">✅</button>
+      <button class="control" id="action-resetview" title="Reset view">🧭</button>
+      <button class="control deactivated" id="action-gridsnap" title="Snap to grid">📐</button>
+      <button class="control deactivated" id="action-pageview" title="View as page">📃</button>
+      <button class="control deactivated" id="action-darkmode" title="Toggle darkmode">🌒</button>
+      <button class="control" id="action-import" title="Import page">📥</button>
+      <button class="control" id="action-export" title="Export page">📤</button>
+      <button class="control" id="action-save" title="Save page">💾</button>
+    </div>
+    <input type="file" title="Select a JSON file to import" accept=".json" id="import-file" class="hidden" onchange="importTrigger(event)">
+  </footer>
+
+
+  <template id="template-card">
+    <div class="card" data-topcard="">
+      <div class="top">
+        <div class="titlearea draghandle">
+          <span class="type-icon" onclick="menu_toggleTitle(event)">X</span>
+          <span class="title">UNKNOWN</span>
+          <input type="text" class="edit-title hidden" onkeydown="title_keydown(event)" oninput="title_input(event)" onchange="setValueAttr(event)">
+          <time></time>
+        </div>
+        <a href="#" class="toggle-editor-direct hidden" onclick="toggleHidden(getCardEditor(cardEvent(event)))">📝</a>
+        <a href="#" onclick="toggleHidden(getCardMenu(cardEvent(event)))">⚙️</a>
+        <div class="menu hidden">
+          <div class="colors">
+            <a href="#" data-color="teal" onclick="setCardColor(event)"></a>
+            <a href="#" data-color="blue" onclick="setCardColor(event)"></a>
+            <a href="#" data-color="red" onclick="setCardColor(event)"></a>
+            <a href="#" data-color="purple" onclick="setCardColor(event)"></a>
+            <a href="#" data-color="gray" onclick="setCardColor(event)"></a>
+          </div>
+          <a href="#" class="toggle-title" onclick="menu_toggleTitle(event)">Set title</a>
+          <a href="#" class="toggle-editor hidden" onclick="toggleHidden(getCardEditor(cardEvent(event)))">Toggle editor</a>
+          <a href="#" class="set-parent" onclick="menu_setUnsetParent(event)">Set Parent</a>
+          <a href="#" onclick="menu_delete(event)">Delete card</a>
+          <div class="card-info">
+            <div>id: <span class="card-id"></span></div>
+            <div>ref: <a href="#" class="card-ref"></a></div>
+            <div>type: <span class="card-type"></span></div>
+            <div>from: <span class="card-from"></span></div>
+            <div>parent: <a href="#" class="card-parent"></a></div>
+          </div>
+        </div>
+      </div>
+      <div class="content"></div>
+      <div class="right-resize"></div>
+      <div class="bottom-resize"></div>
+      <div class="corner-resize"></div>
+    </div>
+    <div class="card-connector no-interaction hidden"></div>
+  </template>
+
+  <template id="template-text">
+    <div class="markdown card-main"></div>
+    <textarea class="editor" style="height: 33%" oninput="setUnsaved(); text_autoMarkdown(event.target);" onchange="event.target.textContent=event.target.value;"></textarea>
+  </template>
+
+  <template id="template-text-menu">
+  </template>
+
+  <template id="template-chat">
+    <div class="messages card-main"></div>
+    <textarea class="editor" onkeydown="if(event.keyCode===13 &amp;&amp; !event.shiftKey){card=cardEvent(event); sendMessage(card,event.target.value); event.target.value='';}"></textarea>
+  </template>
+
+  <template id="template-message">
+    <div class="message-container">
+      <time></time>
+      <span class="message"></span>
+    </div>
+  </template>
+
+  <template id="template-todo">
+    <div class="todo-list card-main"></div>
+    <textarea class="editor" style="height: 33%" oninput="setUnsaved(); todo_autoGenerate(event.target);" onchange="event.target.textContent=event.target.value;"></textarea>
+  </template>
+
+  <template id="template-todo-menu">
+  </template>
+
+  <template id="template-todo-item">
+    <div class="todo-item">
+      <input type="checkbox" onchange="todo_changeState(event.target)">
+      <span class="todo-text"></span>
+      <time></time>
+    </div>
+  </template>
+</body></html>

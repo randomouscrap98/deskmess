@@ -1,12 +1,14 @@
 # Desk Mess
 
-![v0.5 screenshot](screenshots/v0.5.png)
+![v0.6.1 screenshot](screenshots/v0.6.1.png)
 
 I got inspired by the non-linear, "save locally" [TiddlyWiki](https://tiddlywiki.com/)
 and wanted to make something more akin to one of those pegboards filled
 with images and string connecting them all. Or, a bunch of papers on a messy
 desk. The person who organized it all knows where everything is, but
 nobody else does.
+
+It's as easy as downloading index.html, or you can try it out [here](https://haloopdy.com/deskmess).
 
 ## Features
 
