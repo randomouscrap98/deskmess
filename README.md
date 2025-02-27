@@ -85,6 +85,3 @@ the server to store any number of saves. It is very picky about the filename giv
 characters, underscores, and dashes (to prevent accident or abuse). There's no security; this is fine for local
 use but don't use this on a public server.
 
-
-
-

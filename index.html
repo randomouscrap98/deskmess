@@ -1048,8 +1048,7 @@
       .then(response => {
         if(response.status === 404) {
           console.log("Special exception: 404 means not created yet");
-          if(success) success(null);
-          return Promise.resolve();
+          return null;
         }
         return response.text();
       })
