@@ -40,7 +40,7 @@ It's as easy as downloading index.html, or you can try it out [here](https://hal
 Since this is a local-first app, all you need is index.html. You can download it directly from the
 repo or alternatively get it from the source zip from one of the releases.
 
-**To use with the filesystem:**
+**To use with the filesystem (default):**
 - Copy index.html to someplace on your filesystem, rename it whatever you want
 - Open it in your browser
 - As you make changes, you can save with the 💾 icon. This will create a pure copy of the current webpage and download it. It will be exactly where you left off, but a _new_ file (because of browser security limitations)
@@ -50,8 +50,37 @@ repo or alternatively get it from the source zip from one of the releases.
 This is how tiddlywiki and other apps like this work. You get to manage your own files and data and you can be sure they always work. However, if the above sounds like too much work, you can more easily store changes in the browser itself.
 
 **To use with browser saving:**
+This will store your data within the browser's [local storage](https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API)
+rather than the filesystem. Since the browser counts this as a "secure context", it lets you treat saves more normally,
+with the ability to overwrite and thus have auto-saves. Be warned: if you clear your browser's site data, you will
+**lose all of your saves**.
 - Save ONE copy of index.html somewhere on your computer. Use this copy every time, or host it yourself on your server
-- Add `?local=somename`, replace "somename" with the name you want to give your file
+- Add `?local=somename` to the url, replace "somename" with the name you want to give your file
 - Once confirming the alert, saves are done in the browser automatically every minute. Saves are stored in local storage, make sure you have that enabled (some browsers clear all local storage on every exit). You can still manually save any time; manual save is replaced with in-browser save (it no longer downloads a pure copy of the page)
 - Bookmark this page. It should always have your page
 - You can still manually export to your filesystem whenever, and import the data later.
+
+**To use with a server:**
+If you don't trust the browser's local storage or simply want the ease of auto-saving and more normal saving
+mechanics but still want to use the filesystem, you can have deskmess contact a server for loads and stores.
+An example implementation is given with `server.py`. It's fine for local use, but don't use it on a public facing server.
+- Run server with `python3 server.py`. It should work on any system where python is installed. For windows,
+  this may be `py server.py`
+- Use deskmess any copy of index.html (location doesn't matter for this method)
+- Add `?server=url_to_server` to the url. For `server.py`, this is by default `http://localhost:60003/somename` where
+  somename is the name of your save
+- Bookmark this page. Assuming your server is running, this page should always be available
+- As with browser saving, you can still manually export just the data to the filesystem for later import, though
+  that's not as necessary since `server.py` stores the same saves in the local `notes` folder
+
+Deskmess expects a *very* simple server when using the `?server` parameter. It expects GET requests to the url
+given to return the plaintext UTF-8 data for the save, and POST requests to save the plaintext UTF-8 data
+for the same save. No assumption of data format is made; use `text/plain` (even though the format is currently
+json). The supplied `server.py` accepts any single-depth route as the filename for the filesystem, allowing
+the server to store any number of saves. It is very picky about the filename given, only accepting alphanumeric
+characters, underscores, and dashes (to prevent accident or abuse). There's no security; this is fine for local
+use but don't use this on a public server.
+
+
+
+
