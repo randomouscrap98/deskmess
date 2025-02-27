@@ -70,7 +70,7 @@ def main():
                         help='Port to listen on')
     parser.add_argument('--address', type=str, default='localhost',
                         help='Address to bind to')
-    parser.add_argument('--cors_origin', type=str, default='http://localhost',
+    parser.add_argument('--cors_origin', type=str, default='*',
                         help='CORS origin')
     parser.add_argument('--folder', type=str, default='notes',
                         help='Folder to store files')

@@ -62,6 +62,10 @@
     display: none !important;
   }
 
+  .spacer {
+    flex: 1;
+  }
+
   @keyframes bgChange {
     0% { background-color: transparent; }
     50% { background-color: rgba(127,255,0,0.5); }
@@ -88,20 +92,34 @@
   footer {
     position: fixed;
     bottom: 0;
-    right: 0;
+    left: 0;
     display: flex;
     align-items: flex-end;
     gap: 0.25em;
-    padding: 0.25em;
+    padding: 0.3em 1em;
+    box-sizing: border-box;
+    width: 100%;
     z-index: 100000000;
   }
-  footer .version {
+  footer #errors-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5em;
+  }
+  footer #errors-container .error {
+    font-size: 0.8em;
+    background: var(--red);
+    color: var(--content-color);
+    padding: 0.25em 0.5em;
+    border-radius: 0.5em;
+    transition: opacity 2s ease-in-out;
+  }
+  footer #app-version {
     font-size: 0.6em;
     color: rgba(127,127,127,0.75);
   }
 
   #controls {
-    margin-right: 1em;
     display: flex;
     gap: 0.25em;
   }
@@ -565,7 +583,16 @@
     removeWhitespaceNodes(result);
     return result;
   }
-  function getProductVersion() { return document.querySelector("footer .version").textContent; }
+  function addError(error) {
+    let errelm = copyTemplateSingle("template-error");
+    errelm.textContent = error;
+    window["errors-container"].appendChild(errelm);
+    setTimeout(() => {
+      errelm.style.opacity = 0;
+      setTimeout(() => removeSelf(errelm), 2000);
+    }, 10000);
+  }
+  function getProductVersion() { return window["app-version"].textContent; }
   function toggleHiddenChildren(element) { let hid = null; Array.from(element.children).forEach(e => hid = toggleHidden(e)); return hid; }
   function isInFooter(element) { return findParentOrSelf(element, (e) => e.nodeName.toLowerCase() == 'footer'); }
   function clamp(v, min, max) {
@@ -843,7 +870,7 @@
         setCardParent(card, getCardParent(card).textContent);
       });
       // TODO: this is bad
-      if(forceSaveState === undefined) forceSaveState = !getLocalName();
+      if(forceSaveState === undefined) forceSaveState = !isRemoteStorage();
       if(forceSaveState) setSaved();
       else setUnsaved();
       window.location.hash = "";
@@ -983,7 +1010,7 @@
 
     request.onerror = function(event) {
       console.error('Error opening IndexedDB', event.target.errorCode);
-      alert("Couldn't open underlying database");
+      addError("Couldn't open underlying database");
     };
   }
 
@@ -1011,9 +1038,60 @@
     });
   }
 
+  function serverGet(url, success) {
+    fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'text/plain;charset=UTF-8'
+      }
+    })
+      .then(response => {
+        if(response.status === 404) {
+          console.log("Special exception: 404 means not created yet");
+          if(success) success(null);
+          return Promise.resolve();
+        }
+        return response.text();
+      })
+      .then(data => {
+        if(success) success(data);
+      })
+      .catch((error) => {
+        const err = `Error reading from ${url}: ${error}`;
+        console.error(err);
+        addError(err);
+      });
+  }
+  function serverPut(url, value, success) {
+    fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'text/plain;charset=UTF-8'
+      },
+      body: value
+    })
+      .then(response => response.text())
+      .then(data => {
+        console.log(`Saved to ${url}:`, data);
+        if(success) success(data); // ??
+      })
+      .catch((error) => {
+        const err = `Error writing to ${url}: ${error}`;
+        console.error(err);
+        addError(err);
+      });
+  }
+
   function getLocalName() {
     const urlParams = new URLSearchParams(window.location.search);
     return urlParams.get('local');
+  }
+  function getServerName() {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get('server');
+  }
+  function isRemoteStorage() {
+    return getLocalName() || getServerName();
   }
 
   function snapEm(value) {
@@ -1041,27 +1119,48 @@
   document.addEventListener("DOMContentLoaded", function () {
     let main = window[MCKEY];
 
-    // First, check query. If local exists, we do something else
     let localParam = getLocalName();
+    let serverParam = getServerName();
 
-    if(localParam) {
+    if(serverParam) {
+      localParam = null;
+      if(main.innerHTML !== "" && !confirm("You're trying to load a server save on top of an existing save. Your original file will not be modified. Are you sure you want to load over existing data?")) {
+        serverParam = null;
+      }
+    } else if(localParam) {
       if(main.innerHTML !== "" && !confirm("You're trying to load a browser save on top of an existing save. Your original file will not be modified. Are you sure you want to load over existing data?")) {
         localParam = null;
       }
     }
 
     if(localParam) {
+      console.log("Using local IndexedDB to store " + localParam);
+      window["action-export"].addEventListener("click", () => {downloadExport();});
       window["action-save"].addEventListener("click", () => { exportsDbPut(localParam, exportPage(), (e) => {
         setSaved();
         console.log(`Saved to ${localParam}`);
       })});
-      window["action-export"].addEventListener("click", () => {downloadExport();});
-      window["action-import"].addEventListener("click", () => window['import-file'].click());
       exportsDbGet(localParam, (value) => {
         if(value) {
           importPage(value.value, true);
         } else {
-          alert(`You are creating a new browser-backed save at ${localParam}. Auto saves are enabled and manual saves are stored in the browser. Bookmark this page for future use!`);
+          alert(`You are creating a new browser-backed save at ${localParam}. Auto saves are enabled and all saves are stored in the browser. Bookmark this page for future use!`);
+          window["action-save"].click();
+        }
+        setInterval(() => window["action-save"].click(), 60000);
+      });
+    } else if (serverParam) {
+      console.log("Using server to store: " + serverParam);
+      window["action-export"].addEventListener("click", () => {downloadExport();});
+      window["action-save"].addEventListener("click", () => { serverPut(serverParam, exportPage(), (e) => {
+        setSaved();
+        console.log(`Saved to ${serverParam}`);
+      })});
+      serverGet(serverParam, (value) => {
+        if(value) {
+          importPage(value, true);
+        } else {
+          alert(`You are creating a new server-backed save at ${serverParam}. Auto saves are enabled and all saves are stored on the server. Bookmark this page for future use!`);
           window["action-save"].click();
         }
         setInterval(() => window["action-save"].click(), 60000);
@@ -1069,9 +1168,9 @@
     } else {
       window["action-save"].addEventListener("click", () => {removePendingCardAction(); setSaved(); downloadPage();});
       window["action-export"].addEventListener("click", () => {downloadExport(); setSaved();});
-      window["action-import"].addEventListener("click", () => window['import-file'].click());
     }
 
+    window["action-import"].addEventListener("click", () => window['import-file'].click());
     window["action-gridsnap"].addEventListener("click", (event) => toggleControl(event, "grid-snap"));
     window["action-pageview"].addEventListener("click", (event) => toggleControl(event, "page-view"));
     window["action-darkmode"].addEventListener("click", (event) => toggleControl(event, "dark-mode"));
@@ -1352,7 +1451,9 @@
   <div id="main-container" style="font-size: 1rem" data-nextid="1"></div>
 
   <footer>
-    <span class="version no-interaction">v0.6.2</span>
+    <div id="errors-container" class="no-interaction"></div>
+    <div class="spacer no-interaction"></div>
+    <span id="app-version" class="no-interaction">v0.6.3</span>
     <div id="controls">
       <button class="control temp hidden" id="action-cancelpending" title="Cancel pending operation">❌</button>
       <button class="control" id="action-newtext" title="New text card">📄</button>
@@ -1371,6 +1472,10 @@
     <input type="file" title="Select an image to import" accept="image/*" id="import-image" class="hidden" onchange="importImageTrigger(event)" />
   </footer>
 
+
+  <template id="template-error">
+    <div class="error"></div>
+  </template>
 
   <template id="template-card">
     <div class="card" data-topcard="">
