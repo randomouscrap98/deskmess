@@ -880,6 +880,7 @@
       dark_mode: controlEnabled(window['action-darkmode']),
       page_view: controlEnabled(window['action-pageview']),
       grid_snap: controlEnabled(window['action-gridsnap']),
+      open_sidebar: controlEnabled(window['action-sidebar']),
       cards: {}
     };
     document.querySelectorAll(".card").forEach(card => {
@@ -917,6 +918,7 @@
       setControl(window['action-darkmode'], jsonData.dark_mode);
       setControl(window['action-pageview'], jsonData.page_view);
       setControl(window['action-gridsnap'], jsonData.grid_snap);
+      setControl(window['action-sidebar'], jsonData.open_sidebar);
       Object.keys(jsonData.cards).forEach(key => importCard(jsonData.cards[key]));
       // After, some parents may need to be reconnected
       document.querySelectorAll(".card").forEach(card => {
@@ -1560,7 +1562,7 @@
   <div id="sidebar">
     <div id="app-info">
       <a target="_blank" href="https://github.com/randomouscrap98/deskmess">Deskmess</a>
-      <span id="app-version" class="no-interaction">v0.7</span>
+      <span id="app-version" class="no-interaction">v0.7.1</span>
       <span>| haloopdy 2025</span>
       <!--<span>| Get updates on <a target="_blank" href="https://github.com/randomouscrap98/deskmess">github</a></span>-->
     </div>
