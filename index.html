@@ -55,6 +55,7 @@
     height: 100vh;
     display: flex;
     align-items: stretch;
+    position: fixed;
   }
 
   #main-block {
@@ -86,6 +87,25 @@
   #sidebar #tree {
     padding: 1em;
   }
+  .tree-node .line {
+    display: flex;
+  }
+  .tree-node .expand {
+    width: 1.5em;
+    text-align: center;
+    color: var(--content-color);
+    cursor: pointer;
+    flex: none;
+  }
+  .tree-node .children {
+    margin-left: 0.7em;
+  }
+  /*.tree-node > label::after {
+    content: "T";
+    cursor: pointer;
+    margin-right: 0.5em;
+    color: var(--content-color);
+  }*/
 
   .hidden {
     display: none !important;
@@ -541,6 +561,7 @@
   function getCardRef(card) { return card.querySelector(".card-ref"); } // Id from INFO, not actual id
   function getCardParent(card) { return card.querySelector(".card-parent"); }
   function getCardChildren(card) { return window[MCKEY].querySelectorAll(`.card[data-parent="${card.id}"]`) }
+  function getRootCards() { return window[MCKEY].querySelectorAll(`.card:not([data-parent])`) }
   function getCardAllChildren(card) {
     let seen = {};
     seen[card.id] = true; // can't be a child of yourself (well you can... but)
@@ -561,9 +582,9 @@
     parent = parent || "";
     cp.textContent = parent;
     cp.href = "#" + parent;
-    card.setAttribute("data-parent", parent);
     let con = card.parentNode.querySelector(`.card-connector[data-cardset="${card.id}"]`);
     if(parent) {
+      card.setAttribute("data-parent", parent);
       let pelm = document.getElementById(parent);
       if(!pelm) {
         console.warn("Couldn't set card parent connector for " + parent + ", element doesn't exist");
@@ -585,6 +606,7 @@
       setUnhidden(con);
       cpmenu.textContent = "Clear parent";
     } else {
+      card.removeAttribute("data-parent");
       cpmenu.textContent = "Set parent";
       setHidden(con);
     }
@@ -739,6 +761,7 @@
     getCardChildren(card).forEach(c => setCardParent(c, null));
     window[MCKEY].querySelectorAll(`[data-cardset="${card.id}"]`).forEach(e => removeSelf(e));
     setUnsaved();
+    rebuildTree();
   }
 
   const TYPEICONS = { text: "📄", chat: "💬", todo: "✅", image: "🖼️" }; // TODO: don't duplicate these
@@ -831,6 +854,7 @@
     }
     let result = importCard(cdata);
     setUnsaved();
+    rebuildTree();
     return result;
   }
 
@@ -905,6 +929,7 @@
       if(forceSaveState === undefined) forceSaveState = !isRemoteStorage();
       if(forceSaveState) setSaved();
       else setUnsaved();
+      rebuildTree();
       window.location.hash = "";
       console.log('Successfully imported data');
     } catch (err) {
@@ -923,6 +948,27 @@
     } else {
       console.log("Quit image import (no files)");
     }
+  }
+
+  function rebuildTree() {
+    let tree = window['tree'];
+    tree.innerHTML = "";
+    getRootCards().forEach(c => tree.appendChild(buildSubtree(c)));
+  }
+  function buildSubtree(card) {
+    let nodelm = copyTemplateSingle("template-treenode");
+    let titlelm = nodelm.querySelector(".title");
+    titlelm.textContent = getCardTitle(card).textContent;
+    titlelm.href = getCardRef(card).href;
+    let childelm = nodelm.querySelector(".children");
+    let children = getCardChildren(card);
+    if(children.length) {
+      children.forEach(c => childelm.appendChild(buildSubtree(c)));
+    } else {
+      setHidden(childelm);
+      nodelm.querySelector(".expand").textContent = " ";
+    }
+    return nodelm;
   }
 
   function getOffset(element) {
@@ -984,7 +1030,6 @@
   function setCardColor(event) {
     let card = cardEvent(event);
     card.setAttribute("data-color", event.target.getAttribute("data-color"));
-    //setHidden(getCardMenu(card));
     setUnsaved();
   }
 
@@ -1343,6 +1388,7 @@
     toggleHidden(t);
     if(toggleHidden(te)){
       setUnsaved();
+      rebuildTree();
     } else {
       te.focus();
     }
@@ -1362,6 +1408,7 @@
       if(confirm("Are you sure you want to detach this card from the parent?")) {
         setCardParent(card, null);
         setUnsaved();
+        rebuildTree();
       }
     } else {
       // Need to enable the special... kinda weird "click on parent to set" thing.
@@ -1375,6 +1422,7 @@
         }
         setCardParent(card, getCardRef(parent).textContent);
         setUnsaved();
+        rebuildTree();
       };
       setPendingCardAction(onClick);
       console.log("User must now select a parent card");
@@ -1476,6 +1524,15 @@
   let text_autoMarkdown = newAutoGenerate(text_updateMarkdown);
   let todo_autoGenerate = newAutoGenerate(todo_updateAll);
 
+  function treenode_expand(element) {
+    let tnode = findParentOrSelf(element, (e) => e.classList.contains('tree-node'));
+    if(toggleHidden(tnode.querySelector(".children"))) {
+      element.textContent = "▶";
+    } else {
+      element.textContent = "▼";
+    }
+  }
+
 </script>
 
 <body>
@@ -1507,9 +1564,10 @@
 
   <div id="sidebar">
     <div id="app-info">
-      <span>Deskmess</span>
+      <a href="https://github.com/randomouscrap98/deskmess">Deskmess</a>
       <span id="app-version" class="no-interaction">v0.6.4</span>
-      <span>| Get updates on <a target="_blank" href="https://github.com/randomouscrap98/deskmess">github</a></span>
+      <span>| haloopdy 2025</span>
+      <!--<span>| Get updates on <a target="_blank" href="https://github.com/randomouscrap98/deskmess">github</a></span>-->
     </div>
     <div id="tree"></div>
   </div>
@@ -1517,6 +1575,17 @@
   <template id="template-error">
     <div class="error"></div>
   </template>
+
+  <template id="template-treenode">
+    <div class="tree-node">
+      <div class="line">
+        <span class="expand" onclick="treenode_expand(event.target)">▼</span>
+        <a href="#" class="title"></a>
+      </div>
+      <div class="children"></div>
+    </div>
+  </template>
+      <!--<label><input type="checkbox" class="hidden"></label>-->
 
   <template id="template-card">
     <div class="card" data-topcard="">
