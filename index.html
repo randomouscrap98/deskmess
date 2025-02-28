@@ -51,32 +51,35 @@
     font-family: sans-serif;
     padding: 0;
     margin: 0;
-    width: 100vw;
-    height: 100vh;
-    display: flex;
     align-items: stretch;
     position: fixed;
-  }
-
-  #main-block {
-    overflow: hidden;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
     background: var(--bg);
-    flex: 1;
-    position: relative;
   }
 
   #sidebar {
     display: none;
+    position: fixed;
+    right: 0;
+    top: 0;
+    bottom: 0;
     flex-direction: column;
-    flex: none;
     width: 18em;
     border-left: 0.15em solid var(--gray);
     background: var(--content-bg);
     overflow-y: auto;
     overflow-x: hidden;
+    z-index: 1999999999;
   }
   .open-sidebar #sidebar {
     display: flex;
+  }
+  .open-sidebar footer {
+    /* NOTE: this is required to make #links work correctly in visual mode */
+    right: 18em;
   }
   #sidebar #app-info {
     font-size: 0.8em;
@@ -100,12 +103,6 @@
   .tree-node .children {
     margin-left: 0.7em;
   }
-  /*.tree-node > label::after {
-    content: "T";
-    cursor: pointer;
-    margin-right: 0.5em;
-    color: var(--content-color);
-  }*/
 
   .hidden {
     display: none !important;
@@ -142,13 +139,13 @@
     position: absolute;
     bottom: 0;
     left: 0;
+    right: 0;
     display: flex;
     align-items: flex-end;
     gap: 0.25em;
     padding: 0.3em 1em;
     box-sizing: border-box;
-    width: 100%;
-    z-index: 100000000;
+    z-index: 1999999999;
   }
   footer #errors-container {
     display: flex;
@@ -1535,32 +1532,9 @@
 
 </script>
 
-<body>
+<body id="main-block">
 
-  <div id="main-block">
-    <div id="main-container" style="font-size: 1rem" data-nextid="1"></div>
-    <footer>
-      <div id="errors-container"></div>
-      <div class="spacer no-interaction"></div>
-      <div id="controls">
-        <button class="control temp hidden" id="action-cancelpending" title="Cancel pending operation">❌</button>
-        <button class="control" id="action-newtext" title="New text card">📄</button>
-        <button class="control" id="action-newchat" title="New chat card">💬</button>
-        <button class="control" id="action-newtodo" title="New todo card">✅</button>
-        <button class="control" id="action-newimage" title="New image card">🖼️</button>
-        <button class="control" id="action-resetview" title="Reset view">🧭</button>
-        <button class="control deactivated" id="action-gridsnap" title="Snap to grid">📐</button>
-        <button class="control deactivated" id="action-pageview" title="View as page">📃</button>
-        <button class="control deactivated" id="action-darkmode" title="Toggle darkmode">🌒</button>
-        <button class="control deactivated" id="action-sidebar" title="Toggle sidebar">🎚️</button>
-        <button class="control" id="action-import" title="Import page">📥</button>
-        <button class="control" id="action-export" title="Export page">📤</button>
-        <button class="control" id="action-save" title="Save page">💾</button>
-      </div>
-      <input type="file" title="Select a JSON file to import" accept=".json" id="import-file" class="hidden" onchange="importTrigger(event)" />
-      <input type="file" title="Select an image to import" accept="image/*" id="import-image" class="hidden" onchange="importImageTrigger(event)" />
-    </footer>
-  </div>
+  <div id="main-container" style="font-size: 1rem" data-nextid="1"></div>
 
   <div id="sidebar">
     <div id="app-info">
@@ -1571,6 +1545,28 @@
     </div>
     <div id="tree"></div>
   </div>
+
+  <footer>
+    <div id="errors-container"></div>
+    <div class="spacer no-interaction"></div>
+    <div id="controls">
+      <button class="control temp hidden" id="action-cancelpending" title="Cancel pending operation">❌</button>
+      <button class="control" id="action-newtext" title="New text card">📄</button>
+      <button class="control" id="action-newchat" title="New chat card">💬</button>
+      <button class="control" id="action-newtodo" title="New todo card">✅</button>
+      <button class="control" id="action-newimage" title="New image card">🖼️</button>
+      <button class="control" id="action-resetview" title="Reset view">🧭</button>
+      <button class="control deactivated" id="action-gridsnap" title="Snap to grid">📐</button>
+      <button class="control deactivated" id="action-pageview" title="View as page">📃</button>
+      <button class="control deactivated" id="action-darkmode" title="Toggle darkmode">🌒</button>
+      <button class="control deactivated" id="action-sidebar" title="Toggle sidebar">🎚️</button>
+      <button class="control" id="action-import" title="Import page">📥</button>
+      <button class="control" id="action-export" title="Export page">📤</button>
+      <button class="control" id="action-save" title="Save page">💾</button>
+    </div>
+    <input type="file" title="Select a JSON file to import" accept=".json" id="import-file" class="hidden" onchange="importTrigger(event)" />
+    <input type="file" title="Select an image to import" accept="image/*" id="import-image" class="hidden" onchange="importImageTrigger(event)" />
+  </footer>
 
   <template id="template-error">
     <div class="error"></div>
