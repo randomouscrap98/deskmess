@@ -59,7 +59,7 @@ rather than the filesystem. Since the browser counts this as a "secure context",
 with the ability to overwrite and thus have auto-saves. Be warned: if you clear your browser's site data, you will
 **lose all of your saves**.
 - Save ONE copy of index.html somewhere on your computer. Use this copy every time, or host it yourself on your server
-- Add `?local=somename` to the url, replace "somename" with the name you want to give your file
+- Add `?local=somename` to the url, replace "somename" with the name you want to give your notes
 - Once confirming the alert, saves are done in the browser automatically every minute. Saves are stored in local storage, make sure you have that enabled (some browsers clear all local storage on every exit). You can still manually save any time; manual save is replaced with in-browser save (it no longer downloads a pure copy of the page)
 - Bookmark this page. It should always have your page
 - You can still manually export to your filesystem whenever, and import the data later.
@@ -70,12 +70,13 @@ mechanics while still using the filesystem, you can have deskmess contact a serv
 An example implementation is given with [server.py](server.py). It's fine for local use, but don't use it on a public facing server.
 - Run server with `python3 server.py`. It should work on any system where python is installed. For windows,
   this may be `py server.py`
-- Use deskmess from any copy of index.html (location doesn't matter for this method)
-- Add `?server=url_to_server` to the url. For `server.py`, this is by default `http://localhost:60003/somename` where
-  somename is the name of your save
+- Open http://localhost:60003 in your browser
+- Add `?server=somename` to the url, replace "somename" with the name to give your notes
 - Bookmark this page. Assuming your server is running, this page should always be available
 - As with browser saving, you can still manually export just the data to the filesystem for later import, though
   that's not as necessary since `server.py` stores the same saves in the local `notes` folder
+- The `server` parameter is actually a full url. You can pass it a different server than the current
+  by passing the full url, such as `?server=http://localhost:60003/somename`
 
 Deskmess expects a *very* simple server when using the `?server` parameter. It expects GET requests to the url
 given to return the plaintext UTF-8 data for the save, and POST requests to save the plaintext UTF-8 data
@@ -83,5 +84,6 @@ for the same save. No assumption of data format is made; use `text/plain` (even 
 json). The supplied `server.py` accepts any single-depth route as the filename for the filesystem, allowing
 the server to store any number of saves. It is very picky about the filename given, only accepting alphanumeric
 characters, underscores, and dashes (to prevent accident or abuse). There's no security; this is fine for local
-use but don't use this on a public server.
+use but don't use this on a public server. To simplify things, GET at the root path returns index.html,
+though this isn't necessary for your implementation.
 

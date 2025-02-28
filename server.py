@@ -7,7 +7,7 @@ import re
 
 def parse_slug(uri):
     slug = unquote(urlparse(uri).path).lstrip('/')
-    if not re.match(r'^[\w-]+$', slug):
+    if slug and not re.match(r'^[\w-]+$', slug):
         raise ValueError("Invalid path")
     return slug
 
@@ -23,18 +23,24 @@ class SimpleServer(BaseHTTPRequestHandler):
         except Exception as e:
             self.send_error(500, f"Internal Server Error: {str(e)}")
 
+    def send_success(self, content, type):
+        self.send_response(200)
+        self.send_header('Content-type', type)
+        self.end_headers()
+        self.wfile.write(content)
+
     def get(self):
         global args
         slug = parse_slug(self.path)
+        if not slug:
+            with open("index.html", 'rb') as f:
+                self.send_success(f.read(), 'text/html; charset=utf-8')
+                return
         fpath = os.path.join(args.folder, slug)
         if not os.path.exists(fpath) or not os.path.isfile(fpath):
             raise FileNotFoundError(f"No such file: {fpath}")
         with open(fpath, 'rb') as f:
-            content = f.read()
-        self.send_response(200)
-        self.send_header('Content-type', 'text/plain; charset=utf-8')
-        self.end_headers()
-        self.wfile.write(content)
+            self.send_success(f.read(), 'text-plain; charset=utf-8')
 
     def post(self):
         global args
@@ -44,10 +50,8 @@ class SimpleServer(BaseHTTPRequestHandler):
         content = self.rfile.read(content_length)
         with open(fpath, 'wb') as f:
             f.write(content)
-        self.send_response(200)
-        self.send_header('Content-type', 'application/json; charset=utf-8')
-        self.end_headers()
-        self.wfile.write(b'{"success":true}')
+        self.send_success(b'{"success":true}',
+                          'application/json; charset=utf-8')
 
     def do_GET(self):
         self.handle_exceptions(self.get)
