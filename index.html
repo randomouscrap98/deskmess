@@ -825,10 +825,12 @@
   }
 
   function exportPage() {
+    offset = getMainOffset();
     let exp = {
       file_version: "1",
       app_version: getProductVersion(),
       export_date: new Date().toISOString(),
+      offset: offset,
       dark_mode: controlEnabled(window['action-darkmode']),
       page_view: controlEnabled(window['action-pageview']),
       grid_snap: controlEnabled(window['action-gridsnap']),
@@ -861,6 +863,11 @@
       }
       window[MCKEY].innerHTML = "";
       window[MCKEY].style = "";
+      if(jsonData.offset) {
+        window[MCKEY].style.fontSize = jsonData.offset.fs + "em";
+        window[MCKEY].style.left = jsonData.offset.x + "px";
+        window[MCKEY].style.top = jsonData.offset.y + "px";
+      }
       setControl(window['action-darkmode'], jsonData.dark_mode);
       setControl(window['action-pageview'], jsonData.page_view);
       setControl(window['action-gridsnap'], jsonData.grid_snap);
@@ -1452,7 +1459,7 @@
   <footer>
     <div id="errors-container"></div>
     <div class="spacer no-interaction"></div>
-    <span id="app-version" class="no-interaction">v0.6.3</span>
+    <span id="app-version" class="no-interaction">v0.6.4</span>
     <div id="controls">
       <button class="control temp hidden" id="action-cancelpending" title="Cancel pending operation">❌</button>
       <button class="control" id="action-newtext" title="New text card">📄</button>
