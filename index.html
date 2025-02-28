@@ -91,13 +91,16 @@
   #sidebar #tree {
     padding: 1em;
   }
+  .tree-node {
+    margin: 0.25em 0;
+  }
   .tree-node .line {
     display: flex;
   }
   .tree-node .expand {
     width: 1.5em;
     text-align: center;
-    color: var(--content-color);
+    color: var(--gray);
     cursor: pointer;
     flex: none;
   }
@@ -757,14 +760,6 @@
     return cdata;
   }
 
-  function deleteCard(card) {
-    // Need to remove the parent from all children
-    console.log("Deleting card " + card.id);
-    getCardChildren(card).forEach(c => setCardParent(c, null));
-    window[MCKEY].querySelectorAll(`[data-cardset="${card.id}"]`).forEach(e => removeSelf(e));
-    setUnsaved();
-    rebuildTree();
-  }
 
   const TYPEICONS = { text: "📄", chat: "💬", todo: "✅", image: "🖼️" }; // TODO: don't duplicate these
   function importCard(cdata) {
@@ -1396,12 +1391,32 @@
       te.focus();
     }
   }
+
+  function menu_deleteraw(card) {
+    console.log("Deleting card " + card.id);
+    window[MCKEY].querySelectorAll(`[data-cardset="${card.id}"]`).forEach(e => removeSelf(e));
+  }
   function menu_delete(event) {
     let card = cardEvent(event);
     if(confirm('Really delete \''+getCardTitle(card).textContent+'\'?')) {
-      deleteCard(card);
+      getCardChildren(card).forEach(c => setCardParent(c, null));
+      menu_deleteraw(card);
+      setUnsaved();
+      rebuildTree();
     }
   }
+  function menu_deletetree(event) {
+    let card = cardEvent(event);
+    let children = getCardAllChildren(card);
+    if(confirm(`There are ${children.length} child card(s) under parent '${getCardTitle(card).textContent}'.\n\nReally delete WHOLE tree?`)) {
+      console.log("Deleting full card tree " + card.id);
+      children.forEach(c => menu_deleteraw(c));
+      menu_deleteraw(card);
+      setUnsaved();
+      rebuildTree();
+    }
+  }
+
   function menu_setUnsetParent(event) {
     let card = cardEvent(event);
     // If card already has a parent, need to unset it. Otherwise begin the
@@ -1545,7 +1560,7 @@
   <div id="sidebar">
     <div id="app-info">
       <a target="_blank" href="https://github.com/randomouscrap98/deskmess">Deskmess</a>
-      <span id="app-version" class="no-interaction">v0.6.4</span>
+      <span id="app-version" class="no-interaction">v0.7</span>
       <span>| haloopdy 2025</span>
       <!--<span>| Get updates on <a target="_blank" href="https://github.com/randomouscrap98/deskmess">github</a></span>-->
     </div>
@@ -1614,6 +1629,7 @@
             onclick="toggleHidden(getCardEditor(cardEvent(event)))">Toggle editor</a>
           <a href="#" class="set-parent" onclick="menu_setUnsetParent(event)">Set Parent</a>
           <a href="#" onclick="menu_delete(event)">Delete card</a>
+          <a href="#" onclick="menu_deletetree(event)">Delete tree</a>
           <div class="card-info">
             <div>id: <span class="card-id"></span></div>
             <div>ref: <a href="#" class="card-ref"></a></div>
