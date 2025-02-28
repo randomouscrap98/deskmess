@@ -66,8 +66,10 @@
 
   #sidebar {
     display: none;
+    flex-direction: column;
     flex: none;
     width: 18em;
+    border-left: 0.15em solid var(--gray);
     background: var(--content-bg);
     overflow-y: auto;
     overflow-x: hidden;
@@ -75,7 +77,15 @@
   .open-sidebar #sidebar {
     display: flex;
   }
-
+  #sidebar #app-info {
+    font-size: 0.8em;
+    color: rgba(127,127,127,0.75);
+    background: var(--editor-bg);
+    padding: 0.1em 0.5em;
+  }
+  #sidebar #tree {
+    padding: 1em;
+  }
 
   .hidden {
     display: none !important;
@@ -132,10 +142,6 @@
     padding: 0.25em 0.5em;
     border-radius: 0.5em;
     transition: opacity 2s ease-in-out;
-  }
-  footer #app-version {
-    font-size: 0.6em;
-    color: rgba(127,127,127,0.75);
   }
 
   #controls {
@@ -1479,7 +1485,6 @@
     <footer>
       <div id="errors-container"></div>
       <div class="spacer no-interaction"></div>
-      <span id="app-version" class="no-interaction">v0.6.4</span>
       <div id="controls">
         <button class="control temp hidden" id="action-cancelpending" title="Cancel pending operation">❌</button>
         <button class="control" id="action-newtext" title="New text card">📄</button>
@@ -1500,7 +1505,14 @@
     </footer>
   </div>
 
-  <div id="sidebar"></div>
+  <div id="sidebar">
+    <div id="app-info">
+      <span>Deskmess</span>
+      <span id="app-version" class="no-interaction">v0.6.4</span>
+      <span>| Get updates on <a target="_blank" href="https://github.com/randomouscrap98/deskmess">github</a></span>
+    </div>
+    <div id="tree"></div>
+  </div>
 
   <template id="template-error">
     <div class="error"></div>
