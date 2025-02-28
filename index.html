@@ -25,6 +25,7 @@
     --bg: #F3F3F3;
     --content-bg: white;
     --content-color: #111;
+    --sidebar-width: 18rem;
   }
   .dark-mode {
     --editor-bg: #333;
@@ -67,7 +68,7 @@
     top: 0;
     bottom: 0;
     flex-direction: column;
-    width: 18em;
+    width: var(--sidebar-width);
     border-left: 0.15em solid var(--gray);
     background: var(--content-bg);
     overflow-y: auto;
@@ -79,7 +80,7 @@
   }
   .open-sidebar footer {
     /* NOTE: this is required to make #links work correctly in visual mode */
-    right: 18em;
+    right: var(--sidebar-width);
   }
   #sidebar #app-info {
     font-size: 0.8em;
@@ -455,6 +456,10 @@
     left: unset !important;
     padding: 0.5rem;
     box-sizing: border-box;
+  }
+  .page-view.open-sidebar #main-container {
+    /* NOTE: this is required to make #links work correctly in visual mode */
+    padding-right: calc(var(--sidebar-width) + 0.5rem);
   }
   .page-view .card-connector {
     display: none;
@@ -1265,6 +1270,7 @@
     let lastBodyMouse = null;
     window['main-block'].addEventListener("wheel", (event) => {
       if(getContainingCard(event.target)) { return; }
+      if(findParentOrSelf(event.target, (e) => e.id=="sidebar")) { return; }
       // NOTE: CAN'T do this, because need to scroll page now
       if(controlEnabled(window["action-pageview"])) { return; }
       var delta = Math.max(-1, Math.min(1, (event.wheelDelta || -event.detail)));
@@ -1538,7 +1544,7 @@
 
   <div id="sidebar">
     <div id="app-info">
-      <a href="https://github.com/randomouscrap98/deskmess">Deskmess</a>
+      <a target="_blank" href="https://github.com/randomouscrap98/deskmess">Deskmess</a>
       <span id="app-version" class="no-interaction">v0.6.4</span>
       <span>| haloopdy 2025</span>
       <!--<span>| Get updates on <a target="_blank" href="https://github.com/randomouscrap98/deskmess">github</a></span>-->
