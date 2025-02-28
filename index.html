@@ -53,10 +53,29 @@
     margin: 0;
     width: 100vw;
     height: 100vh;
-    overflow: hidden;
-    position: fixed;
-    background: var(--bg);
+    display: flex;
+    align-items: stretch;
   }
+
+  #main-block {
+    overflow: hidden;
+    background: var(--bg);
+    flex: 1;
+    position: relative;
+  }
+
+  #sidebar {
+    display: none;
+    flex: none;
+    width: 18em;
+    background: var(--content-bg);
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+  .open-sidebar #sidebar {
+    display: flex;
+  }
+
 
   .hidden {
     display: none !important;
@@ -90,7 +109,7 @@
   }
 
   footer {
-    position: fixed;
+    position: absolute;
     bottom: 0;
     left: 0;
     display: flex;
@@ -983,12 +1002,12 @@
     setHidden(window["action-cancelpending"]);
   }
 
-  function toggleControl(event, classname) {
-    if(event.target.classList.contains("deactivated")) {
-      event.target.classList.remove("deactivated");
+  function toggleControl(element, classname) {
+    if(element.classList.contains("deactivated")) {
+      element.classList.remove("deactivated");
       document.body.classList.add(classname);
     } else {
-      event.target.classList.add("deactivated");
+      element.classList.add("deactivated");
       document.body.classList.remove(classname);
     }
   }
@@ -1177,9 +1196,10 @@
     }
 
     window["action-import"].addEventListener("click", () => window['import-file'].click());
-    window["action-gridsnap"].addEventListener("click", (event) => toggleControl(event, "grid-snap"));
-    window["action-pageview"].addEventListener("click", (event) => toggleControl(event, "page-view"));
-    window["action-darkmode"].addEventListener("click", (event) => toggleControl(event, "dark-mode"));
+    window["action-gridsnap"].addEventListener("click", (event) => toggleControl(event.target, "grid-snap"));
+    window["action-pageview"].addEventListener("click", (event) => toggleControl(event.target, "page-view"));
+    window["action-darkmode"].addEventListener("click", (event) => toggleControl(event.target, "dark-mode"));
+    window["action-sidebar"].addEventListener("click", (event) => toggleControl(event.target, "open-sidebar"));
     window["action-cancelpending"].addEventListener("click", () => {removePendingCardAction();});
     window["action-newtext"].addEventListener("click", () => addCard("text"));
     window["action-newchat"].addEventListener("click", () => addCard("chat"));
@@ -1195,7 +1215,7 @@
     });
 
     let lastBodyMouse = null;
-    document.body.addEventListener("wheel", (event) => {
+    window['main-block'].addEventListener("wheel", (event) => {
       if(getContainingCard(event.target)) { return; }
       // NOTE: CAN'T do this, because need to scroll page now
       if(controlEnabled(window["action-pageview"])) { return; }
@@ -1212,7 +1232,7 @@
       main.style.left = (event.clientX - xofs * ratio) + "px";
       main.style.top = (event.clientY - yofs * ratio) + "px";
     });
-    document.body.addEventListener("mousedown", (event) => {
+    window['main-block'].addEventListener("mousedown", (event) => {
       if(event.button === 0) {
         if(isInFooter(event.target)) return;
         let card = getContainingCard(event.target);
@@ -1255,7 +1275,7 @@
         return false;
       }
     });
-    document.body.addEventListener("mousemove", (event) => {
+    window['main-block'].addEventListener("mousemove", (event) => {
       if(lastBodyMouse) {
         addCard.offset = null; // any movement will reset the accum offset
         const mofs = getMainOffset();
@@ -1287,7 +1307,7 @@
         lastBodyMouse.y = event.clientY;
       }
     });
-    document.body.addEventListener("mouseup", (event) => {
+    window['main-block'].addEventListener("mouseup", (event) => {
       if(event.button === 0) {
         if(lastBodyMouse) {
           lastBodyMouse = null;
@@ -1454,30 +1474,33 @@
 
 <body>
 
-  <div id="main-container" style="font-size: 1rem" data-nextid="1"></div>
+  <div id="main-block">
+    <div id="main-container" style="font-size: 1rem" data-nextid="1"></div>
+    <footer>
+      <div id="errors-container"></div>
+      <div class="spacer no-interaction"></div>
+      <span id="app-version" class="no-interaction">v0.6.4</span>
+      <div id="controls">
+        <button class="control temp hidden" id="action-cancelpending" title="Cancel pending operation">❌</button>
+        <button class="control" id="action-newtext" title="New text card">📄</button>
+        <button class="control" id="action-newchat" title="New chat card">💬</button>
+        <button class="control" id="action-newtodo" title="New todo card">✅</button>
+        <button class="control" id="action-newimage" title="New image card">🖼️</button>
+        <button class="control" id="action-resetview" title="Reset view">🧭</button>
+        <button class="control deactivated" id="action-gridsnap" title="Snap to grid">📐</button>
+        <button class="control deactivated" id="action-pageview" title="View as page">📃</button>
+        <button class="control deactivated" id="action-darkmode" title="Toggle darkmode">🌒</button>
+        <button class="control deactivated" id="action-sidebar" title="Toggle sidebar">🎚️</button>
+        <button class="control" id="action-import" title="Import page">📥</button>
+        <button class="control" id="action-export" title="Export page">📤</button>
+        <button class="control" id="action-save" title="Save page">💾</button>
+      </div>
+      <input type="file" title="Select a JSON file to import" accept=".json" id="import-file" class="hidden" onchange="importTrigger(event)" />
+      <input type="file" title="Select an image to import" accept="image/*" id="import-image" class="hidden" onchange="importImageTrigger(event)" />
+    </footer>
+  </div>
 
-  <footer>
-    <div id="errors-container"></div>
-    <div class="spacer no-interaction"></div>
-    <span id="app-version" class="no-interaction">v0.6.4</span>
-    <div id="controls">
-      <button class="control temp hidden" id="action-cancelpending" title="Cancel pending operation">❌</button>
-      <button class="control" id="action-newtext" title="New text card">📄</button>
-      <button class="control" id="action-newchat" title="New chat card">💬</button>
-      <button class="control" id="action-newtodo" title="New todo card">✅</button>
-      <button class="control" id="action-newimage" title="New image card">🖼️</button>
-      <button class="control" id="action-resetview" title="Reset view">🧭</button>
-      <button class="control deactivated" id="action-gridsnap" title="Snap to grid">📐</button>
-      <button class="control deactivated" id="action-pageview" title="View as page">📃</button>
-      <button class="control deactivated" id="action-darkmode" title="Toggle darkmode">🌒</button>
-      <button class="control" id="action-import" title="Import page">📥</button>
-      <button class="control" id="action-export" title="Export page">📤</button>
-      <button class="control" id="action-save" title="Save page">💾</button>
-    </div>
-    <input type="file" title="Select a JSON file to import" accept=".json" id="import-file" class="hidden" onchange="importTrigger(event)" />
-    <input type="file" title="Select an image to import" accept="image/*" id="import-image" class="hidden" onchange="importImageTrigger(event)" />
-  </footer>
-
+  <div id="sidebar"></div>
 
   <template id="template-error">
     <div class="error"></div>
