@@ -63,6 +63,15 @@
     background: var(--bg);
   }
 
+  .modern a:not([href="#"]):link, .modern a:not([href="#"]):visited {
+    text-decoration: none;
+    color: var(--teal);
+  }
+  .dark-mode.modern a:not([href="#"]):link,
+  .dark-mode.modern a:not([href="#"]):visited {
+    filter: brightness(1.5);
+  }
+
   #sidebar {
     display: none;
     position: fixed;
@@ -92,6 +101,15 @@
     color: rgba(127,127,127,0.75);
     background: var(--editor-bg);
     padding: 0.1em 0.5em;
+  }
+  .modern #sidebar #app-info {
+    display: flex;
+    gap: 0.5em;
+    padding: 0.4em 1em;
+    border-radius: 2em;
+    justify-content: center;
+    margin: 0.5em auto;
+    background: none;
   }
   #sidebar #tree {
     padding: 1em;
@@ -324,6 +342,7 @@
   .modern .card .menu .colors {
     justify-content: center;
     margin-bottom: 0.2em;
+    gap: 0.2em;
   }
   .card .menu .colors a {
     width: 1em;
@@ -400,7 +419,7 @@
   .modern .card .content .card-main {
     border: none;
     border-radius: 0.5em;
-    padding: 0.2em;
+    padding: 0.3em;
     margin: 0.2em;
   }
 
@@ -438,8 +457,14 @@
   .card .content .messages {
     font-size: 0.93em; /* very silly */
   }
+  .modern .card .content .messages {
+    font-size: 1em;
+  }
   .message-container {
     padding: 0.15em 0.25em;
+  }
+  .modern .message-container {
+    border-radius: 0.35em;
   }
   .message-container:nth-child(odd) {
     background-color: rgba(127,127,127,0.07);
@@ -459,6 +484,9 @@
     align-items: center;
     padding: 0.1em 0.2em;
   }
+  .modern .todo-list .todo-item {
+    border-radius: 0.35em;
+  }
   .todo-list .todo-item:nth-child(odd) {
     background-color: rgba(127,127,127,0.07);
   }
@@ -474,7 +502,7 @@
     padding: 0.5em;
     line-height: 1.4;
   }
-  .modern .card .content .card-main {
+  .modern .card .content .markdown {
     padding: 0.75em;
   }
   .markdown > :first-child {
