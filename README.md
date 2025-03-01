@@ -19,9 +19,9 @@ It's as easy as downloading index.html, or you can try it out [here](https://hal
   - Image cards let you embed images directly into the page. Most browsers limit to 2mb FYI
 - Set title, color, etc, resize, delete
 - Dark mode
-- Toggle "modern" styling 🤔
+- Toggle modern styling 🤔
 - Grid snapping
-- Ability to link cards together parent / child, build trees you can move around
+- Ability to link cards together as parent / child, build trees you can move around
 - Sidebar with tree navigation for entire project
 - Fully local single file, save exact html and open it later where you left off,
   page will never update from underneath you (no server unless desired)
@@ -33,7 +33,7 @@ It's as easy as downloading index.html, or you can try it out [here](https://hal
 ## Goals
 
 - If mobile support is added, perhaps different navigation modes
-- Different types of things you can put in cards (drawing, etc)
+- Basic drawing card
 - Add regular files to cards, if possible
 - Display all cards of a "type" and a simplified view of how you get to them.
   For things like finding all todo lists
