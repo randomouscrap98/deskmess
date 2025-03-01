@@ -48,7 +48,7 @@
   }
   .dark-mode a:link { color: lightskyblue; }
   .dark-mode a:visited { color: orchid; }
-  .dark-mode .top > a { filter: brightness(1.5); /* NOT SURE ABOUT THIS */ }
+  .dark-mode .top > a.toggle-menu { filter: brightness(1.5); }
 
   body {
     font-family: sans-serif;
@@ -62,6 +62,9 @@
     right: 0;
     background: var(--bg);
   }
+  body.modern {
+    transition: background 0.2s ease-in;
+  }
 
   .modern a:not([href="#"]):link, .modern a:not([href="#"]):visited {
     text-decoration: none;
@@ -73,24 +76,27 @@
   }
 
   #sidebar {
-    display: none;
+    display: flex;
     position: fixed;
     right: 0;
     top: 0;
     bottom: 0;
     flex-direction: column;
-    width: var(--sidebar-width);
+    width: 0;
     border-left: 0.15em solid var(--gray);
     background: var(--content-bg);
+    color: var(--content-color);
     overflow-y: auto;
     overflow-x: hidden;
     z-index: 1999999999;
   }
   .modern #sidebar {
     border-left: none;
+    transition: width 0.2s ease-out,
+      background 0.2s ease-in;
   }
   .open-sidebar #sidebar {
-    display: flex;
+    width: var(--sidebar-width);
   }
   .open-sidebar footer {
     /* NOTE: this is required to make #links work correctly in visual mode */
@@ -174,6 +180,9 @@
     box-sizing: border-box;
     z-index: 1999999999;
   }
+  .modern footer {
+    transition: right 0.2s ease-out;
+  }
   footer #errors-container {
     display: flex;
     flex-direction: column;
@@ -204,7 +213,6 @@
     border: none;
     border-radius: 50%;
     background: var(--teal);
-    /*border: 0.15em solid var(--teal-border);*/
     transition: filter 0.1s ease-in-out;
     cursor: pointer;
     display: flex; /* all for chrome */
@@ -214,11 +222,9 @@
   }
   button.control.unsaved, button.control.alert {
     background: var(--red);
-    /*border: 0.15em solid var(--red-border);*/
   }
   button.control.temp, button.control.deactivated {
     background: var(--gray);
-    /*border: 0.15em solid var(--gray-border);*/
   }
   .modern button.control {
     box-shadow: 0.2em 0.2em 0.5em var(--body-shadow);
@@ -253,7 +259,8 @@
     border: none !important;
     box-shadow: 0.2em 0.2em 0.75em var(--body-shadow);
     border-radius: 1em;
-    transition: background 0.1s ease-in;
+    transition: background 0.1s ease-in,
+      box-shadow 0.1s ease-in;
   }
 
   .card input[type="checkbox"] {
@@ -429,6 +436,7 @@
     border-radius: 0.5em;
     padding: 0.3em;
     margin: 0.2em;
+    transition: background 0.2s ease-in;
   }
 
   .card .content textarea.editor {
@@ -456,7 +464,8 @@
     border: none;
     border-radius: 0.5em;
     font-size: 0.9em;
-    transition: height 0.2s ease-out;
+    transition: height 0.2s ease-out,
+      background 0.2s ease-in;
   }
   .modern .card .content textarea.editor:focus {
     height: 40% !important;
@@ -528,7 +537,6 @@
     padding: 0.2em 0.3em;
     border-radius: 0.2em;
     font-size: 0.9em;
-    /*color: var(--teal-border);*/
     color: var(--editor-color);
     vertical-align: baseline;
     padding-bottom: 0.05em;
@@ -537,11 +545,14 @@
     background: #333;
     color: #EEE;
     display: block;
-    /*max-height: 20em;*/
     overflow-y: auto;
     overflow-x: auto;
-    padding: 0.3em;
+    padding: 0.3em 0.5em;
     font-family: monospace, monospace;
+  }
+  .modern .markdown pre code {
+    border-radius: 0.5em;
+    padding: 0.6em 0.8em;
   }
 
   /* Special rendering mode */
@@ -657,6 +668,9 @@
     if(v < min) v = min;
     if(v > max) v = max;
     return v;
+  }
+  function except(a, b) {
+    return a.filter(x => !b.has(x));
   }
   function pxToRem(pxValue) { // ai generated
     const htmlFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize);
@@ -1091,17 +1105,35 @@
   function rebuildTree() {
     let tree = window['tree'];
     tree.innerHTML = "";
-    getRootCards().forEach(c => tree.appendChild(buildSubtree(c)));
+    let seen = new Set();
+    getRootCards().forEach(c => tree.appendChild(buildSubtree(c, seen)));
+    let allCards = Array.from(window[MCKEY].querySelectorAll(".card")).map((x) => getCardRef(x).textContent);
+    //let subtreeCards = new Set(getSubtreeIds(tree));
+    let leftover = except(allCards, seen);
+    if(leftover.length) {
+      console.log(`There are ${leftover.length} cards stuck in cycles`);
+      let circref = copyTemplateSingle("template-circularref");
+      tree.appendChild(circref);
+      while(leftover.length) {
+        let subtree = buildSubtree(window[leftover.pop()], seen);
+        tree.append(subtree);
+        leftover = except(leftover, seen);
+      }
+    }
   }
-  function buildSubtree(card) {
+  // function getSubtreeIds(tree) {
+  //   return Array.from(tree.querySelectorAll("a")).map((x) => x.href.split("#")[1]);
+  // }
+  function buildSubtree(card, seen) {
     let nodelm = copyTemplateSingle("template-treenode");
     let titlelm = nodelm.querySelector(".title");
     titlelm.textContent = getCardTitle(card).textContent;
     titlelm.href = getCardRef(card).href;
+    seen.add(titlelm.href.split("#")[1]);
     let childelm = nodelm.querySelector(".children");
-    let children = getCardChildren(card);
+    let children = Array.from(getCardChildren(card)).filter(c => !seen.has(c.id));
     if(children.length) {
-      children.forEach(c => childelm.appendChild(buildSubtree(c)));
+      children.forEach(c => childelm.appendChild(buildSubtree(c, seen)));
     } else {
       setHidden(childelm);
       nodelm.querySelector(".expand").textContent = " ";
@@ -1661,7 +1693,7 @@
   <div id="sidebar">
     <div id="app-info">
       <a target="_blank" href="https://github.com/randomouscrap98/deskmess">Deskmess</a>
-      <span id="app-version" class="no-interaction">v0.7.3</span>
+      <span id="app-version" class="no-interaction">v0.7.4</span>
       <span>| haloopdy 2025</span>
     </div>
     <div id="tree"></div>
@@ -1703,7 +1735,10 @@
       <div class="children"></div>
     </div>
   </template>
-      <!--<label><input type="checkbox" class="hidden"></label>-->
+
+  <template id="template-circularref">
+    <div class="circularref">Cycles:</div>
+  </template>
 
   <template id="template-card">
     <div class="card" data-topcard="">
@@ -1716,7 +1751,7 @@
           <time></time>
         </div>
         <a href="#" class="toggle-editor-direct hidden" onclick="toggleHidden(getCardEditor(cardEvent(event)))">📝</a>
-        <a href="#" onclick="toggleHidden(getCardMenu(cardEvent(event)))">⚙️</a>
+        <a href="#" class="toggle-menu" onclick="toggleHidden(getCardMenu(cardEvent(event)))">⚙️</a>
         <div class="menu hidden">
           <div class="colors">
             <a href="#" data-color="teal" onclick="menu_color(event)"></a>
