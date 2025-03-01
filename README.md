@@ -19,10 +19,12 @@ It's as easy as downloading index.html, or you can try it out [here](https://hal
   - Image cards let you embed images directly into the page. Most browsers limit to 2mb FYI
 - Set title, color, etc, resize, delete
 - Dark mode
+- Toggle "modern" styling 🤔
 - Grid snapping
 - Ability to link cards together parent / child, build trees you can move around
-- Fully local, save exact html and open it later where you left off,
-  page will never update from underneath you (no server)
+- Sidebar with tree navigation for entire project
+- Fully local single file, save exact html and open it later where you left off,
+  page will never update from underneath you (no server unless desired)
 - Import/export raw data so you can upgrade to newer versions when desired
 - Option to save/load from browser storage instead of filesystem (use `?local=name`, will use local storage + autosave)
 - Option to save/load from a local server (use `?server=url`, will GET for load and POST for save + autosave)
@@ -32,7 +34,6 @@ It's as easy as downloading index.html, or you can try it out [here](https://hal
 
 - If mobile support is added, perhaps different navigation modes
 - Different types of things you can put in cards (drawing, etc)
-- List all cards in simplified list tree view somewhere
 - Add regular files to cards, if possible
 - Display all cards of a "type" and a simplified view of how you get to them.
   For things like finding all todo lists
@@ -42,7 +43,8 @@ It's as easy as downloading index.html, or you can try it out [here](https://hal
 Since this is a local-first app, all you need is index.html. You can download it directly from the
 repo or alternatively get it from the source zip from one of the releases.
 
-For usage tips, see the [example page](https://haloopdy.com/deskmess).
+For usage tips, see the [example page](https://haloopdy.com/deskmess). Or to start
+from a blank slate, try the [latest release](https://haloopdy.com/deskmess/deskmess.html)
 
 ### Use the filesystem (default)
 - Copy index.html to someplace on your filesystem, rename it whatever you want
