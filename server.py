@@ -17,11 +17,11 @@ class SimpleServer(BaseHTTPRequestHandler):
         try:
             func()
         except ValueError as e:
-            self.send_error(400, f"Bad request: {str(e)}")
+            self.send_error(400, "Bad request: " + str(e))
         except FileNotFoundError:
             self.send_error(404, "File not found")
         except Exception as e:
-            self.send_error(500, f"Internal Server Error: {str(e)}")
+            self.send_error(500, "Internal Server Error: " + str(e))
 
     def send_success(self, content, type):
         self.send_response(200)
@@ -38,7 +38,7 @@ class SimpleServer(BaseHTTPRequestHandler):
                 return
         fpath = os.path.join(args.folder, slug)
         if not os.path.exists(fpath) or not os.path.isfile(fpath):
-            raise FileNotFoundError(f"No such file: {fpath}")
+            raise FileNotFoundError("No such file: " + fpath)
         with open(fpath, 'rb') as f:
             self.send_success(f.read(), 'text-plain; charset=utf-8')
 
@@ -86,7 +86,7 @@ def main():
         os.makedirs(args.folder)
 
     httpd = HTTPServer((args.address, args.port), SimpleServer)
-    print(f"Serving at http://{args.address}:{args.port}")
+    print("Serving at http://" + args.address + ":" + str(args.port))
     httpd.serve_forever()
 
 
