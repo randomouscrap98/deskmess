@@ -309,6 +309,7 @@
     outline: none;
     border: 0.05em solid black;
     padding: 0.1em 0.25em;
+    width: 4em; /* I don't quite understand flex */
   }
   .modern .card .top .edit-title {
     border-radius: 0.25em;
@@ -419,7 +420,7 @@
   .card .content .card-main {
     flex: 1;
     margin: 0;
-    overflow-y: scroll;
+    overflow-y: auto;
     overflow-x: hidden;
     background: var(--content-bg);
   }
@@ -433,7 +434,7 @@
   .card .content textarea.editor {
     margin: 0;
     border: 0.2em inset #777;
-    overflow-y: scroll;
+    overflow-y: auto;
     overflow-x: hidden;
     padding: 0.4em;
     background: var(--editor-bg);
