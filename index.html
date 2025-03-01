@@ -26,6 +26,7 @@
     --content-bg: white;
     --content-color: #111;
     --sidebar-width: 18rem;
+    --body-shadow: rgba(127,127,127,0.5);
   }
   .dark-mode {
     --editor-bg: #333;
@@ -43,6 +44,7 @@
     --purple-border: #603065;
     --gray: #717171;
     --gray-border: #484848;
+    --body-shadow: rgb(0,0,0);
   }
   .dark-mode a:link { color: lightskyblue; }
   .dark-mode a:visited { color: orchid; }
@@ -74,6 +76,9 @@
     overflow-y: auto;
     overflow-x: hidden;
     z-index: 1999999999;
+  }
+  .modern #sidebar {
+    border-left: none;
   }
   .open-sidebar #sidebar {
     display: flex;
@@ -181,6 +186,7 @@
     border: none;
     border-radius: 50%;
     background: var(--teal);
+    /*border: 0.15em solid var(--teal-border);*/
     transition: filter 0.1s ease-in-out;
     cursor: pointer;
     display: flex; /* all for chrome */
@@ -190,9 +196,15 @@
   }
   button.control.unsaved, button.control.alert {
     background: var(--red);
+    /*border: 0.15em solid var(--red-border);*/
   }
   button.control.temp, button.control.deactivated {
     background: var(--gray);
+    /*border: 0.15em solid var(--gray-border);*/
+  }
+  .modern button.control {
+    box-shadow: 0.2em 0.2em 0.5em var(--body-shadow);
+    font-size: 1.2em;
   }
 
   button.control:hover {
@@ -219,6 +231,12 @@
     font-size: 1em;
     overflow: hidden;
   }
+  .modern .card {
+    border: none !important;
+    box-shadow: 0.2em 0.2em 0.75em var(--body-shadow);
+    border-radius: 1em;
+    transition: background 0.1s ease-in;
+  }
 
   .card input[type="checkbox"] {
     width: 1em;
@@ -238,6 +256,9 @@
     flex-wrap: wrap;
     gap: 0.4em;
     position: relative;
+  }
+  .modern .card .top {
+    font-size: 1.2em;
   }
   .card .top a:visited, .card .top a:link {
     color: var(--menu-color);
@@ -269,6 +290,10 @@
     border: 0.05em solid black;
     padding: 0.1em 0.25em;
   }
+  .modern .card .top .edit-title {
+    border-radius: 0.25em;
+    border: none;
+  }
   .card .top time {
     flex: none;
     font-size: 0.8em;
@@ -284,6 +309,10 @@
     padding: 0.1em;
     z-index: 1;
   }
+  .modern .card .top .menu {
+    border-radius: 0.4em;
+    transition: background 0.1s ease-in;
+  }
   .card .top .menu > * {
     padding: 0.1em;
     transition: background 0.1s ease-in-out;
@@ -292,15 +321,27 @@
     display: flex;
     gap: 0.14em;
   }
+  .modern .card .menu .colors {
+    justify-content: center;
+    margin-bottom: 0.2em;
+  }
   .card .menu .colors a {
     width: 1em;
     height: 1em;
+  }
+  .modern .card .menu .colors a {
+    border-radius: 50%;
   }
 
   .card .card-info {
     background: var(--menu-infobg);
     font-size: 0.8em;
     margin-top: 0.1em;
+  }
+  .modern .card-info {
+    border-radius: 0.25em;
+    margin: 0.2em;
+    padding: 0.2em 0.3em !important;
   }
 
   .card .right-resize {
@@ -341,7 +382,6 @@
   }
 
   .card .content {
-    background: var(--content-bg);
     color: var(--content-color);
     flex: 1;
     overflow-x: hidden;
@@ -355,9 +395,16 @@
     margin: 0;
     overflow-y: scroll;
     overflow-x: hidden;
+    background: var(--content-bg);
+  }
+  .modern .card .content .card-main {
+    border: none;
+    border-radius: 0.5em;
+    padding: 0.2em;
+    margin: 0.2em;
   }
 
-  .card .content .editor {
+  .card .content textarea.editor {
     margin: 0;
     border: 0.2em inset #777;
     overflow-y: scroll;
@@ -372,6 +419,20 @@
     flex: none;
     resize: vertical;
     min-height: 4em;
+  }
+  .modern .card .content textarea.editor {
+    resize: none;
+    margin: 0.2em;
+    background: var(--content-bg);
+    color: var(--content-color);
+    height: 1em !important;
+    border: none;
+    border-radius: 0.5em;
+    font-size: 0.9em;
+    transition: height 0.2s ease-out;
+  }
+  .modern .card .content textarea.editor:focus {
+    height: 40% !important;
   }
 
   .card .content .messages {
@@ -412,6 +473,9 @@
   .card .content .markdown {
     padding: 0.5em;
     line-height: 1.4;
+  }
+  .modern .card .content .card-main {
+    padding: 0.75em;
   }
   .markdown > :first-child {
     margin-top: 0;
@@ -551,6 +615,54 @@
   const CARDOFSY = 2;
   const AUTOMARKDOWNDELAY = 300; // ms
 
+  // Funny math!
+  function clamp(v, min, max) {
+    if(min > max) { const tmp = min; min = max; max = tmp; }
+    if(v < min) v = min;
+    if(v > max) v = max;
+    return v;
+  }
+  function pxToRem(pxValue) { // ai generated
+    const htmlFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize);
+    return pxValue / htmlFontSize;
+  }
+  function pxToEm(pxValue,emTarget) {
+    const fontSize = parseFloat(getComputedStyle(emTarget).fontSize);
+    return pxValue / fontSize;
+  }
+  function remToPx(remValue) {
+    const htmlFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize);
+    return remValue * htmlFontSize;
+  }
+  function emToRem(emValue, emTarget) {
+    const htmlFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize);
+    const targetFontSize = parseFloat(getComputedStyle(emTarget).fontSize);
+    return emValue * targetFontSize / htmlFontSize;
+  }
+
+  // Simple Html helpers
+  function removeSelf(element) { element.parentNode.removeChild(element); }
+  function toggleHidden(element) { return element.classList.toggle('hidden'); }
+  function setHidden(element) { return element.classList.add('hidden'); }
+  function setUnhidden(element) { return element.classList.remove('hidden'); }
+  function isHidden(element) { return element.classList.contains('hidden'); }
+  function toggleHiddenChildren(element) { let hid = null; Array.from(element.children).forEach(e => hid = toggleHidden(e)); return hid; }
+  function findParentOrSelf(currentElement, check) {
+    while (currentElement) {
+      if (check(currentElement)) {
+        return currentElement;
+      }
+      currentElement = currentElement.parentElement; // Move up the DOM tree.
+    }
+    return null;
+  }
+  function setDateElement(tm, datetime) {
+    const now = new Date(datetime);
+    tm.setAttribute("datetime", now.toISOString());
+    tm.setAttribute("title", now.toISOString());
+    tm.textContent = now.toLocaleDateString();
+  }
+
   // Simple Card helpers
   function getContainingCard(element) { return findParentOrSelf(element, (e) => e.hasAttribute("data-topcard")); }
   function getContainingMenu(element) { return findParentOrSelf(element, (e) => e.classList.contains("menu")); }
@@ -567,6 +679,7 @@
   function getCardParent(card) { return card.querySelector(".card-parent"); }
   function getCardChildren(card) { return window[MCKEY].querySelectorAll(`.card[data-parent="${card.id}"]`) }
   function getRootCards() { return window[MCKEY].querySelectorAll(`.card:not([data-parent])`) }
+  function bringToFront(card) { card.style.zIndex = findMaxCardIndex() + 1; } // Increase forever
   function getCardAllChildren(card) {
     let seen = {};
     seen[card.id] = true; // can't be a child of yourself (well you can... but)
@@ -617,12 +730,7 @@
     }
   }
 
-  // Simple Html helpers
-  function removeSelf(element) { element.parentNode.removeChild(element); }
-  function toggleHidden(element) { return element.classList.toggle('hidden'); }
-  function setHidden(element) { return element.classList.add('hidden'); }
-  function setUnhidden(element) { return element.classList.remove('hidden'); }
-  function isHidden(element) { return element.classList.contains('hidden'); }
+  // Template stuff
   function copyTemplateSingle(name) { 
     let result = document.getElementById(name).content.cloneNode(true).firstElementChild; 
     removeWhitespaceNodes(result);
@@ -635,44 +743,6 @@
     removeWhitespaceNodes(result);
     return result;
   }
-  function addError(error) {
-    let errelm = copyTemplateSingle("template-error");
-    errelm.textContent = error;
-    window["errors-container"].appendChild(errelm);
-    setTimeout(() => {
-      errelm.style.opacity = 0;
-      setTimeout(() => removeSelf(errelm), 2000);
-    }, 10000);
-  }
-  function getProductVersion() { return window["app-version"].textContent; }
-  function toggleHiddenChildren(element) { let hid = null; Array.from(element.children).forEach(e => hid = toggleHidden(e)); return hid; }
-  function isInFooter(element) { return findParentOrSelf(element, (e) => e.nodeName.toLowerCase() == 'footer'); }
-  function clamp(v, min, max) {
-    if(min > max) { const tmp = min; min = max; max = tmp; }
-    if(v < min) v = min;
-    if(v > max) v = max;
-    return v;
-  }
-  function findParentOrSelf(currentElement, check) {
-    while (currentElement) {
-      if (check(currentElement)) {
-        return currentElement;
-      }
-      currentElement = currentElement.parentElement; // Move up the DOM tree.
-    }
-    return null;
-  }
-  function findDraghandle(ce) {
-    if(["input", "select", "button"].includes(ce.tagName.toLowerCase())) return null;
-    return findParentOrSelf(ce, (e) => e.classList.contains("draghandle"));
-  }
-  function getCurrentName() {
-    const parts = window.location.pathname.split('/');
-    if(parts.length === 0) return "deskmess";
-    const lastp = parts[parts.length - 1];
-    const lastd = lastp.lastIndexOf('.');
-    return lastd === -1 ? lastp: lastp.substring(0, lastd);
-  }
   function removeWhitespaceNodes(parentNode) {
     for (var i = parentNode.childNodes.length - 1; i >= 0; --i) { 
       var child = parentNode.childNodes[i];
@@ -684,34 +754,66 @@
     }
   }
 
-  function pxToRem(pxValue) { // ai generated
-    const htmlFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize);
-    return pxValue / htmlFontSize;
+  // Name-related stuff (user supplied?)
+  function getLocalName() {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get('local');
   }
-  function pxToEm(pxValue,emTarget) {
-    const fontSize = parseFloat(getComputedStyle(emTarget).fontSize);
-    return pxValue / fontSize;
+  function getServerName() {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get('server');
   }
-  function remToPx(remValue) {
-    const htmlFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize);
-    return remValue * htmlFontSize;
+  function getRemoteName() {
+    return getLocalName() || getServerName();
   }
-  function emToRem(emValue, emTarget) {
-    const htmlFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize);
-    const targetFontSize = parseFloat(getComputedStyle(emTarget).fontSize);
-    return emValue * targetFontSize / htmlFontSize;
+  function getCurrentName() {
+    const rname = getRemoteName();
+    if(rname) return rname;
+    const parts = window.location.pathname.split('/').filter(x => x);
+    if(parts.length === 0) return "deskmess";
+    const lastp = parts[parts.length - 1];
+    const lastd = lastp.lastIndexOf('.');
+    return lastd === -1 ? lastp: lastp.substring(0, lastd);
   }
 
+  // Meta?
+  function setSaved() { window["action-save"].classList.remove("unsaved"); }
+  function setUnsaved() { window["action-save"].classList.add("unsaved"); }
+  function isUnsaved() { return window["action-save"].classList.contains("unsaved"); }
+  function getProductVersion() { return window["app-version"].textContent; }
+  function isInFooter(element) { return findParentOrSelf(element, (e) => e.nodeName.toLowerCase() == 'footer'); }
+  function findDraghandle(ce) {
+    if(["input", "select", "button"].includes(ce.tagName.toLowerCase())) return null;
+    return findParentOrSelf(ce, (e) => e.classList.contains("draghandle"));
+  }
   function nextCardId() {
     const nextid = parseInt(window[MCKEY].getAttribute(NEXTIDKEY));
     window[MCKEY].setAttribute(NEXTIDKEY, nextid + 1);
     return nextid;
   }
-  function refreshCardId(id) {
+  function updateNextCardId(id) {
     const nextid = parseInt(window[MCKEY].getAttribute(NEXTIDKEY));
     const maxid = Math.max(parseInt(id) + 1, nextid);
     window[MCKEY].setAttribute(NEXTIDKEY, maxid);
     return maxid;
+  }
+  function findMaxCardIndex() {
+    const cards = window[MCKEY].querySelectorAll(":scope > [data-topcard]");
+    let maxZ = 0;
+    cards.forEach(card => {
+      maxZ = Math.max(maxZ, parseFloat(card.style.zIndex));
+    });
+    return maxZ;
+  }
+
+  function addError(error) {
+    let errelm = copyTemplateSingle("template-error");
+    errelm.textContent = error;
+    window["errors-container"].appendChild(errelm);
+    setTimeout(() => {
+      errelm.style.opacity = 0;
+      setTimeout(() => removeSelf(errelm), 2000);
+    }, 10000);
   }
 
   function downloadBlob(blob, name) {
@@ -760,12 +862,10 @@
     return cdata;
   }
 
-
-  const TYPEICONS = { text: "📄", chat: "💬", todo: "✅", image: "🖼️" }; // TODO: don't duplicate these
   function importCard(cdata) {
     let cardsec = copyTemplateSafe("template-card");
     let card = cardsec.firstElementChild;
-    refreshCardId(cdata.id); // Make sure next card id is proper just in case id is huge
+    updateNextCardId(cdata.id); // Make sure next card id is proper just in case id is huge
     card.id = "card_" + cdata.id;
     Array.from(cardsec.children).forEach(c => c.setAttribute("data-cardset", card.id));
     card.setAttribute("data-color", cdata.color);
@@ -773,7 +873,8 @@
     let cardref = getCardRef(card);
     cardref.textContent = card.id;
     cardref.href = "#" + card.id;
-    card.querySelector(".type-icon").textContent = TYPEICONS[cdata.type];
+    const newControl = window['action-new' + cdata.type];
+    if(newControl) card.querySelector(".type-icon").textContent = newControl.textContent;
     getCardType(card).textContent = cdata.type;
     getCardFrom(card).textContent = cdata.from;
     getCardTitle(card).textContent = cdata.title;
@@ -877,6 +978,7 @@
       app_version: getProductVersion(),
       export_date: new Date().toISOString(),
       offset: offset,
+      modern: controlEnabled(window['action-modern']),
       dark_mode: controlEnabled(window['action-darkmode']),
       page_view: controlEnabled(window['action-pageview']),
       grid_snap: controlEnabled(window['action-gridsnap']),
@@ -915,6 +1017,7 @@
         window[MCKEY].style.left = jsonData.offset.x + "px";
         window[MCKEY].style.top = jsonData.offset.y + "px";
       }
+      setControl(window['action-modern'], jsonData.modern);
       setControl(window['action-darkmode'], jsonData.dark_mode);
       setControl(window['action-pageview'], jsonData.page_view);
       setControl(window['action-gridsnap'], jsonData.grid_snap);
@@ -925,7 +1028,7 @@
         setCardParent(card, getCardParent(card).textContent);
       });
       // TODO: this is bad
-      if(forceSaveState === undefined) forceSaveState = !isRemoteStorage();
+      if(forceSaveState === undefined) forceSaveState = !getRemoteName();
       if(forceSaveState) setSaved();
       else setUnsaved();
       rebuildTree();
@@ -980,25 +1083,8 @@
         fs : parseFloat(element.style.fontSize) || 1
     }
   }
-
   function getMainOffset() {
     return getOffset(window[MCKEY]);
-  }
-
-  function setDateElement(tm, datetime) {
-    const now = new Date(datetime);
-    tm.setAttribute("datetime", now.toISOString());
-    tm.setAttribute("title", now.toISOString());
-    tm.textContent = now.toLocaleDateString();
-  }
-
-  function findMaxCardIndex() {
-    const cards = window[MCKEY].querySelectorAll(":scope > [data-topcard]");
-    let maxZ = 0;
-    cards.forEach(card => {
-      maxZ = Math.max(maxZ, parseFloat(card.style.zIndex));
-    });
-    return maxZ;
   }
 
   function createMessage(message, date) {
@@ -1010,14 +1096,12 @@
     emsgmsg.setAttribute("data-message", message);
     return emsg;
   }
-
   function parseMessage(emsg) {
     return {
       date: emsg.querySelector('time').getAttribute("datetime"),
       message: emsg.querySelector('.message').getAttribute("data-message")
     }
   }
-
   function sendMessage(card, message) {
     let emsg = createMessage(message);
     let content = getCardContent(card);
@@ -1026,15 +1110,6 @@
     messages.scrollTop = messages.scrollHeight;
     setUnsaved();
   }
-  function setCardColor(event) {
-    let card = cardEvent(event);
-    card.setAttribute("data-color", event.target.getAttribute("data-color"));
-    setUnsaved();
-  }
-
-  function setSaved() { window["action-save"].classList.remove("unsaved"); }
-  function setUnsaved() { window["action-save"].classList.add("unsaved"); }
-  function isUnsaved() { return window["action-save"].classList.contains("unsaved"); }
 
   let pendingCardAction = null;
   function setPendingCardAction(action) {
@@ -1157,27 +1232,6 @@
       });
   }
 
-  function getLocalName() {
-    const urlParams = new URLSearchParams(window.location.search);
-    return urlParams.get('local');
-  }
-  function getServerName() {
-    const urlParams = new URLSearchParams(window.location.search);
-    return urlParams.get('server');
-  }
-  function isRemoteStorage() {
-    return getLocalName() || getServerName();
-  }
-
-  function snapEm(value) {
-    // TODO: slow
-    if(controlEnabled(window["action-gridsnap"])) {
-      return Math.round(value);
-    } else {
-      return value;
-    }
-  }
-
   window.addEventListener("hashchange", function(event) {
     const cid = window.location.hash.substring(1);
     if(!cid) return;
@@ -1188,6 +1242,7 @@
       let mc = window[MCKEY];
       mc.style.left = remToPx(CARDOFSX - emToRem(ofs.x, mc)) + "px";
       mc.style.top = remToPx(CARDOFSY - emToRem(ofs.y, mc)) + "px";
+      bringToFront(card);
     }
   });
 
@@ -1249,6 +1304,7 @@
     window["action-gridsnap"].addEventListener("click", (event) => toggleControl(event.target, "grid-snap"));
     window["action-pageview"].addEventListener("click", (event) => toggleControl(event.target, "page-view"));
     window["action-darkmode"].addEventListener("click", (event) => toggleControl(event.target, "dark-mode"));
+    window["action-modern"].addEventListener("click", (event) => toggleControl(event.target, "modern"));
     window["action-sidebar"].addEventListener("click", (event) => toggleControl(event.target, "open-sidebar"));
     window["action-cancelpending"].addEventListener("click", () => {removePendingCardAction();});
     window["action-newtext"].addEventListener("click", () => addCard("text"));
@@ -1292,7 +1348,7 @@
         if(card) {
           if(!getContainingMenu(event.target)) setHidden(getCardMenu(card));
           cards.push({card:card, cofs:getOffset(card), main: true});
-          card.style.zIndex = findMaxCardIndex() + 1; // This will increase forever
+          bringToFront(card);
           if(event.target.classList.contains("right-resize")) {
             mods = MODRESIZERIGHT;
             getCardChildren(card).forEach(c => cards.push({card:c, cofs:getOffset(c)}));
@@ -1319,7 +1375,9 @@
           x : event.clientX, xs: event.clientX,
           y : event.clientY, ys: event.clientY,
           cards: cards,
-          mods: mods
+          mods: mods,
+          snapEm : controlEnabled(window["action-gridsnap"]) ?
+            (v) => Math.round(v) : (v) => v 
         };
         event.preventDefault();
         window.location.hash = ""; // to make life easier for people 
@@ -1336,15 +1394,15 @@
           lastBodyMouse.cards.forEach(c => {
             if(c.main) {
               if(lastBodyMouse.mods & MODRESIZERIGHT) {
-                c.card.style.width = snapEm(Math.max(c.cofs.width + xofs, MINCARDWIDTH)) + "em";
+                c.card.style.width = lastBodyMouse.snapEm(Math.max(c.cofs.width + xofs, MINCARDWIDTH)) + "em";
               }
               if(lastBodyMouse.mods & MODRESIZEBOTTOM) {
-                c.card.style.height = snapEm(Math.max(c.cofs.height + yofs, MINCARDHEIGHT)) + "em";
+                c.card.style.height = lastBodyMouse.snapEm(Math.max(c.cofs.height + yofs, MINCARDHEIGHT)) + "em";
               }
             }
             if(lastBodyMouse.mods & MODMOVECARDS) {
-              c.card.style.left = snapEm(c.cofs.x + xofs) + "em";
-              c.card.style.top = snapEm(c.cofs.y + yofs) + "em";
+              c.card.style.left = lastBodyMouse.snapEm(c.cofs.x + xofs) + "em";
+              c.card.style.top = lastBodyMouse.snapEm(c.cofs.y + yofs) + "em";
             }
             // HORRIBLE!!
             setCardParent(c.card, c.card.getAttribute("data-parent"));
@@ -1380,6 +1438,11 @@
     getCardTitle(getContainingCard(event.target)).textContent = event.target.value;
   }
 
+  function menu_color(event) {
+    let card = cardEvent(event);
+    card.setAttribute("data-color", event.target.getAttribute("data-color"));
+    setUnsaved();
+  }
   function menu_toggleTitle(event) {
     let card = cardEvent(event);
     let t = getCardTitle(card);
@@ -1562,9 +1625,8 @@
   <div id="sidebar">
     <div id="app-info">
       <a target="_blank" href="https://github.com/randomouscrap98/deskmess">Deskmess</a>
-      <span id="app-version" class="no-interaction">v0.7.1</span>
+      <span id="app-version" class="no-interaction">v0.7.2</span>
       <span>| haloopdy 2025</span>
-      <!--<span>| Get updates on <a target="_blank" href="https://github.com/randomouscrap98/deskmess">github</a></span>-->
     </div>
     <div id="tree"></div>
   </div>
@@ -1582,6 +1644,7 @@
       <button class="control deactivated" id="action-gridsnap" title="Snap to grid">📐</button>
       <button class="control deactivated" id="action-pageview" title="View as page">📃</button>
       <button class="control deactivated" id="action-darkmode" title="Toggle darkmode">🌒</button>
+      <button class="control deactivated" id="action-modern" title="Toggle modern">🤔</button>
       <button class="control deactivated" id="action-sidebar" title="Toggle sidebar">🎚️</button>
       <button class="control" id="action-import" title="Import page">📥</button>
       <button class="control" id="action-export" title="Export page">📤</button>
@@ -1620,11 +1683,11 @@
         <a href="#" onclick="toggleHidden(getCardMenu(cardEvent(event)))">⚙️</a>
         <div class="menu hidden">
           <div class="colors">
-            <a href="#" data-color="teal" onclick="setCardColor(event)"></a>
-            <a href="#" data-color="blue" onclick="setCardColor(event)"></a>
-            <a href="#" data-color="red" onclick="setCardColor(event)"></a>
-            <a href="#" data-color="purple" onclick="setCardColor(event)"></a>
-            <a href="#" data-color="gray" onclick="setCardColor(event)"></a>
+            <a href="#" data-color="teal" onclick="menu_color(event)"></a>
+            <a href="#" data-color="blue" onclick="menu_color(event)"></a>
+            <a href="#" data-color="red" onclick="menu_color(event)"></a>
+            <a href="#" data-color="purple" onclick="menu_color(event)"></a>
+            <a href="#" data-color="gray" onclick="menu_color(event)"></a>
           </div>
           <a href="#" class="toggle-title" onclick="menu_toggleTitle(event)">Set title</a>
           <a href="#" class="toggle-editor hidden" 
