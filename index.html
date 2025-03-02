@@ -549,13 +549,8 @@ button.control:hover {
   width: 0.15em;
   background: var(--gray);
 }
-/*.draw-controls .tools {
-  padding: 0 0.2em;
-  margin: 0 0.2em;
-  border-right: 0.2em solid var(--gray);
-}*/
 .draw-controls button {
-  font-size: 1.2em;
+  font-size: 1.0em;
   width: 1.5em;
   height: 1.5em;
   border: none;
@@ -566,9 +561,13 @@ button.control:hover {
   color: var(--content-color);
 }
 .modern .draw-controls button {
-  font-size: 1.3em;
+  font-size: 1.1em;
   border-radius: 0.3em;
   margin: 0 0.1em;
+}
+.draw-controls button:disabled {
+  filter: grayscale(1) contrast(0.25);
+  cursor: unset;
 }
 
 /* Special rendering mode */
@@ -1734,13 +1733,49 @@ button.control:hover {
       y: pxToEm(pY, event.target).toFixed(2),
     };
   }
+  function getDrawingSvg(card) {
+    return getCardContent(card).querySelector(".draw-main svg");
+  }
+  function updateDrawingRedo(card) {
+    let redo = getCardContent(card).querySelector(".redo");
+    if(card.redos && card.redos.length) {
+      redo.removeAttribute("disabled");
+    } else {
+      redo.setAttribute("disabled", "");
+    }
+  }
+  function drawing_undo(event) {
+    const card = getContainingCard(event.target);
+    let svg = getDrawingSvg(card);
+    let last = svg.lastElementChild;
+    if(last) {
+      card.redos = card.redos || [];
+      card.redos.push(last);
+      removeSelf(last);
+      updateDrawingRedo(card);
+      console.log("Undo in " + card.id);
+    } else {
+      console.warn("Nothing to undo");
+    }
+  }
+  function drawing_redo(event) {
+    const card = getContainingCard(event.target);
+    if(card.redos && card.redos.length) {
+      let svg = getDrawingSvg(card);
+      svg.appendChild(card.redos.pop());
+      console.log("Redo in " + card.id);
+      updateDrawingRedo(card);
+    } else {
+      console.warn("Nothing to redo!");
+    }
+
+  }
   function drawing_mouseDown(event) {
     if(event.button !== 0) { return; }
     const card = getContainingCard(event.target);
     const editor = getCardEditor(card);
     if(isHidden(editor)) { return; }
-    const content = getCardContent(card);
-    let svg = content.querySelector("svg");
+    const svg = getDrawingSvg(card);
     const rect = svg.getBoundingClientRect();
     const opos = drawing_position(rect, event);
     const tool = getSelectedRadio(editor.querySelector('.tools')).getAttribute("data-tool");
@@ -1910,16 +1945,19 @@ button.control:hover {
   <template id="template-text-menu">
   </template>
 
-  <!--<button data-tool="pencil" data-selected onclick="radio(event.target)">✏️</button>-->
-
   <template id="template-drawing">
     <div class="card-main draw-container">
       <div class="draw-controls editor">
         <div class="tools">
-          <button data-tool="pencil" data-selected onclick="radio(event.target)">〰</button>
-          <button data-tool="line" onclick="radio(event.target)">━</button>
-          <button data-tool="rectangle" onclick="radio(event.target)">□</button>
-          <button data-tool="rectangle-fill" onclick="radio(event.target)">■</button>
+          <button title="Freehand tool" data-tool="pencil" data-selected onclick="radio(event.target)">〰</button>
+          <button title="Straight line tool" data-tool="line" onclick="radio(event.target)">━</button>
+          <button title="Rectangle tool" data-tool="rectangle" onclick="radio(event.target)">□</button>
+          <button title="Rectangle (filled) tool" data-tool="rectangle-fill" onclick="radio(event.target)">■</button>
+        </div>
+        <div class="separator"></div>
+        <div class="modifiers">
+          <button class="undo" title="Undo" onclick="drawing_undo(event)">↺</button>
+          <button class="redo" disabled title="Redo" onclick="drawing_redo(event)">↻</button>
         </div>
         <div class="separator"></div>
         <div class="colors">
