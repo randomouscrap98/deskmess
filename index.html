@@ -554,20 +554,19 @@
     border-radius: 0.5em;
     padding: 0.6em 0.8em;
   }
-  
+
   .card-main.draw-area {
     overflow: hidden !important;
   }
   .draw-area {
-    display: block;
+    display: flex;
+    flex-direction: column;
+  }
+  .draw-area .draw-container {
     position: relative;
   }
-  .draw-area > * {
-    position: absolute;
-    top: 0;
-    left: 0;
-  }
   .draw-area svg {
+    position: absolute;
     width: 500em;
     height: 500em;
   }
@@ -1523,6 +1522,7 @@
         if(lastBodyMouse) {
           lastBodyMouse = null;
           event.preventDefault();
+          console.log("Master mouse up")
         }
       }
     });
@@ -1718,6 +1718,61 @@
     }
   }
 
+  let internal_path = null;
+  function drawing_position(svgrect, event) {
+    const pX = event.clientX - svgrect.left;
+    const pY = event.clientY - svgrect.top;
+    return {
+      x: pxToEm(pX, event.target),
+      y: pxToEm(pY, event.target),
+    };
+  }
+  function drawing_mouseDown(event) {
+    if(event.button !== 0) { return; }
+    const card = getContainingCard(event.target);
+    const editor = getCardEditor(card);
+    if(isHidden(editor)) {
+      return;
+    }
+    const content = getCardContent(card);
+    let svg = content.querySelector("svg");
+    const rect = svg.getBoundingClientRect();
+    const pos = drawing_position(rect, event);
+    let path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("stroke", editor.querySelector('input[name="color"]').value);
+    path.setAttribute("stroke-width", editor.querySelector('input[name="width"]').value * 0.2);
+    path.setAttribute("fill", "none");
+    path.setAttribute("d", `M${pos.x},${pos.y}`);
+    svg.appendChild(path);
+    internal_path = path;
+    //event.target.internal_path = path;
+    //event.target.internal_svgrect = rect;
+    console.log("Mouse down");
+  }
+  function drawing_mouseMove(event) {
+    //if(event.button !== 0) { return; }
+    if(internal_path) { //event.target.internal_path) {
+      // Unfortunately, we have to do this every movement so that zooms/etc don't break it
+      const card = getContainingCard(event.target);
+      const content = getCardContent(card);
+      const svg = content.querySelector("svg");
+      const rect = svg.getBoundingClientRect();
+      const pos = drawing_position(rect, event);
+      internal_path.setAttribute("d", internal_path.getAttribute("d") + ` L${pos.x},${pos.y}`);
+      //event.target.internal_path.setAttribute("d", event.target.internal_path.getAttribute("d") + ` L${pos.x},${pos.y}`);
+      console.log("Mouse move");
+    }
+  }
+  function drawing_mouseUp(event) {
+    //if(event.button !== 0) { return; }
+    //if(event.target.internal_path) {
+    if(internal_path) {
+      internal_path = null;
+      //event.target.internal_svgrect = undefined; 
+      console.log("Mouse up");
+    }
+  }
+
 </script>
 
 <body id="main-block">
@@ -1829,13 +1884,18 @@
 
   <template id="template-drawing">
     <div class="card-main draw-area">
-      <svg width="500" height="500" xmlns="http://www.w3.org/2000/svg"></svg>
       <div class="draw-controls editor">
         <button class="control" onclick="draw_set(event)">✏️</button>
-        <input type="color" value="#000000">
-        <input type="number" min="1" max="100" step="1" value="2">
+        <input type="color" name="color" value="#000000">
+        <input type="number" name="width" min="1" max="100" step="1" value="2">
         <!--<label>Width: <input type="number" min="1" max="100" step="1" value="2"></label>-->
         <!--<button class="control" onclick="draw_(event)"></button>-->
+      </div>
+      <div class="draw-container">
+        <svg viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg"
+            onmousedown="drawing_mouseDown(event)"
+            onmousemove="drawing_mouseMove(event)"
+            onmouseup="drawing_mouseUp(event)"></svg>
       </div>
     </div>
   </template>

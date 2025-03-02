@@ -17,6 +17,7 @@ It's as easy as downloading index.html, or you can try it out [here](https://hal
   - Chat cards let you dump thoughts as messages in a fake chatroom
   - Todo cards let you construct lists and check them off, saving the date of completion
   - Image cards let you embed images directly into the page. Most browsers limit to 2mb FYI
+  - Drawing cards let you draw simple vector shapes
 - Set title, color, etc, resize, delete
 - Dark mode
 - Toggle modern styling 🤔
@@ -33,7 +34,6 @@ It's as easy as downloading index.html, or you can try it out [here](https://hal
 ## Goals
 
 - If mobile support is added, perhaps different navigation modes
-- Basic drawing card
 - Add regular files to cards, if possible
 - Display all cards of a "type" and a simplified view of how you get to them.
   For things like finding all todo lists
