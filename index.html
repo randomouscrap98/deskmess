@@ -7,668 +7,659 @@
 <title>Desk Mess</title>
 
 <style>
-  :root {
-    --teal: #20B2AA;
-    --teal-border: #367370;
-    --blue: #5F92C8;
-    --blue-border: #346393;
-    --red: #DD6D6D;
-    --red-border: #AC4D4D;
-    --purple: #AB7CBB;
-    --purple-border: #784A88;
-    --gray: #A8A8A8;
-    --gray-border: #717171;
-    --menu-color: white;
-    --menu-infobg: #444;
-    --editor-bg: #EEE;
-    --editor-color: #333;
-    --bg: #F3F3F3;
-    --content-bg: white;
-    --content-color: #111;
-    --sidebar-width: 18rem;
-    --body-shadow: rgba(127,127,127,0.5);
-  }
-  .dark-mode {
-    --editor-bg: #333;
-    --editor-color: #AAA;
-    --bg: #111;
-    --content-bg: #222;
-    --content-color: #DDD;
-    --teal: #367370;
-    --teal-border: #205050;
-    --blue: #346393;
-    --blue-border: #203a6f;
-    --red: #AC4D4D;
-    --red-border: #7e3131;
-    --purple: #784A88;
-    --purple-border: #603065;
-    --gray: #717171;
-    --gray-border: #484848;
-    --body-shadow: rgb(0,0,0);
-  }
-  .dark-mode a:link { color: lightskyblue; }
-  .dark-mode a:visited { color: orchid; }
-  .dark-mode .top > a.toggle-menu { filter: brightness(1.5); }
+:root {
+  --teal: #20B2AA;
+  --teal-border: #367370;
+  --blue: #5F92C8;
+  --blue-border: #346393;
+  --red: #DD6D6D;
+  --red-border: #AC4D4D;
+  --purple: #AB7CBB;
+  --purple-border: #784A88;
+  --gray: #A8A8A8;
+  --gray-border: #717171;
+  --menu-color: white;
+  --menu-infobg: #444;
+  --editor-bg: #EEE;
+  --editor-color: #333;
+  --bg: #F3F3F3;
+  --content-bg: white;
+  --content-color: #111;
+  --sidebar-width: 18rem;
+  --body-shadow: rgba(127,127,127,0.5);
+}
+.dark-mode {
+  --editor-bg: #333;
+  --editor-color: #AAA;
+  --bg: #111;
+  --content-bg: #222;
+  --content-color: #DDD;
+  --teal: #367370;
+  --teal-border: #205050;
+  --blue: #346393;
+  --blue-border: #203a6f;
+  --red: #AC4D4D;
+  --red-border: #7e3131;
+  --purple: #784A88;
+  --purple-border: #603065;
+  --gray: #717171;
+  --gray-border: #484848;
+  --body-shadow: rgb(0,0,0);
+}
+.dark-mode a:link { color: lightskyblue; }
+.dark-mode a:visited { color: orchid; }
+.dark-mode .top > a.toggle-menu { filter: brightness(1.5); }
 
-  body {
-    font-family: sans-serif;
-    padding: 0;
-    margin: 0;
-    align-items: stretch;
-    position: fixed;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    right: 0;
-    background: var(--bg);
-  }
-  body.modern {
-    transition: background 0.2s ease-in;
-  }
+body {
+  font-family: sans-serif;
+  padding: 0;
+  margin: 0;
+  align-items: stretch;
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  background: var(--bg);
+}
+body.modern {
+  transition: background 0.2s ease-in;
+}
 
-  .modern a:not([href="#"]):link, .modern a:not([href="#"]):visited {
-    text-decoration: none;
-    color: var(--teal);
-  }
-  .dark-mode.modern a:not([href="#"]):link,
-  .dark-mode.modern a:not([href="#"]):visited {
-    filter: brightness(1.5);
-  }
+.modern a:not([href="#"]):link, .modern a:not([href="#"]):visited {
+  text-decoration: none;
+  color: var(--teal);
+}
+.dark-mode.modern a:not([href="#"]):link,
+.dark-mode.modern a:not([href="#"]):visited {
+  filter: brightness(1.5);
+}
 
-  #sidebar {
-    display: flex;
-    position: fixed;
-    right: 0;
-    top: 0;
-    bottom: 0;
-    flex-direction: column;
-    width: 0;
-    border-left: 0.15em solid var(--gray);
-    background: var(--content-bg);
-    color: var(--content-color);
-    overflow-y: auto;
-    overflow-x: hidden;
-    z-index: 1999999999;
-  }
-  .modern #sidebar {
-    border-left: none;
-    transition: width 0.2s ease-out,
-      background 0.2s ease-in;
-  }
-  .open-sidebar #sidebar {
-    width: var(--sidebar-width);
-  }
-  .open-sidebar footer {
-    /* NOTE: this is required to make #links work correctly in visual mode */
-    right: var(--sidebar-width);
-  }
-  #sidebar #app-info {
-    font-size: 0.8em;
-    color: rgba(127,127,127,0.75);
-    background: var(--editor-bg);
-    padding: 0.1em 0.5em;
-  }
-  .modern #sidebar #app-info {
-    display: flex;
-    gap: 0.5em;
-    padding: 0.4em 1em;
-    border-radius: 2em;
-    justify-content: center;
-    margin: 0.5em auto;
-    background: none;
-  }
-  #sidebar #tree {
-    padding: 1em;
-  }
-  .tree-node {
-    margin: 0.25em 0;
-  }
-  .tree-node .line {
-    display: flex;
-  }
-  .tree-node .expand {
-    width: 1.5em;
-    text-align: center;
-    color: var(--gray);
-    cursor: pointer;
-    flex: none;
-  }
-  .tree-node .children {
-    margin-left: 0.7em;
-  }
+.hidden { display: none !important; }
+.no-interaction { pointer-events: none; user-select: none; }
+.spacer { flex: 1; }
+.draghandle { cursor: grab; }
 
-  .hidden {
-    display: none !important;
-  }
+@keyframes bgChange {
+  0% { background-color: transparent; }
+  50% { background-color: rgba(127,255,0,0.5); }
+  100% { background-color: transparent; }
+}
 
-  .spacer {
-    flex: 1;
-  }
+#sidebar {
+  display: flex;
+  position: fixed;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  flex-direction: column;
+  width: 0;
+  border-left: 0.15em solid var(--gray);
+  background: var(--content-bg);
+  color: var(--content-color);
+  overflow-y: auto;
+  overflow-x: hidden;
+  z-index: 1999999999;
+}
+.modern #sidebar {
+  border-left: none;
+  transition: width 0.2s ease-out,
+    background 0.2s ease-in;
+}
+.open-sidebar #sidebar {
+  width: var(--sidebar-width);
+}
+#app-info {
+  font-size: 0.8em;
+  color: rgba(127,127,127,0.75);
+  background: var(--editor-bg);
+  padding: 0.1em 0.5em;
+}
+.modern #app-info {
+  display: flex;
+  gap: 0.5em;
+  padding: 0.4em 1em;
+  border-radius: 2em;
+  justify-content: center;
+  margin: 0.5em auto;
+  background: none;
+}
+#tree { padding: 1em; }
+.tree-node { margin: 0.25em 0; }
+.tree-node .line { display: flex; }
+.tree-node .children { margin-left: 0.7em; }
+.tree-node .expand {
+  width: 1.5em;
+  text-align: center;
+  color: var(--gray);
+  cursor: pointer;
+  flex: none;
+}
 
-  @keyframes bgChange {
-    0% { background-color: transparent; }
-    50% { background-color: rgba(127,255,0,0.5); }
-    100% { background-color: transparent; }
-  }
+#main-container {
+  width: 1em;
+  height: 1em;
+  position: absolute;
+  background: rgba(127,127,127,0.15);
+  border-radius: 50%;
+  margin: 0.5em;
+}
 
-  #main-container {
-    width: 1em;
-    height: 1em;
-    position: absolute;
-    background: rgba(127,127,127,0.15);
-    border-radius: 50%;
-    margin: 0.5em;
-  }
-  #main-container.pending-action .card .top .draghandle {
-    animation: bgChange 0.75s infinite;
-  }
+footer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: flex-end;
+  gap: 0.25em;
+  padding: 0.3em 1em;
+  box-sizing: border-box;
+  z-index: 1999999999;
+}
+.open-sidebar footer {
+  /* NOTE: this is required to make #links work correctly in visual mode */
+  right: var(--sidebar-width);
+}
+.modern footer {
+  transition: right 0.2s ease-out;
+}
 
-  .no-interaction {
-    pointer-events: none; /* Disables all mouse events */
-    user-select: none;    /* Prevents text selection */
-  }
+#errors-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+}
+#errors-container .error {
+  font-size: 0.8em;
+  background: var(--red);
+  color: var(--content-color);
+  padding: 0.25em 0.5em;
+  border-radius: 0.5em;
+  transition: opacity 2s ease-in-out;
+}
 
-  footer {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    display: flex;
-    align-items: flex-end;
-    gap: 0.25em;
-    padding: 0.3em 1em;
-    box-sizing: border-box;
-    z-index: 1999999999;
-  }
-  .modern footer {
-    transition: right 0.2s ease-out;
-  }
-  footer #errors-container {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5em;
-  }
-  footer #errors-container .error {
-    font-size: 0.8em;
-    background: var(--red);
-    color: var(--content-color);
-    padding: 0.25em 0.5em;
-    border-radius: 0.5em;
-    transition: opacity 2s ease-in-out;
-  }
+#controls {
+  display: flex;
+  gap: 0.25em;
+}
 
-  #controls {
-    display: flex;
-    gap: 0.25em;
-  }
+button.control {
+  width: 2em;
+  height: 2em;
+  font-size: 1em;
+  border: none;
+  border-radius: 50%;
+  background: var(--teal);
+  transition: filter 0.1s ease-in-out;
+  cursor: pointer;
+  display: flex; /* all for chrome */
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+button.control.unsaved, button.control.alert {
+  background: var(--red);
+}
+button.control.temp, button.control.deactivated {
+  background: var(--gray);
+}
+.modern button.control {
+  box-shadow: 0.2em 0.2em 0.5em var(--body-shadow);
+  font-size: 1.2em;
+}
 
-  .draghandle {
-    cursor: grab;
-  }
+button.control:hover {
+  filter: brightness(1.2);
+}
 
-  button.control {
-    width: 2em;
-    height: 2em;
-    font-size: 1em;
-    border: none;
-    border-radius: 50%;
-    background: var(--teal);
-    transition: filter 0.1s ease-in-out;
-    cursor: pointer;
-    display: flex; /* all for chrome */
-    align-items: center;
-    justify-content: center;
-    line-height: 1;
-  }
-  button.control.unsaved, button.control.alert {
-    background: var(--red);
-  }
-  button.control.temp, button.control.deactivated {
-    background: var(--gray);
-  }
-  .modern button.control {
-    box-shadow: 0.2em 0.2em 0.5em var(--body-shadow);
-    font-size: 1.2em;
-  }
+.image-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.image-container img {
+  max-width: 100%;
+  max-height: 100%;
+  margin: 0;
+  padding: 0;
+}
 
-  button.control:hover {
-    filter: brightness(1.2);
-  }
+.card {
+  display: flex;
+  flex-direction: column;
+  padding: 0.35em;
+  position: absolute;
+  font-size: 1em;
+  overflow: hidden;
+}
+.modern .card {
+  border: none !important;
+  box-shadow: 0.2em 0.2em 0.75em var(--body-shadow);
+  border-radius: 1em;
+  transition: background 0.1s ease-in,
+    box-shadow 0.1s ease-in;
+}
 
-  .image-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-  .image-container img {
-    max-width: 100%;
-    max-height: 100%;
-    margin: 0;
-    padding: 0;
-  }
+.card input[type="checkbox"] {
+  width: 1em;
+  height: 1em;
+  font-size: 1em;
+  margin: 0;
+  cursor: pointer;
+}
 
-  .card {
-    display: flex;
-    flex-direction: column;
-    padding: 0.35em;
-    position: absolute;
-    font-size: 1em;
-    overflow: hidden;
-  }
-  .modern .card {
-    border: none !important;
-    box-shadow: 0.2em 0.2em 0.75em var(--body-shadow);
-    border-radius: 1em;
-    transition: background 0.1s ease-in,
-      box-shadow 0.1s ease-in;
-  }
+.card .top {
+  flex: none;
+  color: var(--menu-color);
+  padding-bottom: 0.25em;
+  padding-right: 0.2em;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.4em;
+  position: relative;
+}
+.modern .card .top {
+  font-size: 1.2em;
+  padding-left: 0.2em;
+  padding-top: 0.1em;
+}
+.card .top a:visited, .card .top a:link {
+  color: var(--menu-color);
+}
+.card .top a:visited[href="#"], .card .top a:link[href="#"] {
+  text-decoration: none;
+}
+.card .top > * {
+  flex: none;
+}
+.pending-action .card .top .draghandle {
+  animation: bgChange 0.75s infinite;
+}
+.card .top .type-icon {
+  cursor: pointer;
+}
+.card .top .titlearea {
+  flex: 1;
+  display: flex;
+  padding: 0 0.2em;
+  border-radius: 0.5em;
+  gap: 0.4em;
+  align-items: baseline;
+}
+.card .top .title {
+  flex: 1;
+}
+.card .top .edit-title {
+  flex: 1;
+  font-size: 0.9em;
+  outline: none;
+  border: 0.05em solid black;
+  padding: 0.1em 0.25em;
+  width: 4em; /* I don't quite understand flex */
+}
+.modern .card .top .edit-title {
+  border-radius: 0.25em;
+  border: none;
+}
+.card .top time {
+  flex: none;
+  font-size: 0.8em;
+  opacity: 0.8;
+}
 
-  .card input[type="checkbox"] {
-    width: 1em;
-    height: 1em;
-    font-size: 1em;
-    margin: 0;
-    cursor: pointer;
-  }
+.card .top .menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0.1em;
+  z-index: 1;
+}
+.modern .card .top .menu {
+  border-radius: 0.4em;
+  transition: background 0.1s ease-in;
+}
+.card .top .menu > * {
+  padding: 0.1em;
+  transition: background 0.1s ease-in-out;
+}
+.card .menu .colors {
+  display: flex;
+  gap: 0.14em;
+}
+.modern .card .menu .colors {
+  justify-content: center;
+  margin-bottom: 0.2em;
+  margin-top: 0.1em;
+  gap: 0.2em;
+}
+.card .menu .colors a {
+  width: 1em;
+  height: 1em;
+}
+.modern .card .menu .colors a {
+  border-radius: 50%;
+}
 
-  .card .top {
-    flex: none;
-    color: var(--menu-color);
-    padding-bottom: 0.25em;
-    padding-right: 0.2em;
-    display: flex;
-    align-items: baseline;
-    flex-wrap: wrap;
-    gap: 0.4em;
-    position: relative;
-  }
-  .modern .card .top {
-    font-size: 1.2em;
-    padding-left: 0.2em;
-    padding-top: 0.1em;
-  }
-  .card .top a:visited, .card .top a:link {
-    color: var(--menu-color);
-  }
-  .card .top a:visited[href="#"], .card .top a:link[href="#"] {
-    text-decoration: none;
-  }
-  .card .top > * {
-    flex: none;
-  }
-  .card .top .type-icon {
-    cursor: pointer;
-  }
-  .card .top .titlearea {
-    flex: 1;
-    display: flex;
-    padding: 0 0.2em;
-    border-radius: 0.5em;
-    gap: 0.4em;
-    align-items: baseline;
-  }
-  .card .top .title {
-    flex: 1;
-  }
-  .card .top .edit-title {
-    flex: 1;
-    font-size: 0.9em;
-    outline: none;
-    border: 0.05em solid black;
-    padding: 0.1em 0.25em;
-    width: 4em; /* I don't quite understand flex */
-  }
-  .modern .card .top .edit-title {
-    border-radius: 0.25em;
-    border: none;
-  }
-  .card .top time {
-    flex: none;
-    font-size: 0.8em;
-    opacity: 0.8;
-  }
+.card .card-info {
+  background: var(--menu-infobg);
+  font-size: 0.8em;
+  margin-top: 0.1em;
+}
+.modern .card .card-info {
+  border-radius: 0.25em;
+  margin: 0.2em;
+  padding: 0.2em 0.3em !important;
+}
 
-  .card .top .menu {
-    position: absolute;
-    top: 100%;
-    right: 0;
-    display: flex;
-    flex-direction: column;
-    padding: 0.1em;
-    z-index: 1;
-  }
-  .modern .card .top .menu {
-    border-radius: 0.4em;
-    transition: background 0.1s ease-in;
-  }
-  .card .top .menu > * {
-    padding: 0.1em;
-    transition: background 0.1s ease-in-out;
-  }
-  .card .menu .colors {
-    display: flex;
-    gap: 0.14em;
-  }
-  .modern .card .menu .colors {
-    justify-content: center;
-    margin-bottom: 0.2em;
-    margin-top: 0.1em;
-    gap: 0.2em;
-  }
-  .card .menu .colors a {
-    width: 1em;
-    height: 1em;
-  }
-  .modern .card .menu .colors a {
-    border-radius: 50%;
-  }
+.card .right-resize {
+  position: absolute;
+  height: calc(100% - 0.3em);
+  width: 0.2em;
+  top: 0;
+  right: 0;
+  cursor: ew-resize;
+}
+.card .bottom-resize {
+  position: absolute;
+  width: calc(100% - 0.3em);
+  height: 0.2em;
+  bottom: 0;
+  left: 0;
+  cursor: ns-resize;
+}
+.card .corner-resize {
+  position: absolute;
+  width: 0.3em;
+  height: 0.3em;
+  bottom: 0;
+  right: 0;
+  cursor: se-resize;
+}
+.modern .card .corner-resize {
+  width: 0.7em;
+  height: 0.7em;
+}
 
-  .card .card-info {
-    background: var(--menu-infobg);
-    font-size: 0.8em;
-    margin-top: 0.1em;
-  }
-  .modern .card-info {
-    border-radius: 0.25em;
-    margin: 0.2em;
-    padding: 0.2em 0.3em !important;
-  }
+.card-connector {
+  z-index: -1;
+  display: block;
+  position: absolute;
+  margin: 0;
+  padding: 0;
+  border-right: 0.15em solid rgba(127,127,127,0.5);
+  border-top: 0.15em solid rgba(127,127,127,0.5);
+  transform-origin: left top;
+}
 
-  .card .right-resize {
-    position: absolute;
-    height: calc(100% - 0.3em);
-    width: 0.2em;
-    top: 0;
-    right: 0;
-    cursor: ew-resize;
+.card .content {
+  color: var(--content-color);
+  flex: 1;
+  overflow-x: hidden;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
 
-  }
-  .card .bottom-resize {
-    position: absolute;
-    width: calc(100% - 0.3em);
-    height: 0.2em;
-    bottom: 0;
-    left: 0;
-    cursor: ns-resize;
-  }
-  .card .corner-resize {
-    position: absolute;
-    width: 0.3em;
-    height: 0.3em;
-    bottom: 0;
-    right: 0;
-    cursor: se-resize;
-  }
-  .modern .card .corner-resize {
-    width: 0.7em;
-    height: 0.7em;
-  }
+.card .content .card-main {
+  flex: 1;
+  margin: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: var(--content-bg);
+}
+.modern .card .content .card-main {
+  border: none;
+  border-radius: 0.5em;
+  padding: 0.3em;
+  margin: 0.2em;
+  transition: background 0.2s ease-in;
+}
 
-  .card-connector {
-    z-index: -1;
-    display: block;
-    position: absolute;
-    margin: 0;
-    padding: 0;
-    border-right: 0.15em solid rgba(127,127,127,0.5);
-    border-top: 0.15em solid rgba(127,127,127,0.5);
-    transform-origin: left top;
-  }
+.content textarea.editor {
+  margin: 0;
+  border: 0.2em inset #777;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0.4em;
+  background: var(--editor-bg);
+  color: var(--editor-color);
+  font-size: 0.8em;
+  font-family: monospace, monospace;
+  border-radius: 0;
+  outline: none;
+  flex: none;
+  resize: vertical;
+  min-height: 4em;
+}
+.modern .content textarea.editor {
+  resize: none;
+  margin: 0.2em;
+  background: var(--content-bg);
+  color: var(--content-color);
+  height: 1em !important;
+  border: none;
+  border-radius: 0.5em;
+  font-size: 0.9em;
+  transition: height 0.2s ease-out,
+    background 0.2s ease-in;
+}
+.modern .content textarea.editor:focus {
+  height: 40% !important;
+}
 
-  .card .content {
-    color: var(--content-color);
-    flex: 1;
-    overflow-x: hidden;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-  }
+/* Chat (messages) */
+.messages { font-size: 0.93em; /* very silly */ }
+.modern .messages { font-size: 1em; }
+.message-container { padding: 0.15em 0.25em; }
+.modern .message-container { border-radius: 0.35em; }
+.message-container:nth-child(odd) { background-color: rgba(127,127,127,0.07); }
+.message-container time { font-weight: bold; }
+.message-container time::after { content: ": "; }
 
-  .card .content .card-main {
-    flex: 1;
-    margin: 0;
-    overflow-y: auto;
-    overflow-x: hidden;
-    background: var(--content-bg);
-  }
-  .modern .card .content .card-main {
-    border: none;
-    border-radius: 0.5em;
-    padding: 0.3em;
-    margin: 0.2em;
-    transition: background 0.2s ease-in;
-  }
+/* Todo */
+.todo-list { }
+.todo-list .todo-item {
+  margin: 0.1em;
+  display: flex;
+  gap: 0.35em;
+  align-items: center;
+  padding: 0.1em 0.2em;
+}
+.modern .todo-list .todo-item {
+  border-radius: 0.35em;
+}
+.todo-list .todo-item:nth-child(odd) {
+  background-color: rgba(127,127,127,0.07);
+}
+.todo-list .todo-item .todo-text {
+  flex: 1;
+}
+.todo-list .todo-item time {
+  font-size: 0.8em;
+  opacity: 0.5;
+}
 
-  .card .content textarea.editor {
-    margin: 0;
-    border: 0.2em inset #777;
-    overflow-y: auto;
-    overflow-x: hidden;
-    padding: 0.4em;
-    background: var(--editor-bg);
-    color: var(--editor-color);
-    font-size: 0.8em;
-    font-family: monospace, monospace;
-    border-radius: 0;
-    outline: none;
-    flex: none;
-    resize: vertical;
-    min-height: 4em;
-  }
-  .modern .card .content textarea.editor {
-    resize: none;
-    margin: 0.2em;
-    background: var(--content-bg);
-    color: var(--content-color);
-    height: 1em !important;
-    border: none;
-    border-radius: 0.5em;
-    font-size: 0.9em;
-    transition: height 0.2s ease-out,
-      background 0.2s ease-in;
-  }
-  .modern .card .content textarea.editor:focus {
-    height: 40% !important;
-  }
+/* Markdown */
+.content .markdown { padding: 0.5em; line-height: 1.4; }
+.modern .content .markdown { padding: 0.75em; }
+.markdown > :first-child { margin-top: 0; }
+.markdown p { margin: 1em 0; }
+.markdown ul { padding-left: 1.5em; }
+.markdown code {
+  font-family: 'Courier New', monospace;
+  background: var(--editor-bg);
+  padding: 0.2em 0.3em;
+  border-radius: 0.2em;
+  font-size: 0.9em;
+  color: var(--editor-color);
+  vertical-align: baseline;
+  padding-bottom: 0.05em;
+}
+.markdown pre code {
+  background: #333;
+  color: #EEE;
+  display: block;
+  overflow-y: auto;
+  overflow-x: auto;
+  padding: 0.3em 0.5em;
+  font-family: monospace, monospace;
+}
+.modern .markdown pre code {
+  border-radius: 0.5em;
+  padding: 0.6em 0.8em;
+}
 
-  .card .content .messages {
-    font-size: 0.93em; /* very silly */
-  }
-  .modern .card .content .messages {
-    font-size: 1em;
-  }
-  .message-container {
-    padding: 0.15em 0.25em;
-  }
-  .modern .message-container {
-    border-radius: 0.35em;
-  }
-  .message-container:nth-child(odd) {
-    background-color: rgba(127,127,127,0.07);
-  }
-  .message-container time {
-    font-weight: bold;
-  }
-  .message-container time::after {
-    content: ": ";
-  }
+/* Drawing */
+.draw-container {
+  overflow: hidden !important;
+  display: flex;
+  flex-direction: column;
+}
+.draw-container .draw-main {
+  position: relative;
+}
+.draw-main svg {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 500em;
+  height: 500em;
+  /*background: white; /* Regardless */
+}
+.draw-container .draw-controls {
+  display: flex;
+  gap: 0.2em;
+  width: 100%;
+  justify-content: end;
+  background: var(--editor-bg);
+  padding: 0.2em;
+  box-sizing: border-box;
+}
+.modern .draw-container .draw-controls {
+  border-radius: 0.5em;
+}
+.draw-controls .separator {
+  display: block;
+  margin: 0 0.5em;
+  width: 0.15em;
+  background: var(--gray);
+}
+/*.draw-controls .tools {
+  padding: 0 0.2em;
+  margin: 0 0.2em;
+  border-right: 0.2em solid var(--gray);
+}*/
+.draw-controls button {
+  font-size: 1.2em;
+  width: 1.5em;
+  height: 1.5em;
+  border: none;
+  margin: 0;
+  line-height: 1;
+  background: none;
+  margin-right: 0.1em;
+  cursor: pointer;
+}
+.modern .draw-controls button {
+  font-size: 1.3em;
+  border-radius: 0.3em;
+  margin: 0 0.2em;
+}
 
-  .todo-list { }
-  .todo-list .todo-item {
-    margin: 0.1em;
-    display: flex;
-    gap: 0.35em;
-    align-items: center;
-    padding: 0.1em 0.2em;
-  }
-  .modern .todo-list .todo-item {
-    border-radius: 0.35em;
-  }
-  .todo-list .todo-item:nth-child(odd) {
-    background-color: rgba(127,127,127,0.07);
-  }
-  .todo-list .todo-item .todo-text {
-    flex: 1;
-  }
-  .todo-list .todo-item time {
-    font-size: 0.8em;
-    opacity: 0.5;
-  }
-
-  .card .content .markdown {
-    padding: 0.5em;
-    line-height: 1.4;
-  }
-  .modern .card .content .markdown {
-    padding: 0.75em;
-  }
-  .markdown > :first-child {
-    margin-top: 0;
-  }
-  .markdown p {
-    margin: 1em 0;
-  }
-  .markdown ul {
-    padding-left: 1.5em;
-  }
-  .content code {
-    font-family: 'Courier New', monospace;
-    background: var(--editor-bg);
-    padding: 0.2em 0.3em;
-    border-radius: 0.2em;
-    font-size: 0.9em;
-    color: var(--editor-color);
-    vertical-align: baseline;
-    padding-bottom: 0.05em;
-  }
-  .markdown pre code {
-    background: #333;
-    color: #EEE;
-    display: block;
-    overflow-y: auto;
-    overflow-x: auto;
-    padding: 0.3em 0.5em;
-    font-family: monospace, monospace;
-  }
-  .modern .markdown pre code {
-    border-radius: 0.5em;
-    padding: 0.6em 0.8em;
-  }
-
-  .card-main.draw-area {
-    overflow: hidden !important;
-  }
-  .draw-area {
-    display: flex;
-    flex-direction: column;
-  }
-  .draw-area .draw-container {
-    position: relative;
-  }
-  .draw-area svg {
-    position: absolute;
-    width: 500em;
-    height: 500em;
-    background: white; /* Regardless */
-  }
-  .draw-area .draw-controls {
-    display: flex;
-    gap: 0.2em;
-    width: 100%;
-    justify-content: end;
-    background: var(--editor-bg);
-    padding: 0.2em;
-    box-sizing: border-box;
-  }
-  .modern .draw-area .draw-controls {
-    border-radius: 0.5em;
-  }
-
-  /* Special rendering mode */
-  .page-view #main-container {
-    background: none;
-    border-radius: 0;
-    width: 100%;
-    height: 100%;
-    margin: 0;
-    display: flex;
-    flex-wrap: wrap;
-    overflow-x: hidden;
-    overflow-y: auto;
-    top: unset !important;
-    left: unset !important;
-    padding: 0.5rem;
-    box-sizing: border-box;
-  }
-  .page-view.open-sidebar #main-container {
-    /* NOTE: this is required to make #links work correctly in visual mode */
-    padding-right: calc(var(--sidebar-width) + 0.5rem);
-  }
-  .page-view .card-connector {
-    display: none;
-  }
-  .page-view .card {
-    position: relative;
-    margin: 0.5em;
-    top: unset !important;
-    left: unset !important;
-  }
-  /* SEVERE HACK TO ADD EXTRA SPACE, requires each card to have connector after */
-  .page-view #main-container > :last-child {
-    display: block !important;
-    height: 50vh;
-    width: 100%;
-    position: unset;
-    visibility: hidden;
-  }
+/* Special rendering mode */
+.page-view #main-container {
+  background: none;
+  border-radius: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  overflow-x: hidden;
+  overflow-y: auto;
+  top: unset !important;
+  left: unset !important;
+  padding: 0.5rem;
+  box-sizing: border-box;
+}
+.page-view.open-sidebar #main-container {
+  /* NOTE: this is required to make #links work correctly in visual mode */
+  padding-right: calc(var(--sidebar-width) + 0.5rem);
+}
+.page-view .card-connector {
+  display: none;
+}
+.page-view .card {
+  position: relative;
+  margin: 0.5em;
+  top: unset !important;
+  left: unset !important;
+}
+/* SEVERE HACK TO ADD EXTRA SPACE, requires each card to have connector after */
+.page-view #main-container > :last-child {
+  display: block !important;
+  height: 50vh;
+  width: 100%;
+  position: unset;
+  visibility: hidden;
+}
 
 
-  /* Standard colors */
-  .card, .card.teal {
-    background: var(--teal);
-    border: 0.1em solid var(--teal-border);
-  }
-  /* class for main card content? I don't know... */
-  .card .card-main, .card.teal .card-main { border: 0.15em solid var(--teal-border); }
-  .card .top .menu, .card.teal .top .menu { background: var(--teal-border); }
-  .card .top .menu > a:hover, .card.teal .top .menu > a:hover { background: var(--teal); }
-  .card .menu .colors a[data-color="teal"] { background: var(--teal); }
-  /* Blue */
-  .card[data-color="blue"] {
-    background: var(--blue);
-    border: 0.1em solid var(--blue-border);
-  }
-  .card[data-color="blue"] .card-main { border: 0.15em solid var(--blue-border); }
-  .card[data-color="blue"] .top .menu { background: var(--blue-border); }
-  .card[data-color="blue"] .top .menu > a:hover { background: var(--blue); }
-  .card .menu .colors a[data-color="blue"] { background: var(--blue); }
-  /* Red */
-  .card[data-color="red"] {
-    background: var(--red);
-    border: 0.1em solid var(--red-border);
-  }
-  .card[data-color="red"] .card-main { border: 0.15em solid var(--red-border); }
-  .card[data-color="red"] .top .menu { background: var(--red-border); }
-  .card[data-color="red"] .top .menu > a:hover { background: var(--red); }
-  .card .menu .colors a[data-color="red"] { background: var(--red); }
-  /* Purple */
-  .card[data-color="purple"] {
-    background: var(--purple);
-    border: 0.1em solid var(--purple-border);
-  }
-  .card[data-color="purple"] .card-main { border: 0.15em solid var(--purple-border); }
-  .card[data-color="purple"] .top .menu { background: var(--purple-border); }
-  .card[data-color="purple"] .top .menu > a:hover { background: var(--purple); }
-  .card .menu .colors a[data-color="purple"] { background: var(--purple); }
-  /* Gray */
-  .card[data-color="gray"] {
-    background: var(--gray);
-    border: 0.1em solid var(--gray-border);
-  }
-  .card[data-color="gray"] .card-main { border: 0.15em solid var(--gray-border); }
-  .card[data-color="gray"] .top .menu { background: var(--gray-border); }
-  .card[data-color="gray"] .top .menu > a:hover { background: var(--gray); }
-  .card .menu .colors a[data-color="gray"] { background: var(--gray); }
+/* Standard colors */
+.card {
+  background: var(--teal);
+  border: 0.1em solid var(--teal-border);
+}
+/* class for main card content? I don't know... */
+.card .card-main { border: 0.15em solid var(--teal-border); }
+.card .top .menu { background: var(--teal-border); }
+.card .top .menu > a:hover { background: var(--teal); }
+.card .menu .colors a { background: var(--teal); }
+.card .draw-controls button[data-selected] { background: var(--teal); }
+/* Blue */
+.card[data-color="blue"] {
+  background: var(--blue);
+  border: 0.1em solid var(--blue-border);
+}
+.card[data-color="blue"] .card-main { border: 0.15em solid var(--blue-border); }
+.card[data-color="blue"] .top .menu { background: var(--blue-border); }
+.card[data-color="blue"] .top .menu > a:hover { background: var(--blue); }
+.card .menu .colors a[data-color="blue"] { background: var(--blue); }
+.card[data-color="blue"] .draw-controls button[data-selected] { background: var(--blue); }
+/* Red */
+.card[data-color="red"] {
+  background: var(--red);
+  border: 0.1em solid var(--red-border);
+}
+.card[data-color="red"] .card-main { border: 0.15em solid var(--red-border); }
+.card[data-color="red"] .top .menu { background: var(--red-border); }
+.card[data-color="red"] .top .menu > a:hover { background: var(--red); }
+.card .menu .colors a[data-color="red"] { background: var(--red); }
+.card[data-color="red"] .draw-controls button[data-selected] { background: var(--red); }
+/* Purple */
+.card[data-color="purple"] {
+  background: var(--purple);
+  border: 0.1em solid var(--purple-border);
+}
+.card[data-color="purple"] .card-main { border: 0.15em solid var(--purple-border); }
+.card[data-color="purple"] .top .menu { background: var(--purple-border); }
+.card[data-color="purple"] .top .menu > a:hover { background: var(--purple); }
+.card .menu .colors a[data-color="purple"] { background: var(--purple); }
+.card[data-color="purple"] .draw-controls button[data-selected] { background: var(--purple); }
+/* Gray */
+.card[data-color="gray"] {
+  background: var(--gray);
+  border: 0.1em solid var(--gray-border);
+}
+.card[data-color="gray"] .card-main { border: 0.15em solid var(--gray-border); }
+.card[data-color="gray"] .top .menu { background: var(--gray-border); }
+.card[data-color="gray"] .top .menu > a:hover { background: var(--gray); }
+.card .menu .colors a[data-color="gray"] { background: var(--gray); }
+.card[data-color="gray"] .draw-controls button[data-selected] { background: var(--gray); }
 
 </style>
 
@@ -740,6 +731,14 @@
     tm.setAttribute("datetime", now.toISOString());
     tm.setAttribute("title", now.toISOString());
     tm.textContent = now.toLocaleDateString();
+  }
+
+  function radio(element) {
+    Array.from(element.parentNode.children).forEach(x => x.removeAttribute("data-selected"));
+    element.setAttribute("data-selected", "");
+  }
+  function getSelectedRadio(parent) {
+    return parent.querySelector("[data-selected]");
   }
 
   // Simple Card helpers
@@ -1837,7 +1836,7 @@
   </template>
 
   <template id="template-card">
-    <div class="card" data-topcard="">
+    <div class="card" data-topcard="" data-color="teal">
       <div class="top">
         <div class="titlearea draghandle">
           <span class="type-icon" onclick="menu_toggleTitle(event)">X</span>
@@ -1889,16 +1888,43 @@
   </template>
 
   <template id="template-drawing">
-    <div class="card-main draw-area">
+    <div class="card-main draw-container">
       <div class="draw-controls editor">
-        <button class="control" onclick="draw_set(event)">✏️</button>
-        <input type="color" name="color" value="#333333">
-        <input type="number" name="width" min="1" max="100" step="1" value="3">
+        <div class="tools collection">
+          <button class="pencil" data-selected onclick="radio(event.target)">✏️</button>
+          <button class="rectangle" onclick="radio(event.target)">□</button>
+          <button class="rectangle-fill" onclick="radio(event.target)">■</button>
+        </div>
+        <div class="separator"></div>
+        <!--
+        <div class="sizes">
+          <button style="background:#333333" data-selected onclick="radio(event.target)"></button>
+        </div>
+        <div class="colors">
+          <button style="background:#333333" data-selected onclick="radio(event.target)"></button>
+          <button style="background:#FF4422" onclick="radio(event.target)"></button>
+          <button style="background:#2244FF" onclick="radio(event.target)"></button>
+          <button style="background:#888888" onclick="radio(event.target)"></button>
+        </div>
+        -->
+        <div class="colors collection">
+          <button style="background:#333333" 
+                onclick="event.target.parentNode.querySelector('input').click()">🎨</button>
+          <input type="color" name="color" class="hidden" value="#333333"
+                onchange="event.target.parentNode.firstElementChild.style.background=event.target.value">
+        </div>
+        <!--<label>
+          <span>🎨</span>
+        </label>
+        <input name="width" class="hidden" value="3">00>
+        <!--<input type="color" name="color" value="#333333">
+        <input type="number" name="width" min="1" max="100" step="1" value="3">-->
         <!--<label>Width: <input type="number" min="1" max="100" step="1" value="2"></label>-->
         <!--<button class="control" onclick="draw_(event)"></button>-->
       </div>
-      <div class="draw-container">
+      <div class="draw-main">
         <svg viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg"
+            style="background:white"
             onmousedown="drawing_mouseDown(event)"
             onmousemove="drawing_mouseMove(event)"
             onmouseup="drawing_mouseUp(event)"></svg>
