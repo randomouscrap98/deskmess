@@ -557,6 +557,7 @@ button.control:hover {
   line-height: 1;
   background: none;
   margin: 0 0.05em;
+  padding: 0;
   cursor: pointer;
   color: var(--content-color);
 }
@@ -1792,9 +1793,6 @@ button.control:hover {
       path.setAttribute("class", "s");
       path.setAttribute("stroke", color);
       path.setAttribute("stroke-width", size);
-      // path.setAttribute("stroke-linecap", "round");
-      // path.setAttribute("stroke-linejoin", "round");
-      // path.setAttribute("fill", "none");
       const baseline = `${opos.x} ${opos.y}`;
       svg.appendChild(path);
       if(tool == "pencil") {
@@ -1992,10 +1990,6 @@ button.control:hover {
       </div>
     </div>
   </template>
-
-            <!--onmouseup="drawing_mouseUp(event)"><defs><style type="text/css"><![CDATA[
-            .s {stroke-linecap: round; stroke-linejoin: round; fill: none;}
-            ]]></style></defs></svg>-->
 
   <template id="template-chat">
     <div class="messages card-main"></div>
