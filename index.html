@@ -532,9 +532,10 @@ button.control:hover {
 .draw-container .draw-controls {
   z-index: 1;
   display: flex;
+  flex-wrap: wrap;
   gap: 0.2em;
   width: 100%;
-  justify-content: end;
+  /*justify-content: end;*/
   background: var(--editor-bg);
   padding: 0.2em;
   box-sizing: border-box;
@@ -1724,12 +1725,13 @@ button.control:hover {
 
   let drawing_updatePoint = null;
   let drawing_target = "???";
+  let drawing_events = 0;
   function drawing_position(svgrect, event) {
     const pX = event.clientX - svgrect.left;
     const pY = event.clientY - svgrect.top;
     return {
-      x: pxToEm(pX, event.target),
-      y: pxToEm(pY, event.target),
+      x: pxToEm(pX, event.target).toFixed(2),
+      y: pxToEm(pY, event.target).toFixed(2),
     };
   }
   function drawing_mouseDown(event) {
@@ -1743,24 +1745,24 @@ button.control:hover {
     const opos = drawing_position(rect, event);
     const tool = getSelectedRadio(editor.querySelector('.tools')).getAttribute("data-tool");
     const color = editor.querySelector('input[name="color"]').value;
-    const size = getSelectedRadio(editor.querySelector('.sizes')).textContent * 0.05;
+    const size = (getSelectedRadio(editor.querySelector('.sizes')).textContent * 0.05).toFixed(2);
     if(tool == "pencil" || tool == "line") {
-      let path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      let path = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
       path.setAttribute("stroke", color);
       path.setAttribute("stroke-width", size);
       path.setAttribute("fill", "none");
-      const baseline = `M${opos.x},${opos.y}`;
-      path.setAttribute("d", baseline);
+      const baseline = `${opos.x} ${opos.y}`;
+      path.setAttribute("points", baseline);
       svg.appendChild(path);
       if(tool == "pencil") {
         drawing_updatePoint = (e) => {
           const pos = drawing_position(rect, e);
-          path.setAttribute("d", path.getAttribute("d") + ` L${pos.x},${pos.y}`);
+          path.setAttribute("points", path.getAttribute("points") + ` ${pos.x} ${pos.y}`);
         }
       } else {
         drawing_updatePoint = (e) => {
           const pos = drawing_position(rect, e);
-          path.setAttribute("d", baseline + ` L${pos.x},${pos.y}`);
+          path.setAttribute("points", baseline + ` ${pos.x} ${pos.y}`);
         }
       }
     } else if(tool == "rectangle" || tool == "rectangle-fill") {
@@ -1782,18 +1784,20 @@ button.control:hover {
       return;
     }
     drawing_target = tool + " " + card.id;
+    drawing_events = 0;
     setUnsaved();
     console.log("SVG mouse down on " + drawing_target);
   }
   function drawing_mouseMove(event) {
     if(drawing_updatePoint) {
+      drawing_events++;
       drawing_updatePoint(event);
     }
   }
   function drawing_mouseUp(event) {
     if(drawing_updatePoint) {
       drawing_updatePoint = null;
-      console.log("SVG mouse up on " + drawing_target);
+      console.log(`SVG mouse up on ${drawing_target} (${drawing_events} events)`);
     }
   }
 
@@ -1906,18 +1910,20 @@ button.control:hover {
   <template id="template-text-menu">
   </template>
 
+  <!--<button data-tool="pencil" data-selected onclick="radio(event.target)">✏️</button>-->
+
   <template id="template-drawing">
     <div class="card-main draw-container">
       <div class="draw-controls editor">
         <div class="tools">
-          <button data-tool="pencil" data-selected onclick="radio(event.target)">✏️</button>
+          <button data-tool="pencil" data-selected onclick="radio(event.target)">〰</button>
           <button data-tool="line" onclick="radio(event.target)">━</button>
           <button data-tool="rectangle" onclick="radio(event.target)">□</button>
           <button data-tool="rectangle-fill" onclick="radio(event.target)">■</button>
         </div>
         <div class="separator"></div>
         <div class="colors">
-          <button style="background:#333333" 
+          <button style="background:#333333"
                 onclick="event.target.parentNode.querySelector('input').click()">🎨</button>
           <input type="color" name="color" class="hidden" value="#333333"
                 onchange="event.target.parentNode.firstElementChild.style.background=event.target.value">
