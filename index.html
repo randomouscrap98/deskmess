@@ -569,6 +569,7 @@
     position: absolute;
     width: 500em;
     height: 500em;
+    background: white; /* Regardless */
   }
   .draw-area .draw-controls {
     display: flex;
@@ -578,6 +579,9 @@
     background: var(--editor-bg);
     padding: 0.2em;
     box-sizing: border-box;
+  }
+  .modern .draw-area .draw-controls {
+    border-radius: 0.5em;
   }
 
   /* Special rendering mode */
@@ -996,7 +1000,8 @@
     } else if(cdata.type == "image") {
       content.querySelector("img").setAttribute("src", cdata.image_data);
     } else if(cdata.type == "drawing") {
-      getCardContent(card).querySelector("svg").innerHTML = cdata.draw_data;
+      if(cdata.draw_data) 
+        getCardContent(card).querySelector("svg").innerHTML = cdata.draw_data;
     }
     return card;
   }
@@ -1719,6 +1724,7 @@
   }
 
   let internal_path = null;
+  let internal_target = "???";
   function drawing_position(svgrect, event) {
     const pX = event.clientX - svgrect.left;
     const pY = event.clientY - svgrect.top;
@@ -1740,14 +1746,14 @@
     const pos = drawing_position(rect, event);
     let path = document.createElementNS("http://www.w3.org/2000/svg", "path");
     path.setAttribute("stroke", editor.querySelector('input[name="color"]').value);
-    path.setAttribute("stroke-width", editor.querySelector('input[name="width"]').value * 0.2);
+    path.setAttribute("stroke-width", editor.querySelector('input[name="width"]').value * 0.05);
     path.setAttribute("fill", "none");
     path.setAttribute("d", `M${pos.x},${pos.y}`);
     svg.appendChild(path);
     internal_path = path;
-    //event.target.internal_path = path;
-    //event.target.internal_svgrect = rect;
-    console.log("Mouse down");
+    internal_target = card.id;
+    setUnsaved();
+    console.log("SVG mouse down on " + internal_target);
   }
   function drawing_mouseMove(event) {
     //if(event.button !== 0) { return; }
@@ -1760,7 +1766,7 @@
       const pos = drawing_position(rect, event);
       internal_path.setAttribute("d", internal_path.getAttribute("d") + ` L${pos.x},${pos.y}`);
       //event.target.internal_path.setAttribute("d", event.target.internal_path.getAttribute("d") + ` L${pos.x},${pos.y}`);
-      console.log("Mouse move");
+      //console.log("Mouse move");
     }
   }
   function drawing_mouseUp(event) {
@@ -1769,7 +1775,7 @@
     if(internal_path) {
       internal_path = null;
       //event.target.internal_svgrect = undefined; 
-      console.log("Mouse up");
+      console.log("SVG mouse up on " + internal_target);
     }
   }
 
@@ -1886,8 +1892,8 @@
     <div class="card-main draw-area">
       <div class="draw-controls editor">
         <button class="control" onclick="draw_set(event)">✏️</button>
-        <input type="color" name="color" value="#000000">
-        <input type="number" name="width" min="1" max="100" step="1" value="2">
+        <input type="color" name="color" value="#333333">
+        <input type="number" name="width" min="1" max="100" step="1" value="3">
         <!--<label>Width: <input type="number" min="1" max="100" step="1" value="2"></label>-->
         <!--<button class="control" onclick="draw_(event)"></button>-->
       </div>
