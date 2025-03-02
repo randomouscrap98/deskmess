@@ -554,6 +554,32 @@
     border-radius: 0.5em;
     padding: 0.6em 0.8em;
   }
+  
+  .card-main.draw-area {
+    overflow: hidden !important;
+  }
+  .draw-area {
+    display: block;
+    position: relative;
+  }
+  .draw-area > * {
+    position: absolute;
+    top: 0;
+    left: 0;
+  }
+  .draw-area svg {
+    width: 500em;
+    height: 500em;
+  }
+  .draw-area .draw-controls {
+    display: flex;
+    gap: 0.2em;
+    width: 100%;
+    justify-content: end;
+    background: var(--editor-bg);
+    padding: 0.2em;
+    box-sizing: border-box;
+  }
 
   /* Special rendering mode */
   .page-view #main-container {
@@ -899,7 +925,8 @@
     };
     const editor = getCardEditor(card);
     if(editor) {
-      cdata.text = editor.value;
+      if(editor.tagName.toLowerCase() == "textarea")
+        cdata.text = editor.value;
       cdata.is_edit = !isHidden(editor);
     }
     if(cdata.type == "chat") {
@@ -908,6 +935,9 @@
     }
     if(cdata.type == "image") {
       cdata.image_data = getCardContent(card).querySelector("img").src;
+    }
+    if(cdata.type == "drawing") {
+      cdata.draw_data = getCardContent(card).querySelector("svg").innerHTML;
     }
     return cdata;
   }
@@ -942,7 +972,8 @@
     window[MCKEY].appendChild(cardsec);
     const editor = getCardEditor(card);
     if(editor) {
-      editor.textContent = cdata.text;
+      if(editor.tagName.toLowerCase() == "textarea")
+        editor.textContent = cdata.text;
       let toggler = menu.querySelector(".toggle-editor");
       let toggler2 = card.querySelector(".toggle-editor-direct");
       if(toggler && toggler2) {
@@ -965,6 +996,8 @@
       melem.scrollTop = melem.scrollHeight;
     } else if(cdata.type == "image") {
       content.querySelector("img").setAttribute("src", cdata.image_data);
+    } else if(cdata.type == "drawing") {
+      getCardContent(card).querySelector("svg").innerHTML = cdata.draw_data;
     }
     return card;
   }
@@ -1378,6 +1411,7 @@
     window["action-newtext"].addEventListener("click", () => addCard("text"));
     window["action-newchat"].addEventListener("click", () => addCard("chat"));
     window["action-newtodo"].addEventListener("click", () => addCard("todo"));
+    window["action-newdrawing"].addEventListener("click", () => addCard("drawing"));
     window["action-newimage"].addEventListener("click", () => window['import-image'].click()); //addCard("image"));
     window["action-resetview"].addEventListener("click", () => main.style = "");
 
@@ -1693,7 +1727,7 @@
   <div id="sidebar">
     <div id="app-info">
       <a target="_blank" href="https://github.com/randomouscrap98/deskmess">Deskmess</a>
-      <span id="app-version" class="no-interaction">v0.7.4</span>
+      <span id="app-version" class="no-interaction">v0.8</span>
       <span>| haloopdy 2025</span>
     </div>
     <div id="tree"></div>
@@ -1708,6 +1742,7 @@
       <button class="control" id="action-newchat" title="New chat card">💬</button>
       <button class="control" id="action-newtodo" title="New todo card">✅</button>
       <button class="control" id="action-newimage" title="New image card">🖼️</button>
+      <button class="control" id="action-newdrawing" title="New drawing card">✏️</button>
       <button class="control" id="action-resetview" title="Reset view">🧭</button>
       <button class="control deactivated" id="action-gridsnap" title="Snap to grid">📐</button>
       <button class="control deactivated" id="action-pageview" title="View as page">📃</button>
@@ -1791,6 +1826,20 @@
 
   <template id="template-text-menu">
   </template>
+
+  <template id="template-drawing">
+    <div class="card-main draw-area">
+      <svg width="500" height="500" xmlns="http://www.w3.org/2000/svg"></svg>
+      <div class="draw-controls editor">
+        <button class="control" onclick="draw_set(event)">✏️</button>
+        <input type="color" value="#000000">
+        <input type="number" min="1" max="100" step="1" value="2">
+        <!--<label>Width: <input type="number" min="1" max="100" step="1" value="2"></label>-->
+        <!--<button class="control" onclick="draw_(event)"></button>-->
+      </div>
+    </div>
+  </template>
+
 
   <template id="template-chat">
     <div class="messages card-main"></div>
