@@ -78,7 +78,7 @@ body.modern {
 .hidden { display: none !important; }
 .no-interaction { pointer-events: none; user-select: none; }
 .spacer { flex: 1; }
-.draghandle { cursor: grab; user-select: none;}
+.draghandle { cursor: grab; }
 
 @keyframes bgChange {
   0% { background-color: transparent; }
@@ -273,6 +273,7 @@ button.control:hover {
 }
 .card .top > * {
   flex: none;
+  user-select: none;
 }
 .pending-action .card .top .draghandle {
   animation: bgChange 0.75s infinite;
@@ -441,6 +442,7 @@ button.control:hover {
   background: var(--content-bg);
   color: var(--content-color);
   height: 1em !important;
+  min-height: 1em;
   border: none;
   border-radius: 0.5em;
   font-size: 0.9em;
