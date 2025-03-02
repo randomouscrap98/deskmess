@@ -441,8 +441,8 @@ button.control:hover {
   margin: 0.2em;
   background: var(--content-bg);
   color: var(--content-color);
-  height: 1em !important;
-  min-height: 1em;
+  height: 1.0em !important;
+  min-height: 0;
   border: none;
   border-radius: 0.5em;
   font-size: 0.9em;
@@ -487,7 +487,7 @@ button.control:hover {
 
 /* Markdown */
 .content .markdown { padding: 0.5em; line-height: 1.4; }
-.modern .content .markdown { padding: 0.75em; }
+.modern .card .content .markdown { padding: 0.75em; }
 .markdown > :first-child { margin-top: 0; }
 .markdown p { margin: 1em 0; }
 .markdown ul { padding-left: 1.5em; }
@@ -1762,6 +1762,7 @@ button.control:hover {
       card.redos.push(last);
       removeSelf(last);
       updateDrawingRedo(card);
+      setUnsaved();
       console.log("Undo in " + card.id);
     } else {
       console.warn("Nothing to undo");
@@ -1772,8 +1773,9 @@ button.control:hover {
     if(card.redos && card.redos.length) {
       let svg = getDrawingSvg(card);
       svg.appendChild(card.redos.pop());
-      console.log("Redo in " + card.id);
       updateDrawingRedo(card);
+      setUnsaved();
+      console.log("Redo in " + card.id);
     } else {
       console.warn("Nothing to redo!");
     }
