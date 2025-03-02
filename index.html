@@ -1785,11 +1785,13 @@ button.control:hover {
       let path = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
       path.setAttribute("stroke", color);
       path.setAttribute("stroke-width", size);
+      path.setAttribute("stroke-linecap", "round");
+      path.setAttribute("stroke-linejoin", "round");
       path.setAttribute("fill", "none");
       const baseline = `${opos.x} ${opos.y}`;
-      path.setAttribute("points", baseline);
       svg.appendChild(path);
       if(tool == "pencil") {
+        path.setAttribute("points", baseline + " " + baseline);
         drawing_updatePoint = (e) => {
           const pos = drawing_position(rect, e);
           path.setAttribute("points", path.getAttribute("points") + ` ${pos.x} ${pos.y}`);
