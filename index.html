@@ -78,7 +78,7 @@ body.modern {
 .hidden { display: none !important; }
 .no-interaction { pointer-events: none; user-select: none; }
 .spacer { flex: 1; }
-.draghandle { cursor: grab; }
+.draghandle { cursor: grab; user-select: none;}
 
 @keyframes bgChange {
   0% { background-color: transparent; }
@@ -1971,7 +1971,7 @@ button.control:hover {
           <button style="background:#333333"
                 onclick="event.target.parentNode.querySelector('input').click()">🎨</button>
           <input type="color" name="color" class="hidden" value="#333333"
-                onchange="event.target.parentNode.firstElementChild.style.background=event.target.value">
+                onchange="event.target.setAttribute('value',event.target.value);event.target.parentNode.firstElementChild.style.background=event.target.value">
         </div>
         <div class="sizes">
           <button onclick="radio(event.target)">1</button>
