@@ -570,6 +570,12 @@ button.control:hover {
   cursor: unset;
 }
 
+.s {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+}
+
 /* Special rendering mode */
 .page-view #main-container {
   background: none;
@@ -1783,11 +1789,12 @@ button.control:hover {
     const size = (getSelectedRadio(editor.querySelector('.sizes')).textContent * 0.05).toFixed(2);
     if(tool == "pencil" || tool == "line") {
       let path = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+      path.setAttribute("class", "s");
       path.setAttribute("stroke", color);
       path.setAttribute("stroke-width", size);
-      path.setAttribute("stroke-linecap", "round");
-      path.setAttribute("stroke-linejoin", "round");
-      path.setAttribute("fill", "none");
+      // path.setAttribute("stroke-linecap", "round");
+      // path.setAttribute("stroke-linejoin", "round");
+      // path.setAttribute("fill", "none");
       const baseline = `${opos.x} ${opos.y}`;
       svg.appendChild(path);
       if(tool == "pencil") {
@@ -1986,6 +1993,9 @@ button.control:hover {
     </div>
   </template>
 
+            <!--onmouseup="drawing_mouseUp(event)"><defs><style type="text/css"><![CDATA[
+            .s {stroke-linecap: round; stroke-linejoin: round; fill: none;}
+            ]]></style></defs></svg>-->
 
   <template id="template-chat">
     <div class="messages card-main"></div>
