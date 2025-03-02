@@ -316,7 +316,7 @@ button.control:hover {
   display: flex;
   flex-direction: column;
   padding: 0.1em;
-  z-index: 1;
+  z-index: 10;
 }
 .modern .card .top .menu {
   border-radius: 0.4em;
@@ -524,13 +524,14 @@ button.control:hover {
 }
 .draw-main svg {
   position: absolute;
-  left: 0;
-  top: 0;
+  left: -3em;
+  top: -3em;
   width: 500em;
   height: 500em;
   /*background: white; /* Regardless */
 }
 .draw-container .draw-controls {
+  z-index: 1;
   display: flex;
   gap: 0.2em;
   width: 100%;
@@ -558,16 +559,16 @@ button.control:hover {
   width: 1.5em;
   height: 1.5em;
   border: none;
-  margin: 0;
   line-height: 1;
   background: none;
-  margin-right: 0.1em;
+  margin: 0 0.05em;
   cursor: pointer;
+  color: var(--content-color);
 }
 .modern .draw-controls button {
   font-size: 1.3em;
   border-radius: 0.3em;
-  margin: 0 0.2em;
+  margin: 0 0.1em;
 }
 
 /* Special rendering mode */
@@ -1745,7 +1746,7 @@ button.control:hover {
     const pos = drawing_position(rect, event);
     let path = document.createElementNS("http://www.w3.org/2000/svg", "path");
     path.setAttribute("stroke", editor.querySelector('input[name="color"]').value);
-    path.setAttribute("stroke-width", editor.querySelector('input[name="width"]').value * 0.05);
+    path.setAttribute("stroke-width", getSelectedRadio(editor.querySelector('.sizes')).textContent * 0.05);
     path.setAttribute("fill", "none");
     path.setAttribute("d", `M${pos.x},${pos.y}`);
     svg.appendChild(path);
@@ -1890,7 +1891,7 @@ button.control:hover {
   <template id="template-drawing">
     <div class="card-main draw-container">
       <div class="draw-controls editor">
-        <div class="tools collection">
+        <div class="tools">
           <button class="pencil" data-selected onclick="radio(event.target)">✏️</button>
           <button class="rectangle" onclick="radio(event.target)">□</button>
           <button class="rectangle-fill" onclick="radio(event.target)">■</button>
@@ -1907,11 +1908,19 @@ button.control:hover {
           <button style="background:#888888" onclick="radio(event.target)"></button>
         </div>
         -->
-        <div class="colors collection">
+        <div class="colors">
           <button style="background:#333333" 
                 onclick="event.target.parentNode.querySelector('input').click()">🎨</button>
           <input type="color" name="color" class="hidden" value="#333333"
                 onchange="event.target.parentNode.firstElementChild.style.background=event.target.value">
+          <!--<input type="range" min="1" max="15" value="3" name="width">-->
+        </div>
+        <div class="sizes">
+          <button onclick="radio(event.target)">1</button>
+          <button data-selected onclick="radio(event.target)">3</button>
+          <button onclick="radio(event.target)">6</button>
+          <button onclick="radio(event.target)">12</button>
+          <button onclick="radio(event.target)">24</button>
         </div>
         <!--<label>
           <span>🎨</span>
