@@ -1,8 +1,10 @@
 # Desk Mess
 
-![v0.8 screenshot](screenshots/v0.8.png)
-![v0.8 modern screenshot](screenshots/v0.8m.png)
-![v0.8 modern darkmode screenshot](screenshots/v0.8md.png)
+<img alt="v0.8 screenshot" src="screenshots/v0.8.png">
+<img alt="v0.8 modern screenshot" src="screenshots/v0.8m.png" width="500">
+<img alt="v0.8 modern darkmode screenshot" src="screenshots/v0.8md.png" width="500">
+
+## About
 
 I got inspired by the non-linear, "save locally" [TiddlyWiki](https://tiddlywiki.com/)
 and wanted to make something more akin to one of those pegboards filled
