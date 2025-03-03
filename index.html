@@ -1152,8 +1152,7 @@ button.control:hover {
     tree.innerHTML = "";
     let seen = new Set();
     getRootCards().forEach(c => tree.appendChild(buildSubtree(c, seen)));
-    let allCards = Array.from(window[MCKEY].querySelectorAll(".card")).map((x) => getCardRef(x).textContent);
-    //let subtreeCards = new Set(getSubtreeIds(tree));
+    let allCards = Array.from(window[MCKEY].querySelectorAll(".card")).map((x) => x.id);
     let leftover = except(allCards, seen);
     if(leftover.length) {
       console.log(`There are ${leftover.length} cards stuck in cycles`);
@@ -1166,14 +1165,11 @@ button.control:hover {
       }
     }
   }
-  // function getSubtreeIds(tree) {
-  //   return Array.from(tree.querySelectorAll("a")).map((x) => x.href.split("#")[1]);
-  // }
   function buildSubtree(card, seen) {
     let nodelm = copyTemplateSingle("template-treenode");
     let titlelm = nodelm.querySelector(".title");
     titlelm.textContent = getCardTitle(card).textContent;
-    titlelm.href = getCardRef(card).href;
+    titlelm.href = "#" + card.id;
     seen.add(titlelm.href.split("#")[1]);
     let childelm = nodelm.querySelector(".children");
     let children = Array.from(getCardChildren(card)).filter(c => !seen.has(c.id));
@@ -1181,7 +1177,9 @@ button.control:hover {
       children.forEach(c => childelm.appendChild(buildSubtree(c, seen)));
     } else {
       setHidden(childelm);
-      nodelm.querySelector(".expand").textContent = " ";
+      let expand = nodelm.querySelector(".expand");
+      expand.classList.add("no-interaction");
+      expand.textContent = " ";
     }
     return nodelm;
   }
@@ -1612,13 +1610,13 @@ button.control:hover {
       // Need to enable the special... kinda weird "click on parent to set" thing.
       // Setting the menu and the parent will only happen after the fact.
       let onClick = (parent) => {
-        const pref = getCardRef(parent).textContent;
-        const cref = getCardRef(card).textContent;
+        const pref = parent.id;
+        const cref = card.id;
         if(pref == cref) {
           alert("Can't set self as parent!");
           return false;
         }
-        setCardParent(card, getCardRef(parent).textContent);
+        setCardParent(card, pref);
         setUnsaved();
         rebuildTree();
       };
@@ -1831,6 +1829,8 @@ button.control:hover {
     }
     drawing_target = tool + " " + card.id;
     drawing_events = 0;
+    card.redos = [];
+    updateDrawingRedo(card);
     setUnsaved();
     console.log("SVG mouse down on " + drawing_target);
   }
@@ -1856,7 +1856,7 @@ button.control:hover {
   <div id="sidebar">
     <div id="app-info">
       <a target="_blank" href="https://github.com/randomouscrap98/deskmess">Deskmess</a>
-      <span id="app-version" class="no-interaction">v0.8</span>
+      <span id="app-version" class="no-interaction">v0.8.1</span>
       <span>| haloopdy 2025</span>
     </div>
     <div id="tree"></div>
