@@ -1,0 +1,2100 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Desk Mess</title>
+
+<style>
+:root {
+  --teal: #20B2AA;
+  --teal-border: #367370;
+  --blue: #5F92C8;
+  --blue-border: #346393;
+  --red: #DD6D6D;
+  --red-border: #AC4D4D;
+  --purple: #AB7CBB;
+  --purple-border: #784A88;
+  --gray: #A8A8A8;
+  --gray-border: #717171;
+  --menu-color: white;
+  --menu-infobg: #444;
+  --editor-bg: #EEE;
+  --editor-color: #333;
+  --bg: #F3F3F3;
+  --content-bg: white;
+  --content-color: #111;
+  --sidebar-width: 18rem;
+  --body-shadow: rgba(127,127,127,0.5);
+}
+.dark-mode {
+  --editor-bg: #333;
+  --editor-color: #AAA;
+  --bg: #111;
+  --content-bg: #222;
+  --content-color: #DDD;
+  --teal: #367370;
+  --teal-border: #205050;
+  --blue: #346393;
+  --blue-border: #203a6f;
+  --red: #AC4D4D;
+  --red-border: #7e3131;
+  --purple: #784A88;
+  --purple-border: #603065;
+  --gray: #717171;
+  --gray-border: #484848;
+  --body-shadow: rgb(0,0,0);
+}
+.dark-mode a:link { color: lightskyblue; }
+.dark-mode a:visited { color: orchid; }
+.dark-mode .top > a.toggle-menu { filter: brightness(1.5); }
+
+body {
+  font-family: sans-serif;
+  padding: 0;
+  margin: 0;
+  align-items: stretch;
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  background: var(--bg);
+}
+body.modern {
+  transition: background 0.2s ease-in;
+}
+
+.modern a:not([href="#"]):link, .modern a:not([href="#"]):visited {
+  text-decoration: none;
+  color: var(--teal);
+}
+.dark-mode.modern a:not([href="#"]):link,
+.dark-mode.modern a:not([href="#"]):visited {
+  filter: brightness(1.5);
+}
+
+.hidden { display: none !important; }
+.no-interaction { pointer-events: none; user-select: none; }
+.spacer { flex: 1; }
+.draghandle { cursor: grab; }
+
+@keyframes bgChange {
+  0% { background-color: transparent; }
+  50% { background-color: rgba(127,255,0,0.5); }
+  100% { background-color: transparent; }
+}
+
+#sidebar {
+  display: flex;
+  position: fixed;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  flex-direction: column;
+  width: 0;
+  border-left: 0.15em solid var(--gray);
+  background: var(--content-bg);
+  color: var(--content-color);
+  overflow-y: auto;
+  overflow-x: hidden;
+  z-index: 1999999999;
+}
+.modern #sidebar {
+  border-left: none;
+  transition: width 0.2s ease-out,
+    background 0.2s ease-in;
+}
+.open-sidebar #sidebar {
+  width: var(--sidebar-width);
+}
+#app-info {
+  font-size: 0.8em;
+  color: rgba(127,127,127,0.75);
+  background: var(--editor-bg);
+  padding: 0.1em 0.5em;
+}
+.modern #app-info {
+  display: flex;
+  gap: 0.5em;
+  padding: 0.4em 1em;
+  border-radius: 2em;
+  justify-content: center;
+  margin: 0.5em auto;
+  background: none;
+}
+#tree { padding: 1em; }
+.tree-node { margin: 0.25em 0; }
+.tree-node .line { display: flex; }
+.tree-node .children { margin-left: 0.7em; }
+.tree-node .expand {
+  width: 1.5em;
+  text-align: center;
+  color: var(--gray);
+  cursor: pointer;
+  flex: none;
+}
+
+#main-container {
+  width: 1em;
+  height: 1em;
+  position: absolute;
+  background: rgba(127,127,127,0.15);
+  border-radius: 50%;
+  margin: 0.5em;
+}
+
+footer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: flex-end;
+  gap: 0.25em;
+  padding: 0.3em 1em;
+  box-sizing: border-box;
+  z-index: 1999999999;
+}
+.open-sidebar footer {
+  /* NOTE: this is required to make #links work correctly in visual mode */
+  right: var(--sidebar-width);
+}
+.modern footer {
+  transition: right 0.2s ease-out;
+}
+
+#errors-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+}
+#errors-container .error {
+  font-size: 0.8em;
+  background: var(--red);
+  color: var(--content-color);
+  padding: 0.25em 0.5em;
+  border-radius: 0.5em;
+  transition: opacity 2s ease-in-out;
+}
+
+#controls {
+  display: flex;
+  gap: 0.25em;
+}
+
+button.control {
+  width: 2em;
+  height: 2em;
+  font-size: 1em;
+  border: none;
+  border-radius: 50%;
+  background: var(--teal);
+  transition: filter 0.1s ease-in-out;
+  cursor: pointer;
+  display: flex; /* all for chrome */
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+button.control.unsaved, button.control.alert {
+  background: var(--red);
+}
+button.control.temp, button.control.deactivated {
+  background: var(--gray);
+}
+.modern button.control {
+  box-shadow: 0.2em 0.2em 0.5em var(--body-shadow);
+  font-size: 1.2em;
+}
+
+button.control:hover {
+  filter: brightness(1.2);
+}
+
+.image-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.image-container img {
+  max-width: 100%;
+  max-height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  padding: 0.35em;
+  position: absolute;
+  font-size: 1em;
+  overflow: hidden;
+}
+.modern .card {
+  border: none !important;
+  box-shadow: 0.2em 0.2em 0.75em var(--body-shadow);
+  border-radius: 1em;
+  transition: background 0.1s ease-in,
+    box-shadow 0.1s ease-in;
+}
+
+.card input[type="checkbox"] {
+  width: 1em;
+  height: 1em;
+  font-size: 1em;
+  margin: 0;
+  cursor: pointer;
+}
+
+.card .top {
+  flex: none;
+  color: var(--menu-color);
+  padding-bottom: 0.25em;
+  padding-right: 0.2em;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.4em;
+  position: relative;
+}
+.modern .card .top {
+  font-size: 1.2em;
+  padding-left: 0.2em;
+  padding-top: 0.1em;
+}
+.card .top a:visited, .card .top a:link {
+  color: var(--menu-color);
+}
+.card .top a:visited[href="#"], .card .top a:link[href="#"] {
+  text-decoration: none;
+}
+.card .top > * {
+  flex: none;
+  user-select: none;
+}
+.pending-action .card .top .draghandle {
+  animation: bgChange 0.75s infinite;
+}
+.card .top .type-icon {
+  cursor: pointer;
+}
+.card .top .titlearea {
+  flex: 1;
+  display: flex;
+  padding: 0 0.2em;
+  border-radius: 0.5em;
+  gap: 0.4em;
+  align-items: baseline;
+}
+.card .top .title {
+  flex: 1;
+}
+.card .top .edit-title {
+  flex: 1;
+  font-size: 0.9em;
+  outline: none;
+  border: 0.05em solid black;
+  padding: 0.1em 0.25em;
+  width: 4em; /* I don't quite understand flex */
+}
+.modern .card .top .edit-title {
+  border-radius: 0.25em;
+  border: none;
+}
+.card .top time {
+  flex: none;
+  font-size: 0.8em;
+  opacity: 0.8;
+}
+
+.card .top .menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0.1em;
+  z-index: 10;
+}
+.modern .card .top .menu {
+  border-radius: 0.4em;
+  transition: background 0.1s ease-in;
+}
+.card .top .menu > * {
+  padding: 0.1em;
+  transition: background 0.1s ease-in-out;
+}
+.card .menu .colors {
+  display: flex;
+  gap: 0.14em;
+}
+.modern .card .menu .colors {
+  justify-content: center;
+  margin-bottom: 0.2em;
+  margin-top: 0.1em;
+  gap: 0.2em;
+}
+.card .menu .colors a {
+  width: 1em;
+  height: 1em;
+}
+.modern .card .menu .colors a {
+  border-radius: 50%;
+}
+
+.card .card-info {
+  background: var(--menu-infobg);
+  font-size: 0.8em;
+  margin-top: 0.1em;
+}
+.modern .card .card-info {
+  border-radius: 0.25em;
+  margin: 0.2em;
+  padding: 0.2em 0.3em !important;
+}
+
+.card .right-resize {
+  position: absolute;
+  height: calc(100% - 0.3em);
+  width: 0.2em;
+  top: 0;
+  right: 0;
+  cursor: ew-resize;
+}
+.card .bottom-resize {
+  position: absolute;
+  width: calc(100% - 0.3em);
+  height: 0.2em;
+  bottom: 0;
+  left: 0;
+  cursor: ns-resize;
+}
+.card .corner-resize {
+  position: absolute;
+  width: 0.3em;
+  height: 0.3em;
+  bottom: 0;
+  right: 0;
+  cursor: se-resize;
+}
+.modern .card .corner-resize {
+  width: 0.7em;
+  height: 0.7em;
+}
+
+.card-connector {
+  z-index: -1;
+  display: block;
+  position: absolute;
+  margin: 0;
+  padding: 0;
+  border-right: 0.15em solid rgba(127,127,127,0.5);
+  border-top: 0.15em solid rgba(127,127,127,0.5);
+  transform-origin: left top;
+}
+
+.card .content {
+  color: var(--content-color);
+  flex: 1;
+  overflow-x: hidden;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.card .content .card-main {
+  flex: 1;
+  margin: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: var(--content-bg);
+}
+.modern .card .content .card-main {
+  border: none;
+  border-radius: 0.5em;
+  padding: 0.3em;
+  margin: 0.2em;
+  transition: background 0.2s ease-in;
+}
+
+.content textarea.editor {
+  margin: 0;
+  border: 0.2em inset #777;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0.4em;
+  background: var(--editor-bg);
+  color: var(--editor-color);
+  font-size: 0.8em;
+  font-family: monospace, monospace;
+  border-radius: 0;
+  outline: none;
+  flex: none;
+  resize: vertical;
+  min-height: 4em;
+}
+.modern .content textarea.editor {
+  resize: none;
+  margin: 0.2em;
+  background: var(--content-bg);
+  color: var(--content-color);
+  height: 1.0em !important;
+  min-height: 0;
+  border: none;
+  border-radius: 0.5em;
+  font-size: 0.9em;
+  transition: height 0.2s ease-out,
+    background 0.2s ease-in;
+}
+.modern .content textarea.editor:focus {
+  height: 40% !important;
+}
+
+/* Chat (messages) */
+.messages { font-size: 0.93em; /* very silly */ }
+.modern .messages { font-size: 1em; }
+.message-container { padding: 0.15em 0.25em; }
+.modern .message-container { border-radius: 0.35em; }
+.message-container:nth-child(odd) { background-color: rgba(127,127,127,0.07); }
+.message-container time { font-weight: bold; }
+.message-container time::after { content: ": "; }
+
+/* Todo */
+.todo-list { }
+.todo-list .todo-item {
+  margin: 0.1em;
+  display: flex;
+  gap: 0.35em;
+  align-items: center;
+  padding: 0.1em 0.2em;
+}
+.modern .todo-list .todo-item {
+  border-radius: 0.35em;
+}
+.todo-list .todo-item:nth-child(odd) {
+  background-color: rgba(127,127,127,0.07);
+}
+.todo-list .todo-item .todo-text {
+  flex: 1;
+}
+.todo-list .todo-item time {
+  font-size: 0.8em;
+  opacity: 0.5;
+}
+
+/* Markdown */
+.content .markdown { padding: 0.5em; line-height: 1.4; }
+.modern .card .content .markdown { padding: 0.75em; }
+.markdown > :first-child { margin-top: 0; }
+.markdown p { margin: 1em 0; }
+.markdown ul { padding-left: 1.5em; }
+.markdown code {
+  font-family: 'Courier New', monospace;
+  background: var(--editor-bg);
+  padding: 0.2em 0.3em;
+  border-radius: 0.2em;
+  font-size: 0.9em;
+  color: var(--editor-color);
+  vertical-align: baseline;
+  padding-bottom: 0.05em;
+}
+.markdown pre code {
+  background: #333;
+  color: #EEE;
+  display: block;
+  overflow-y: auto;
+  overflow-x: auto;
+  padding: 0.3em 0.5em;
+  font-family: monospace, monospace;
+}
+.modern .markdown pre code {
+  border-radius: 0.5em;
+  padding: 0.6em 0.8em;
+}
+
+/* Drawing */
+.draw-container {
+  overflow: hidden !important;
+  display: flex;
+  flex-direction: column;
+}
+.draw-container .draw-main {
+  position: relative;
+}
+.draw-main svg {
+  position: absolute;
+  left: -3em;
+  top: -3em;
+  width: 500em;
+  height: 500em;
+}
+.draw-container .draw-controls {
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2em;
+  width: 100%;
+  /*justify-content: end;*/
+  background: var(--editor-bg);
+  padding: 0.2em;
+  box-sizing: border-box;
+}
+.modern .draw-container .draw-controls {
+  border-radius: 0.5em;
+}
+.draw-controls .separator {
+  display: block;
+  margin: 0 0.5em;
+  width: 0.15em;
+  background: var(--gray);
+}
+.draw-controls button {
+  font-size: 1.0em;
+  width: 1.5em;
+  height: 1.5em;
+  border: none;
+  line-height: 1;
+  background: none;
+  margin: 0 0.05em;
+  padding: 0;
+  cursor: pointer;
+  color: var(--content-color);
+}
+.modern .draw-controls button {
+  font-size: 1.1em;
+  border-radius: 0.3em;
+  margin: 0 0.1em;
+}
+.draw-controls button:disabled {
+  filter: grayscale(1) contrast(0.25);
+  cursor: unset;
+}
+
+.s {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+}
+
+/* Special rendering mode */
+.page-view #main-container {
+  background: none;
+  border-radius: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  overflow-x: hidden;
+  overflow-y: auto;
+  top: unset !important;
+  left: unset !important;
+  padding: 0.5rem;
+  box-sizing: border-box;
+}
+.page-view.open-sidebar #main-container {
+  /* NOTE: this is required to make #links work correctly in visual mode */
+  padding-right: calc(var(--sidebar-width) + 0.5rem);
+}
+.page-view .card-connector {
+  display: none;
+}
+.page-view .card {
+  position: relative;
+  margin: 0.5em;
+  top: unset !important;
+  left: unset !important;
+}
+/* SEVERE HACK TO ADD EXTRA SPACE, requires each card to have connector after */
+.page-view #main-container > :last-child {
+  display: block !important;
+  height: 50vh;
+  width: 100%;
+  position: unset;
+  visibility: hidden;
+}
+
+
+/* Standard colors */
+.card {
+  background: var(--teal);
+  border: 0.1em solid var(--teal-border);
+}
+/* class for main card content? I don't know... */
+.card .card-main { border: 0.15em solid var(--teal-border); }
+.card .top .menu { background: var(--teal-border); }
+.card .top .menu > a:hover { background: var(--teal); }
+.card .menu .colors a { background: var(--teal); }
+.card .draw-controls button[data-selected] { background: var(--teal); }
+/* Blue */
+.card[data-color="blue"] {
+  background: var(--blue);
+  border: 0.1em solid var(--blue-border);
+}
+.card[data-color="blue"] .card-main { border: 0.15em solid var(--blue-border); }
+.card[data-color="blue"] .top .menu { background: var(--blue-border); }
+.card[data-color="blue"] .top .menu > a:hover { background: var(--blue); }
+.card .menu .colors a[data-color="blue"] { background: var(--blue); }
+.card[data-color="blue"] .draw-controls button[data-selected] { background: var(--blue); }
+/* Red */
+.card[data-color="red"] {
+  background: var(--red);
+  border: 0.1em solid var(--red-border);
+}
+.card[data-color="red"] .card-main { border: 0.15em solid var(--red-border); }
+.card[data-color="red"] .top .menu { background: var(--red-border); }
+.card[data-color="red"] .top .menu > a:hover { background: var(--red); }
+.card .menu .colors a[data-color="red"] { background: var(--red); }
+.card[data-color="red"] .draw-controls button[data-selected] { background: var(--red); }
+/* Purple */
+.card[data-color="purple"] {
+  background: var(--purple);
+  border: 0.1em solid var(--purple-border);
+}
+.card[data-color="purple"] .card-main { border: 0.15em solid var(--purple-border); }
+.card[data-color="purple"] .top .menu { background: var(--purple-border); }
+.card[data-color="purple"] .top .menu > a:hover { background: var(--purple); }
+.card .menu .colors a[data-color="purple"] { background: var(--purple); }
+.card[data-color="purple"] .draw-controls button[data-selected] { background: var(--purple); }
+/* Gray */
+.card[data-color="gray"] {
+  background: var(--gray);
+  border: 0.1em solid var(--gray-border);
+}
+.card[data-color="gray"] .card-main { border: 0.15em solid var(--gray-border); }
+.card[data-color="gray"] .top .menu { background: var(--gray-border); }
+.card[data-color="gray"] .top .menu > a:hover { background: var(--gray); }
+.card .menu .colors a[data-color="gray"] { background: var(--gray); }
+.card[data-color="gray"] .draw-controls button[data-selected] { background: var(--gray); }
+
+</style>
+
+<script>
+    // got from https://github.com/markedjs/marked
+    // marked v15.0.7 - a markdown parser Copyright (c) 2011-2025, Christopher Jeffrey. (MIT Licensed) https://github.com/markedjs/marked
+    !function (e, t) {"object" == typeof exports && "undefined" != typeof module ? t(exports) : "function" == typeof define && define.amd ? define(["exports"], t) : t((e = "undefined" != typeof globalThis ? globalThis : e || self).marked = {})}(this, (function (e) {
+      "use strict"; function t() {return {async: !1, breaks: !1, extensions: null, gfm: !0, hooks: null, pedantic: !1, renderer: null, silent: !1, tokenizer: null, walkTokens: null}} function n(t) {e.defaults = t} e.defaults = {async: !1, breaks: !1, extensions: null, gfm: !0, hooks: null, pedantic: !1, renderer: null, silent: !1, tokenizer: null, walkTokens: null}; const s = {exec: () => null}; function r(e, t = "") {let n = "string" == typeof e ? e : e.source; const s = {replace: (e, t) => {let r = "string" == typeof t ? t : t.source; return r = r.replace(i.caret, "$1"), n = n.replace(e, r), s}, getRegex: () => new RegExp(n, t)}; return s} const i = {codeRemoveIndent: /^(?: {1,4}| {0,3}\t)/gm, outputLinkReplace: /\\([\[\]])/g, indentCodeCompensation: /^(\s+)(?:```)/, beginningSpace: /^\s+/, endingHash: /#$/, startingSpaceChar: /^ /, endingSpaceChar: / $/, nonSpaceChar: /[^ ]/, newLineCharGlobal: /\n/g, tabCharGlobal: /\t/g, multipleSpaceGlobal: /\s+/g, blankLine: /^[ \t]*$/, doubleBlankLine: /\n[ \t]*\n[ \t]*$/, blockquoteStart: /^ {0,3}>/, blockquoteSetextReplace: /\n {0,3}((?:=+|-+) *)(?=\n|$)/g, blockquoteSetextReplace2: /^ {0,3}>[ \t]?/gm, listReplaceTabs: /^\t+/, listReplaceNesting: /^ {1,4}(?=( {4})*[^ ])/g, listIsTask: /^\[[ xX]\] /, listReplaceTask: /^\[[ xX]\] +/, anyLine: /\n.*\n/, hrefBrackets: /^<(.*)>$/, tableDelimiter: /[:|]/, tableAlignChars: /^\||\| *$/g, tableRowBlankLine: /\n[ \t]*$/, tableAlignRight: /^ *-+: *$/, tableAlignCenter: /^ *:-+: *$/, tableAlignLeft: /^ *:-+ *$/, startATag: /^<a /i, endATag: /^<\/a>/i, startPreScriptTag: /^<(pre|code|kbd|script)(\s|>)/i, endPreScriptTag: /^<\/(pre|code|kbd|script)(\s|>)/i, startAngleBracket: /^</, endAngleBracket: />$/, pedanticHrefTitle: /^([^'"]*[^\s])\s+(['"])(.*)\2/, unicodeAlphaNumeric: /[\p{L}\p{N}]/u, escapeTest: /[&<>"']/, escapeReplace: /[&<>"']/g, escapeTestNoEncode: /[<>"']|&(?!(#\d{1,7}|#[Xx][a-fA-F0-9]{1,6}|\w+);)/, escapeReplaceNoEncode: /[<>"']|&(?!(#\d{1,7}|#[Xx][a-fA-F0-9]{1,6}|\w+);)/g, unescapeTest: /&(#(?:\d+)|(?:#x[0-9A-Fa-f]+)|(?:\w+));?/gi, caret: /(^|[^\[])\^/g, percentDecode: /%25/g, findPipe: /\|/g, splitPipe: / \|/, slashPipe: /\\\|/g, carriageReturn: /\r\n|\r/g, spaceLine: /^ +$/gm, notSpaceStart: /^\S*/, endingNewline: /\n$/, listItemRegex: e => new RegExp(`^( {0,3}${e})((?:[\t ][^\\n]*)?(?:\\n|$))`), nextBulletRegex: e => new RegExp(`^ {0,${Math.min(3, e - 1)}}(?:[*+-]|\\d{1,9}[.)])((?:[ \t][^\\n]*)?(?:\\n|$))`), hrRegex: e => new RegExp(`^ {0,${Math.min(3, e - 1)}}((?:- *){3,}|(?:_ *){3,}|(?:\\* *){3,})(?:\\n+|$)`), fencesBeginRegex: e => new RegExp(`^ {0,${Math.min(3, e - 1)}}(?:\`\`\`|~~~)`), headingBeginRegex: e => new RegExp(`^ {0,${Math.min(3, e - 1)}}#`), htmlBeginRegex: e => new RegExp(`^ {0,${Math.min(3, e - 1)}}<(?:[a-z].*>|!--)`, "i")}, l = /^ {0,3}((?:-[\t ]*){3,}|(?:_[ \t]*){3,}|(?:\*[ \t]*){3,})(?:\n+|$)/, o = /(?:[*+-]|\d{1,9}[.)])/, a = /^(?!bull |blockCode|fences|blockquote|heading|html|table)((?:.|\n(?!\s*?\n|bull |blockCode|fences|blockquote|heading|html|table))+?)\n {0,3}(=+|-+) *(?:\n+|$)/, c = r(a).replace(/bull/g, o).replace(/blockCode/g, /(?: {4}| {0,3}\t)/).replace(/fences/g, / {0,3}(?:`{3,}|~{3,})/).replace(/blockquote/g, / {0,3}>/).replace(/heading/g, / {0,3}#{1,6}/).replace(/html/g, / {0,3}<[^\n>]+>\n/).replace(/\|table/g, "").getRegex(), h = r(a).replace(/bull/g, o).replace(/blockCode/g, /(?: {4}| {0,3}\t)/).replace(/fences/g, / {0,3}(?:`{3,}|~{3,})/).replace(/blockquote/g, / {0,3}>/).replace(/heading/g, / {0,3}#{1,6}/).replace(/html/g, / {0,3}<[^\n>]+>\n/).replace(/table/g, / {0,3}\|?(?:[:\- ]*\|)+[\:\- ]*\n/).getRegex(), p = /^([^\n]+(?:\n(?!hr|heading|lheading|blockquote|fences|list|html|table| +\n)[^\n]+)*)/, u = /(?!\s*\])(?:\\.|[^\[\]\\])+/, g = r(/^ {0,3}\[(label)\]: *(?:\n[ \t]*)?([^<\s][^\s]*|<.*?>)(?:(?: +(?:\n[ \t]*)?| *\n[ \t]*)(title))? *(?:\n+|$)/).replace("label", u).replace("title", /(?:"(?:\\"?|[^"\\])*"|'[^'\n]*(?:\n[^'\n]+)*\n?'|\([^()]*\))/).getRegex(), k = r(/^( {0,3}bull)([ \t][^\n]+?)?(?:\n|$)/).replace(/bull/g, o).getRegex(), d = "address|article|aside|base|basefont|blockquote|body|caption|center|col|colgroup|dd|details|dialog|dir|div|dl|dt|fieldset|figcaption|figure|footer|form|frame|frameset|h[1-6]|head|header|hr|html|iframe|legend|li|link|main|menu|menuitem|meta|nav|noframes|ol|optgroup|option|p|param|search|section|summary|table|tbody|td|tfoot|th|thead|title|tr|track|ul", f =/<!--(?:-?>|[\s\S]*?(?:-->|$))/,x=r("^ {0,3}(?:<(script|pre|style|textarea)[\\s>][\\s\\S]*?(?:</\\1>[^\\n]*\\n+|$)|comment[^\\n]*(\\n+|$)|<\\?[\\s\\S]*?(?:\\?>\\n*|$)|<![A-Z][\\s\\S]*?(?:>\\n*|$)|<!\\[CDATA\\[[\\s\\S]*?(?:\\]\\]>\\n*|$)|</?(tag)(?: +|\\n|/?>)[\\s\\S]*?(?:(?:\\n[ \t]*)+\\n|$)|<(?!script|pre|style|textarea)([a-z][\\w-]*)(?:attribute)*? */?>(?=[ \\t]*(?:\\n|$))[\\s\\S]*?(?:(?:\\n[ \t]*)+\\n|$)|</(?!script|pre|style|textarea)[a-z][\\w-]*\\s*>(?=[ \\t]*(?:\\n|$))[\\s\\S]*?(?:(?:\\n[ \t]*)+\\n|$))","i").replace("comment",f).replace("tag",d).replace("attribute",/ +[a-zA-Z:_][\w.:-]*(?: *= *"[^"\n]*"| *= *'[^'\n]*'| *= *[^\s"'=<>`]+)?/).getRegex(),b=r(p).replace("hr",l).replace("heading"," {0,3}#{1,6}(?:\\s|$)").replace("|lheading","").replace("|table","").replace("blockquote"," {0,3}>").replace("fences"," {0,3}(?:`{3,}(?=[^`\\n]*\\n)|~{3,})[^\\n]*\\n").replace("list"," {0,3}(?:[*+-]|1[.)]) ").replace("html","</?(?:tag)(?: +|\\n|/?>)|<(?:script|pre|style|textarea|!--)").replace("tag",d).getRegex(),w={blockquote:r(/^( {0,3}> ?(paragraph|[^\n]*)(?:\n|$))+/).replace("paragraph",b).getRegex(),code:/^((?: {4}| {0,3}\t)[^\n]+(?:\n(?:[ \t]*(?:\n|$))*)?)+/,def:g,fences:/^ {0,3}(`{3,}(?=[^`\n]*(?:\n|$))|~{3,})([^\n]*)(?:\n|$)(?:|([\s\S]*?)(?:\n|$))(?: {0,3}\1[~`]* *(?=\n|$)|$)/,heading:/^ {0,3}(#{1,6})(?=\s|$)(.*)(?:\n+|$)/,hr:l,html:x,lheading:c,list:k,newline:/^(?:[ \t]*(?:\n|$))+/,paragraph:b,table:s,text:/^[^\n]+/},m=r("^ *([^\\n ].*)\\n {0,3}((?:\\| *)?:?-+:? *(?:\\| *:?-+:? *)*(?:\\| *)?)(?:\\n((?:(?! *\\n|hr|heading|blockquote|code|fences|list|html).*(?:\\n|$))*)\\n*|$)").replace("hr",l).replace("heading"," {0,3}#{1,6}(?:\\s|$)").replace("blockquote"," {0,3}>").replace("code","(?: {4}| {0,3}\t)[^\\n]").replace("fences"," {0,3}(?:`{3,}(?=[^`\\n]*\\n)|~{3,})[^\\n]*\\n").replace("list"," {0,3}(?:[*+-]|1[.)]) ").replace("html","</?(?:tag)(?: +|\\n|/?>)|<(?:script|pre|style|textarea|!--)").replace("tag",d).getRegex(),y={...w,lheading:h,table:m,paragraph:r(p).replace("hr",l).replace("heading"," {0,3}#{1,6}(?:\\s|$)").replace("|lheading","").replace("table",m).replace("blockquote"," {0,3}>").replace("fences"," {0,3}(?:`{3,}(?=[^`\\n]*\\n)|~{3,})[^\\n]*\\n").replace("list"," {0,3}(?:[*+-]|1[.)]) ").replace("html","</?(?:tag)(?: +|\\n|/?>)|<(?:script|pre|style|textarea|!--)").replace("tag",d).getRegex()},$={...w,html:r("^ *(?:comment *(?:\\n|\\s*$)|<(tag)[\\s\\S]+?</\\1> *(?:\\n{2,}|\\s*$)|<tag(?:\"[^\"]*\"|'[^']*'|\\s[^'\"/>\\s]*)*?/?> *(?:\\n{2,}|\\s*$))").replace("comment",f).replace(/tag/g,"(?!(?:a|em|strong|small|s|cite|q|dfn|abbr|data|time|code|var|samp|kbd|sub|sup|i|b|u|mark|ruby|rt|rp|bdi|bdo|span|br|wbr|ins|del|img)\\b)\\w+(?!:|[^\\w\\s@]*@)\\b").getRegex(),def:/^ *\[([^\]]+)\]: *<?([^\s>]+)>?(?: +(["(][^\n]+[")]))? *(?:\n+|$)/,heading:/^(#{1,6})(.*)(?:\n+|$)/,fences:s,lheading:/^(.+?)\n {0,3}(=+|-+) *(?:\n+|$)/,paragraph:r(p).replace("hr",l).replace("heading"," *#{1,6} *[^\n]").replace("lheading",c).replace("|table","").replace("blockquote"," {0,3}>").replace("|fences","").replace("|list","").replace("|html","").replace("|tag","").getRegex()},R=/^( {2,}|\\)\n(?!\s*$)/,S=/[\p{P}\p{S}]/u,T=/[\s\p{P}\p{S}]/u,z=/[^\s\p{P}\p{S}]/u,A=r(/^((?![*_])punctSpace)/,"u").replace(/punctSpace/g,T).getRegex(),_=/(?!~)[\p{P}\p{S}]/u,P=/^(?:\*+(?:((?!\*)punct)|[^\s*]))|^_+(?:((?!_)punct)|([^\s_]))/,I=r(P,"u").replace(/punct/g,S).getRegex(),L=r(P,"u").replace(/punct/g,_).getRegex(),B="^[^_*]*?__[^_*]*?\\*[^_*]*?(?=__)|[^*]+(?=[^*])|(?!\\*)punct(\\*+)(?=[\\s]|$)|notPunctSpace(\\*+)(?!\\*)(?=punctSpace|$)|(?!\\*)punctSpace(\\*+)(?=notPunctSpace)|[\\s](\\*+)(?!\\*)(?=punct)|(?!\\*)punct(\\*+)(?!\\*)(?=punct)|notPunctSpace(\\*+)(?=notPunctSpace)",C=r(B,"gu").replace(/notPunctSpace/g,z).replace(/punctSpace/g,T).replace(/punct/g,S).getRegex(),q=r(B,"gu").replace(/notPunctSpace/g,/(?:[^\s\p{P}\p{S}]|~)/u).replace(/punctSpace/g,/(?!~)[\s\p{P}\p{S}]/u).replace(/punct/g,_).getRegex(),E=r("^[^_*]*?\\*\\*[^_*]*?_[^_*]*?(?=\\*\\*)|[^_]+(?=[^_])|(?!_)punct(_+)(?=[\\s]|$)|notPunctSpace(_+)(?!_)(?=punctSpace|$)|(?!_)punctSpace(_+)(?=notPunctSpace)|[\\s](_+)(?!_)(?=punct)|(?!_)punct(_+)(?!_)(?=punct)","gu").replace(/notPunctSpace/g,z).replace(/punctSpace/g,T).replace(/punct/g,S).getRegex(),Z=r(/\\(punct)/,"gu").replace(/punct/g,S).getRegex(),v=r(/^<(scheme:[^\s\x00-\x1f<>]*|email)>/).replace("scheme",/[a-zA-Z][a-zA-Z0-9+.-]{1,31}/).replace("email",/[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+(@)[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+(?![-_])/).getRegex(),D=r(f).replace("(?:--\x3e|$)","--\x3e").getRegex(),M=r("^comment|^</[a-zA-Z][\\w:-]*\\s*>|^<[a-zA-Z][\\w-]*(?:attribute)*?\\s*/?>|^<\\?[\\s\\S]*?\\?>|^<![a-zA-Z]+\\s[\\s\\S]*?>|^<!\\[CDATA\\[[\\s\\S]*?\\]\\]>").replace("comment",D).replace("attribute",/\s+[a-zA-Z:_][\w.:-]*(?:\s*=\s*"[^"]*"|\s*=\s*'[^']*'|\s*=\s*[^\s"'=<>`]+)?/).getRegex(),O=/(?:\[(?:\\.|[^\[\]\\])*\]|\\.|`[^`]*`|[^\[\]\\`])*?/,Q=r(/^!?\[(label)\]\(\s*(href)(?:\s+(title))?\s*\)/).replace("label",O).replace("href",/<(?:\\.|[^\n<>\\])+>|[^\s\x00-\x1f]*/).replace("title",/"(?:\\"?|[^"\\])*"|'(?:\\'?|[^'\\])*'|\((?:\\\)?|[^)\\])*\)/).getRegex(),j=r(/^!?\[(label)\]\[(ref)\]/).replace("label",O).replace("ref",u).getRegex(),N=r(/^!?\[(ref)\](?:\[\])?/).replace("ref",u).getRegex(),G={_backpedal:s,anyPunctuation:Z,autolink:v,blockSkip:/\[[^[\]]*?\]\((?:\\.|[^\\\(\)]|\((?:\\.|[^\\\(\)])*\))*\)|`[^`]*?`|<[^<>]*?>/g,br:R,code:/^(`+)([^`]|[^`][\s\S]*?[^`])\1(?!`)/,del:s,emStrongLDelim:I,emStrongRDelimAst:C,emStrongRDelimUnd:E,escape:/^\\([!"#$%&'()*+,\-./:;<=>?@\[\]\\^_`{|}~])/,link:Q,nolink:N,punctuation:A,reflink:j,reflinkSearch:r("reflink|nolink(?!\\()","g").replace("reflink",j).replace("nolink",N).getRegex(),tag:M,text:/^(`+|[^`])(?:(?= {2,}\n)|[\s\S]*?(?:(?=[\\<!\[`*_]|\b_|$)|[^ ](?= {2,}\n)))/,url:s},H={...G,link:r(/^!?\[(label)\]\((.*?)\)/).replace("label",O).getRegex(),reflink:r(/^!?\[(label)\]\s*\[([^\]]*)\]/).replace("label",O).getRegex()},X={...G,emStrongRDelimAst:q,emStrongLDelim:L,url:r(/^((?:ftp|https?):\/\/|www\.)(?:[a-zA-Z0-9\-]+\.?)+[^\s<]*|^email/,"i").replace("email",/[A-Za-z0-9._+-]+(@)[a-zA-Z0-9-_]+(?:\.[a-zA-Z0-9-_]*[a-zA-Z0-9])+(?![-_])/).getRegex(),_backpedal:/(?:[^?!.,:;*_'"~()&]+|\([^)]*\)|&(?![a-zA-Z0-9]+;$)|[?!.,:;*_'"~)]+(?!$))+/,del:/^(~~?)(?=[^\s~])((?:\\.|[^\\])*?(?:\\.|[^\s~\\]))\1(?=[^~]|$)/,text:/^([`~]+|[^`~])(?:(?= {2,}\n)|(?=[a-zA-Z0-9.!#$%&'*+\/=?_`{\|}~-]+@)|[\s\S]*?(?:(?=[\\<!\[`*~_]|\b_|https?:\/\/|ftp:\/\/|www\.|$)|[^ ](?= {2,}\n)|[^a-zA-Z0-9.!#$%&'*+\/=?_`{\|}~-](?=[a-zA-Z0-9.!#$%&'*+\/=?_`{\|}~-]+@)))/},F={...X,br:r(R).replace("{2,}","*").getRegex(),text:r(X.text).replace("\\b_","\\b_| {2,}\\n").replace(/\{2,\}/g,"*").getRegex()},U={normal:w,gfm:y,pedantic:$},J={normal:G,gfm:X,breaks:F,pedantic:H},K={"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"},V=e=>K[e];function W(e,t){if(t){if(i.escapeTest.test(e))return e.replace(i.escapeReplace,V)}else if(i.escapeTestNoEncode.test(e))return e.replace(i.escapeReplaceNoEncode,V);return e}function Y(e){try{e=encodeURI(e).replace(i.percentDecode,"%")}catch{return null}return e}function ee(e,t){const n=e.replace(i.findPipe,((e,t,n)=>{let s=!1,r=t;for(;--r>=0&&"\\"===n[r];)s=!s;return s?"|":" |"})).split(i.splitPipe);let s=0;if(n[0].trim()||n.shift(),n.length>0&&!n.at(-1)?.trim()&&n.pop(),t)if(n.length>t)n.splice(t);else for(;n.length<t;)n.push("");for(;s<n.length;s++)n[s]=n[s].trim().replace(i.slashPipe,"|");return n}function te(e,t,n){const s=e.length;if(0===s)return"";let r=0;for(;r<s;){if(e.charAt(s-r-1)!==t)break;r++}return e.slice(0,s-r)}function ne(e,t,n,s,r){const i=t.href,l=t.title||null,o=e[1].replace(r.other.outputLinkReplace,"$1");if("!"!==e[0].charAt(0)){s.state.inLink=!0;const e={type:"link",raw:n,href:i,title:l,text:o,tokens:s.inlineTokens(o)};return s.state.inLink=!1,e}return{type:"image",raw:n,href:i,title:l,text:o}}class se{options;rules;lexer;constructor(t){this.options=t||e.defaults}space(e){const t=this.rules.block.newline.exec(e);if(t&&t[0].length>0)return{type:"space",raw:t[0]}}code(e){const t=this.rules.block.code.exec(e);if(t){const e=t[0].replace(this.rules.other.codeRemoveIndent,"");return{type:"code",raw:t[0],codeBlockStyle:"indented",text:this.options.pedantic?e:te(e,"\n")}}}fences(e){const t=this.rules.block.fences.exec(e);if(t){const e=t[0],n=function(e,t,n){const s=e.match(n.other.indentCodeCompensation);if(null===s)return t;const r=s[1];return t.split("\n").map((e=>{const t=e.match(n.other.beginningSpace);if(null===t)return e;const[s]=t;return s.length>=r.length?e.slice(r.length):e})).join("\n")}(e,t[3]||"",this.rules);return{type:"code",raw:e,lang:t[2]?t[2].trim().replace(this.rules.inline.anyPunctuation,"$1"):t[2],text:n}}}heading(e){const t=this.rules.block.heading.exec(e);if(t){let e=t[2].trim();if(this.rules.other.endingHash.test(e)){const t=te(e,"#");this.options.pedantic?e=t.trim():t&&!this.rules.other.endingSpaceChar.test(t)||(e=t.trim())}return{type:"heading",raw:t[0],depth:t[1].length,text:e,tokens:this.lexer.inline(e)}}}hr(e){const t=this.rules.block.hr.exec(e);if(t)return{type:"hr",raw:te(t[0],"\n")}}blockquote(e){const t=this.rules.block.blockquote.exec(e);if(t){let e=te(t[0],"\n").split("\n"),n="",s="";const r=[];for(;e.length>0;){let t=!1;const i=[];let l;for(l=0;l<e.length;l++)if(this.rules.other.blockquoteStart.test(e[l]))i.push(e[l]),t=!0;else{if(t)break;i.push(e[l])}e=e.slice(l);const o=i.join("\n"),a=o.replace(this.rules.other.blockquoteSetextReplace,"\n    $1").replace(this.rules.other.blockquoteSetextReplace2,"");n=n?`${n}\n${o}`:o,s=s?`${s}\n${a}`:a;const c=this.lexer.state.top;if(this.lexer.state.top=!0,this.lexer.blockTokens(a,r,!0),this.lexer.state.top=c,0===e.length)break;const h=r.at(-1);if("code"===h?.type)break;if("blockquote"===h?.type){const t=h,i=t.raw+"\n"+e.join("\n"),l=this.blockquote(i);r[r.length-1]=l,n=n.substring(0,n.length-t.raw.length)+l.raw,s=s.substring(0,s.length-t.text.length)+l.text;break}if("list"!==h?.type);else{const t=h,i=t.raw+"\n"+e.join("\n"),l=this.list(i);r[r.length-1]=l,n=n.substring(0,n.length-h.raw.length)+l.raw,s=s.substring(0,s.length-t.raw.length)+l.raw,e=i.substring(r.at(-1).raw.length).split("\n")}}return{type:"blockquote",raw:n,tokens:r,text:s}}}list(e){let t=this.rules.block.list.exec(e);if(t){let n=t[1].trim();const s=n.length>1,r={type:"list",raw:"",ordered:s,start:s?+n.slice(0,-1):"",loose:!1,items:[]};n=s?`\\d{1,9}\\${n.slice(-1)}`:`\\${n}`,this.options.pedantic&&(n=s?n:"[*+-]");const i=this.rules.other.listItemRegex(n);let l=!1;for(;e;){let n=!1,s="",o="";if(!(t=i.exec(e)))break;if(this.rules.block.hr.test(e))break;s=t[0],e=e.substring(s.length);let a=t[2].split("\n",1)[0].replace(this.rules.other.listReplaceTabs,(e=>" ".repeat(3*e.length))),c=e.split("\n",1)[0],h=!a.trim(),p=0;if(this.options.pedantic?(p=2,o=a.trimStart()):h?p=t[1].length+1:(p=t[2].search(this.rules.other.nonSpaceChar),p=p>4?1:p,o=a.slice(p),p+=t[1].length),h&&this.rules.other.blankLine.test(c)&&(s+=c+"\n",e=e.substring(c.length+1),n=!0),!n){const t=this.rules.other.nextBulletRegex(p),n=this.rules.other.hrRegex(p),r=this.rules.other.fencesBeginRegex(p),i=this.rules.other.headingBeginRegex(p),l=this.rules.other.htmlBeginRegex(p);for(;e;){const u=e.split("\n",1)[0];let g;if(c=u,this.options.pedantic?(c=c.replace(this.rules.other.listReplaceNesting,"  "),g=c):g=c.replace(this.rules.other.tabCharGlobal,"    "),r.test(c))break;if(i.test(c))break;if(l.test(c))break;if(t.test(c))break;if(n.test(c))break;if(g.search(this.rules.other.nonSpaceChar)>=p||!c.trim())o+="\n"+g.slice(p);else{if(h)break;if(a.replace(this.rules.other.tabCharGlobal,"    ").search(this.rules.other.nonSpaceChar)>=4)break;if(r.test(a))break;if(i.test(a))break;if(n.test(a))break;o+="\n"+c}h||c.trim()||(h=!0),s+=u+"\n",e=e.substring(u.length+1),a=g.slice(p)}}r.loose||(l?r.loose=!0:this.rules.other.doubleBlankLine.test(s)&&(l=!0));let u,g=null;this.options.gfm&&(g=this.rules.other.listIsTask.exec(o),g&&(u="[ ] "!==g[0],o=o.replace(this.rules.other.listReplaceTask,""))),r.items.push({type:"list_item",raw:s,task:!!g,checked:u,loose:!1,text:o,tokens:[]}),r.raw+=s}const o=r.items.at(-1);if(!o)return;o.raw=o.raw.trimEnd(),o.text=o.text.trimEnd(),r.raw=r.raw.trimEnd();for(let e=0;e<r.items.length;e++)if(this.lexer.state.top=!1,r.items[e].tokens=this.lexer.blockTokens(r.items[e].text,[]),!r.loose){const t=r.items[e].tokens.filter((e=>"space"===e.type)),n=t.length>0&&t.some((e=>this.rules.other.anyLine.test(e.raw)));r.loose=n}if(r.loose)for(let e=0;e<r.items.length;e++)r.items[e].loose=!0;return r}}html(e){const t=this.rules.block.html.exec(e);if(t){return{type:"html",block:!0,raw:t[0],pre:"pre"===t[1]||"script"===t[1]||"style"===t[1],text:t[0]}}}def(e){const t=this.rules.block.def.exec(e);if(t){const e=t[1].toLowerCase().replace(this.rules.other.multipleSpaceGlobal," "),n=t[2]?t[2].replace(this.rules.other.hrefBrackets,"$1").replace(this.rules.inline.anyPunctuation,"$1"):"",s=t[3]?t[3].substring(1,t[3].length-1).replace(this.rules.inline.anyPunctuation,"$1"):t[3];return{type:"def",tag:e,raw:t[0],href:n,title:s}}}table(e){const t=this.rules.block.table.exec(e);if(!t)return;if(!this.rules.other.tableDelimiter.test(t[2]))return;const n=ee(t[1]),s=t[2].replace(this.rules.other.tableAlignChars,"").split("|"),r=t[3]?.trim()?t[3].replace(this.rules.other.tableRowBlankLine,"").split("\n"):[],i={type:"table",raw:t[0],header:[],align:[],rows:[]};if(n.length===s.length){for(const e of s)this.rules.other.tableAlignRight.test(e)?i.align.push("right"):this.rules.other.tableAlignCenter.test(e)?i.align.push("center"):this.rules.other.tableAlignLeft.test(e)?i.align.push("left"):i.align.push(null);for(let e=0;e<n.length;e++)i.header.push({text:n[e],tokens:this.lexer.inline(n[e]),header:!0,align:i.align[e]});for(const e of r)i.rows.push(ee(e,i.header.length).map(((e,t)=>({text:e,tokens:this.lexer.inline(e),header:!1,align:i.align[t]}))));return i}}lheading(e){const t=this.rules.block.lheading.exec(e);if(t)return{type:"heading",raw:t[0],depth:"="===t[2].charAt(0)?1:2,text:t[1],tokens:this.lexer.inline(t[1])}}paragraph(e){const t=this.rules.block.paragraph.exec(e);if(t){const e="\n"===t[1].charAt(t[1].length-1)?t[1].slice(0,-1):t[1];return{type:"paragraph",raw:t[0],text:e,tokens:this.lexer.inline(e)}}}text(e){const t=this.rules.block.text.exec(e);if(t)return{type:"text",raw:t[0],text:t[0],tokens:this.lexer.inline(t[0])}}escape(e){const t=this.rules.inline.escape.exec(e);if(t)return{type:"escape",raw:t[0],text:t[1]}}tag(e){const t=this.rules.inline.tag.exec(e);if(t)return!this.lexer.state.inLink&&this.rules.other.startATag.test(t[0])?this.lexer.state.inLink=!0:this.lexer.state.inLink&&this.rules.other.endATag.test(t[0])&&(this.lexer.state.inLink=!1),!this.lexer.state.inRawBlock&&this.rules.other.startPreScriptTag.test(t[0])?this.lexer.state.inRawBlock=!0:this.lexer.state.inRawBlock&&this.rules.other.endPreScriptTag.test(t[0])&&(this.lexer.state.inRawBlock=!1),{type:"html",raw:t[0],inLink:this.lexer.state.inLink,inRawBlock:this.lexer.state.inRawBlock,block:!1,text:t[0]}}link(e){const t=this.rules.inline.link.exec(e);if(t){const e=t[2].trim();if(!this.options.pedantic&&this.rules.other.startAngleBracket.test(e)){if(!this.rules.other.endAngleBracket.test(e))return;const t=te(e.slice(0,-1),"\\");if((e.length-t.length)%2==0)return}else{const e=function(e,t){if(-1===e.indexOf(t[1]))return-1;let n=0;for(let s=0;s<e.length;s++)if("\\"===e[s])s++;else if(e[s]===t[0])n++;else if(e[s]===t[1]&&(n--,n<0))return s;return-1}(t[2],"()");if(e>-1){const n=(0===t[0].indexOf("!")?5:4)+t[1].length+e;t[2]=t[2].substring(0,e),t[0]=t[0].substring(0,n).trim(),t[3]=""}}let n=t[2],s="";if(this.options.pedantic){const e=this.rules.other.pedanticHrefTitle.exec(n);e&&(n=e[1],s=e[3])}else s=t[3]?t[3].slice(1,-1):"";return n=n.trim(),this.rules.other.startAngleBracket.test(n)&&(n=this.options.pedantic&&!this.rules.other.endAngleBracket.test(e)?n.slice(1):n.slice(1,-1)),ne(t,{href:n?n.replace(this.rules.inline.anyPunctuation,"$1"):n,title:s?s.replace(this.rules.inline.anyPunctuation,"$1"):s},t[0],this.lexer,this.rules)}}reflink(e,t){let n;if((n=this.rules.inline.reflink.exec(e))||(n=this.rules.inline.nolink.exec(e))){const e=t[(n[2]||n[1]).replace(this.rules.other.multipleSpaceGlobal," ").toLowerCase()];if(!e){const e=n[0].charAt(0);return{type:"text",raw:e,text:e}}return ne(n,e,n[0],this.lexer,this.rules)}}emStrong(e,t,n=""){let s=this.rules.inline.emStrongLDelim.exec(e);if(!s)return;if(s[3]&&n.match(this.rules.other.unicodeAlphaNumeric))return;if(!(s[1]||s[2]||"")||!n||this.rules.inline.punctuation.exec(n)){const n=[...s[0]].length-1;let r,i,l=n,o=0;const a="*"===s[0][0]?this.rules.inline.emStrongRDelimAst:this.rules.inline.emStrongRDelimUnd;for(a.lastIndex=0,t=t.slice(-1*e.length+n);null!=(s=a.exec(t));){if(r=s[1]||s[2]||s[3]||s[4]||s[5]||s[6],!r)continue;if(i=[...r].length,s[3]||s[4]){l+=i;continue}if((s[5]||s[6])&&n%3&&!((n+i)%3)){o+=i;continue}if(l-=i,l>0)continue;i=Math.min(i,i+l+o);const t=[...s[0]][0].length,a=e.slice(0,n+s.index+t+i);if(Math.min(n,i)%2){const e=a.slice(1,-1);return{type:"em",raw:a,text:e,tokens:this.lexer.inlineTokens(e)}}const c=a.slice(2,-2);return{type:"strong",raw:a,text:c,tokens:this.lexer.inlineTokens(c)}}}}codespan(e){const t=this.rules.inline.code.exec(e);if(t){let e=t[2].replace(this.rules.other.newLineCharGlobal," ");const n=this.rules.other.nonSpaceChar.test(e),s=this.rules.other.startingSpaceChar.test(e)&&this.rules.other.endingSpaceChar.test(e);return n&&s&&(e=e.substring(1,e.length-1)),{type:"codespan",raw:t[0],text:e}}}br(e){const t=this.rules.inline.br.exec(e);if(t)return{type:"br",raw:t[0]}}del(e){const t=this.rules.inline.del.exec(e);if(t)return{type:"del",raw:t[0],text:t[2],tokens:this.lexer.inlineTokens(t[2])}}autolink(e){const t=this.rules.inline.autolink.exec(e);if(t){let e,n;return"@"===t[2]?(e=t[1],n="mailto:"+e):(e=t[1],n=e),{type:"link",raw:t[0],text:e,href:n,tokens:[{type:"text",raw:e,text:e}]}}}url(e){let t;if(t=this.rules.inline.url.exec(e)){let e,n;if("@"===t[2])e=t[0],n="mailto:"+e;else{let s;do{s=t[0],t[0]=this.rules.inline._backpedal.exec(t[0])?.[0]??""}while(s!==t[0]);e=t[0],n="www."===t[1]?"http://"+t[0]:t[0]}return{type:"link",raw:t[0],text:e,href:n,tokens:[{type:"text",raw:e,text:e}]}}}inlineText(e){const t=this.rules.inline.text.exec(e);if(t){const e=this.lexer.state.inRawBlock;return{type:"text",raw:t[0],text:t[0],escaped:e}}}}class re{tokens;options;state;tokenizer;inlineQueue;constructor(t){this.tokens=[],this.tokens.links=Object.create(null),this.options=t||e.defaults,this.options.tokenizer=this.options.tokenizer||new se,this.tokenizer=this.options.tokenizer,this.tokenizer.options=this.options,this.tokenizer.lexer=this,this.inlineQueue=[],this.state={inLink:!1,inRawBlock:!1,top:!0};const n={other:i,block:U.normal,inline:J.normal};this.options.pedantic?(n.block=U.pedantic,n.inline=J.pedantic):this.options.gfm&&(n.block=U.gfm,this.options.breaks?n.inline=J.breaks:n.inline=J.gfm),this.tokenizer.rules=n}static get rules(){return{block:U,inline:J}}static lex(e,t){return new re(t).lex(e)}static lexInline(e,t){return new re(t).inlineTokens(e)}lex(e){e=e.replace(i.carriageReturn,"\n"),this.blockTokens(e,this.tokens);for(let e=0;e<this.inlineQueue.length;e++){const t=this.inlineQueue[e];this.inlineTokens(t.src,t.tokens)}return this.inlineQueue=[],this.tokens}blockTokens(e,t=[],n=!1){for(this.options.pedantic&&(e=e.replace(i.tabCharGlobal,"    ").replace(i.spaceLine,""));e;){let s;if(this.options.extensions?.block?.some((n=>!!(s=n.call({lexer:this},e,t))&&(e=e.substring(s.raw.length),t.push(s),!0))))continue;if(s=this.tokenizer.space(e)){e=e.substring(s.raw.length);const n=t.at(-1);1===s.raw.length&&void 0!==n?n.raw+="\n":t.push(s);continue}if(s=this.tokenizer.code(e)){e=e.substring(s.raw.length);const n=t.at(-1);"paragraph"===n?.type||"text"===n?.type?(n.raw+="\n"+s.raw,n.text+="\n"+s.text,this.inlineQueue.at(-1).src=n.text):t.push(s);continue}if(s=this.tokenizer.fences(e)){e=e.substring(s.raw.length),t.push(s);continue}if(s=this.tokenizer.heading(e)){e=e.substring(s.raw.length),t.push(s);continue}if(s=this.tokenizer.hr(e)){e=e.substring(s.raw.length),t.push(s);continue}if(s=this.tokenizer.blockquote(e)){e=e.substring(s.raw.length),t.push(s);continue}if(s=this.tokenizer.list(e)){e=e.substring(s.raw.length),t.push(s);continue}if(s=this.tokenizer.html(e)){e=e.substring(s.raw.length),t.push(s);continue}if(s=this.tokenizer.def(e)){e=e.substring(s.raw.length);const n=t.at(-1);"paragraph"===n?.type||"text"===n?.type?(n.raw+="\n"+s.raw,n.text+="\n"+s.raw,this.inlineQueue.at(-1).src=n.text):this.tokens.links[s.tag]||(this.tokens.links[s.tag]={href:s.href,title:s.title});continue}if(s=this.tokenizer.table(e)){e=e.substring(s.raw.length),t.push(s);continue}if(s=this.tokenizer.lheading(e)){e=e.substring(s.raw.length),t.push(s);continue}let r=e;if(this.options.extensions?.startBlock){let t=1/0;const n=e.slice(1);let s;this.options.extensions.startBlock.forEach((e=>{s=e.call({lexer:this},n),"number"==typeof s&&s>=0&&(t=Math.min(t,s))})),t<1/0&&t>=0&&(r=e.substring(0,t+1))}if(this.state.top&&(s=this.tokenizer.paragraph(r))){const i=t.at(-1);n&&"paragraph"===i?.type?(i.raw+="\n"+s.raw,i.text+="\n"+s.text,this.inlineQueue.pop(),this.inlineQueue.at(-1).src=i.text):t.push(s),n=r.length!==e.length,e=e.substring(s.raw.length)}else if(s=this.tokenizer.text(e)){e=e.substring(s.raw.length);const n=t.at(-1);"text"===n?.type?(n.raw+="\n"+s.raw,n.text+="\n"+s.text,this.inlineQueue.pop(),this.inlineQueue.at(-1).src=n.text):t.push(s)}else if(e){const t="Infinite loop on byte: "+e.charCodeAt(0);if(this.options.silent){console.error(t);break}throw new Error(t)}}return this.state.top=!0,t}inline(e,t=[]){return this.inlineQueue.push({src:e,tokens:t}),t}inlineTokens(e,t=[]){let n=e,s=null;if(this.tokens.links){const e=Object.keys(this.tokens.links);if(e.length>0)for(;null!=(s=this.tokenizer.rules.inline.reflinkSearch.exec(n));)e.includes(s[0].slice(s[0].lastIndexOf("[")+1,-1))&&(n=n.slice(0,s.index)+"["+"a".repeat(s[0].length-2)+"]"+n.slice(this.tokenizer.rules.inline.reflinkSearch.lastIndex))}for(;null!=(s=this.tokenizer.rules.inline.blockSkip.exec(n));)n=n.slice(0,s.index)+"["+"a".repeat(s[0].length-2)+"]"+n.slice(this.tokenizer.rules.inline.blockSkip.lastIndex);for(;null!=(s=this.tokenizer.rules.inline.anyPunctuation.exec(n));)n=n.slice(0,s.index)+"++"+n.slice(this.tokenizer.rules.inline.anyPunctuation.lastIndex);let r=!1,i="";for(;e;){let s;if(r||(i=""),r=!1,this.options.extensions?.inline?.some((n=>!!(s=n.call({lexer:this},e,t))&&(e=e.substring(s.raw.length),t.push(s),!0))))continue;if(s=this.tokenizer.escape(e)){e=e.substring(s.raw.length),t.push(s);continue}if(s=this.tokenizer.tag(e)){e=e.substring(s.raw.length),t.push(s);continue}if(s=this.tokenizer.link(e)){e=e.substring(s.raw.length),t.push(s);continue}if(s=this.tokenizer.reflink(e,this.tokens.links)){e=e.substring(s.raw.length);const n=t.at(-1);"text"===s.type&&"text"===n?.type?(n.raw+=s.raw,n.text+=s.text):t.push(s);continue}if(s=this.tokenizer.emStrong(e,n,i)){e=e.substring(s.raw.length),t.push(s);continue}if(s=this.tokenizer.codespan(e)){e=e.substring(s.raw.length),t.push(s);continue}if(s=this.tokenizer.br(e)){e=e.substring(s.raw.length),t.push(s);continue}if(s=this.tokenizer.del(e)){e=e.substring(s.raw.length),t.push(s);continue}if(s=this.tokenizer.autolink(e)){e=e.substring(s.raw.length),t.push(s);continue}if(!this.state.inLink&&(s=this.tokenizer.url(e))){e=e.substring(s.raw.length),t.push(s);continue}let l=e;if(this.options.extensions?.startInline){let t=1/0;const n=e.slice(1);let s;this.options.extensions.startInline.forEach((e=>{s=e.call({lexer:this},n),"number"==typeof s&&s>=0&&(t=Math.min(t,s))})),t<1/0&&t>=0&&(l=e.substring(0,t+1))}if(s=this.tokenizer.inlineText(l)){e=e.substring(s.raw.length),"_"!==s.raw.slice(-1)&&(i=s.raw.slice(-1)),r=!0;const n=t.at(-1);"text"===n?.type?(n.raw+=s.raw,n.text+=s.text):t.push(s)}else if(e){const t="Infinite loop on byte: "+e.charCodeAt(0);if(this.options.silent){console.error(t);break}throw new Error(t)}}return t}}class ie{options;parser;constructor(t){this.options=t||e.defaults}space(e){return""}code({text:e,lang:t,escaped:n}){const s=(t||"").match(i.notSpaceStart)?.[0],r=e.replace(i.endingNewline,"")+"\n";return s?'<pre><code class="language-'+W(s)+'">'+(n?r:W(r,!0))+"</code></pre>\n":"<pre><code>"+(n?r:W(r,!0))+"</code></pre>\n"}blockquote({tokens:e}){return`<blockquote>\n${this.parser.parse(e)}</blockquote>\n`}html({text:e}){return e}heading({tokens:e,depth:t}){return`<h${t}>${this.parser.parseInline(e)}</h${t}>\n`}hr(e){return"<hr>\n"}list(e){const t=e.ordered,n=e.start;let s="";for(let t=0;t<e.items.length;t++){const n=e.items[t];s+=this.listitem(n)}const r=t?"ol":"ul";return"<"+r+(t&&1!==n?' start="'+n+'"':"")+">\n"+s+"</"+r+">\n"}listitem(e){let t="";if(e.task){const n=this.checkbox({checked:!!e.checked});e.loose?"paragraph"===e.tokens[0]?.type?(e.tokens[0].text=n+" "+e.tokens[0].text,e.tokens[0].tokens&&e.tokens[0].tokens.length>0&&"text"===e.tokens[0].tokens[0].type&&(e.tokens[0].tokens[0].text=n+" "+W(e.tokens[0].tokens[0].text),e.tokens[0].tokens[0].escaped=!0)):e.tokens.unshift({type:"text",raw:n+" ",text:n+" ",escaped:!0}):t+=n+" "}return t+=this.parser.parse(e.tokens,!!e.loose),`<li>${t}</li>\n`}checkbox({checked:e}){return"<input "+(e?'checked="" ':"")+'disabled="" type="checkbox">'}paragraph({tokens:e}){return`<p>${this.parser.parseInline(e)}</p>\n`}table(e){let t="",n="";for(let t=0;t<e.header.length;t++)n+=this.tablecell(e.header[t]);t+=this.tablerow({text:n});let s="";for(let t=0;t<e.rows.length;t++){const r=e.rows[t];n="";for(let e=0;e<r.length;e++)n+=this.tablecell(r[e]);s+=this.tablerow({text:n})}return s&&(s=`<tbody>${s}</tbody>`),"<table>\n<thead>\n"+t+"</thead>\n"+s+"</table>\n"}tablerow({text:e}){return`<tr>\n${e}</tr>\n`}tablecell(e){const t=this.parser.parseInline(e.tokens),n=e.header?"th":"td";return(e.align?`<${n} align="${e.align}">`:`<${n}>`)+t+`</${n}>\n`}strong({tokens:e}){return`<strong>${this.parser.parseInline(e)}</strong>`}em({tokens:e}){return`<em>${this.parser.parseInline(e)}</em>`}codespan({text:e}){return`<code>${W(e,!0)}</code>`}br(e){return"<br>"}del({tokens:e}){return`<del>${this.parser.parseInline(e)}</del>`}link({href:e,title:t,tokens:n}){const s=this.parser.parseInline(n),r=Y(e);if(null===r)return s;let i='<a href="'+(e=r)+'"';return t&&(i+=' title="'+W(t)+'"'),i+=">"+s+"</a>",i}image({href:e,title:t,text:n}){const s=Y(e);if(null===s)return W(n);let r=`<img src="${e=s}" alt="${n}"`;return t&&(r+=` title="${W(t)}"`),r+=">",r}text(e){return"tokens"in e&&e.tokens?this.parser.parseInline(e.tokens):"escaped"in e&&e.escaped?e.text:W(e.text)}}class le{strong({text:e}){return e}em({text:e}){return e}codespan({text:e}){return e}del({text:e}){return e}html({text:e}){return e}text({text:e}){return e}link({text:e}){return""+e}image({text:e}){return""+e}br(){return""}}class oe{options;renderer;textRenderer;constructor(t){this.options=t||e.defaults,this.options.renderer=this.options.renderer||new ie,this.renderer=this.options.renderer,this.renderer.options=this.options,this.renderer.parser=this,this.textRenderer=new le}static parse(e,t){return new oe(t).parse(e)}static parseInline(e,t){return new oe(t).parseInline(e)}parse(e,t=!0){let n="";for(let s=0;s<e.length;s++){const r=e[s];if(this.options.extensions?.renderers?.[r.type]){const e=r,t=this.options.extensions.renderers[e.type].call({parser:this},e);if(!1!==t||!["space","hr","heading","code","table","blockquote","list","html","paragraph","text"].includes(e.type)){n+=t||"";continue}}const i=r;switch(i.type){case"space":n+=this.renderer.space(i);continue;case"hr":n+=this.renderer.hr(i);continue;case"heading":n+=this.renderer.heading(i);continue;case"code":n+=this.renderer.code(i);continue;case"table":n+=this.renderer.table(i);continue;case"blockquote":n+=this.renderer.blockquote(i);continue;case"list":n+=this.renderer.list(i);continue;case"html":n+=this.renderer.html(i);continue;case"paragraph":n+=this.renderer.paragraph(i);continue;case"text":{let r=i,l=this.renderer.text(r);for(;s+1<e.length&&"text"===e[s+1].type;)r=e[++s],l+="\n"+this.renderer.text(r);n+=t?this.renderer.paragraph({type:"paragraph",raw:l,text:l,tokens:[{type:"text",raw:l,text:l,escaped:!0}]}):l;continue}default:{const e='Token with "'+i.type+'" type was not found.';if(this.options.silent)return console.error(e),"";throw new Error(e)}}}return n}parseInline(e,t=this.renderer){let n="";for(let s=0;s<e.length;s++){const r=e[s];if(this.options.extensions?.renderers?.[r.type]){const e=this.options.extensions.renderers[r.type].call({parser:this},r);if(!1!==e||!["escape","html","link","image","strong","em","codespan","br","del","text"].includes(r.type)){n+=e||"";continue}}const i=r;switch(i.type){case"escape":case"text":n+=t.text(i);break;case"html":n+=t.html(i);break;case"link":n+=t.link(i);break;case"image":n+=t.image(i);break;case"strong":n+=t.strong(i);break;case"em":n+=t.em(i);break;case"codespan":n+=t.codespan(i);break;case"br":n+=t.br(i);break;case"del":n+=t.del(i);break;default:{const e='Token with "'+i.type+'" type was not found.';if(this.options.silent)return console.error(e),"";throw new Error(e)}}}return n}}class ae{options;block;constructor(t){this.options=t||e.defaults}static passThroughHooks=new Set(["preprocess","postprocess","processAllTokens"]);preprocess(e){return e}postprocess(e){return e}processAllTokens(e){return e}provideLexer(){return this.block?re.lex:re.lexInline}provideParser(){return this.block?oe.parse:oe.parseInline}}class ce{defaults={async:!1,breaks:!1,extensions:null,gfm:!0,hooks:null,pedantic:!1,renderer:null,silent:!1,tokenizer:null,walkTokens:null};options=this.setOptions;parse=this.parseMarkdown(!0);parseInline=this.parseMarkdown(!1);Parser=oe;Renderer=ie;TextRenderer=le;Lexer=re;Tokenizer=se;Hooks=ae;constructor(...e){this.use(...e)}walkTokens(e,t){let n=[];for(const s of e)switch(n=n.concat(t.call(this,s)),s.type){case"table":{const e=s;for(const s of e.header)n=n.concat(this.walkTokens(s.tokens,t));for(const s of e.rows)for(const e of s)n=n.concat(this.walkTokens(e.tokens,t));break}case"list":{const e=s;n=n.concat(this.walkTokens(e.items,t));break}default:{const e=s;this.defaults.extensions?.childTokens?.[e.type]?this.defaults.extensions.childTokens[e.type].forEach((s=>{const r=e[s].flat(1/0);n=n.concat(this.walkTokens(r,t))})):e.tokens&&(n=n.concat(this.walkTokens(e.tokens,t)))}}return n}use(...e){const t=this.defaults.extensions||{renderers:{},childTokens:{}};return e.forEach((e=>{const n={...e};if(n.async=this.defaults.async||n.async||!1,e.extensions&&(e.extensions.forEach((e=>{if(!e.name)throw new Error("extension name required");if("renderer"in e){const n=t.renderers[e.name];t.renderers[e.name]=n?function(...t){let s=e.renderer.apply(this,t);return!1===s&&(s=n.apply(this,t)),s}:e.renderer}if("tokenizer"in e){if(!e.level||"block"!==e.level&&"inline"!==e.level)throw new Error("extension level must be 'block' or 'inline'");const n=t[e.level];n?n.unshift(e.tokenizer):t[e.level]=[e.tokenizer],e.start&&("block"===e.level?t.startBlock?t.startBlock.push(e.start):t.startBlock=[e.start]:"inline"===e.level&&(t.startInline?t.startInline.push(e.start):t.startInline=[e.start]))}"childTokens"in e&&e.childTokens&&(t.childTokens[e.name]=e.childTokens)})),n.extensions=t),e.renderer){const t=this.defaults.renderer||new ie(this.defaults);for(const n in e.renderer){if(!(n in t))throw new Error(`renderer '${n}' does not exist`);if(["options","parser"].includes(n))continue;const s=n,r=e.renderer[s],i=t[s];t[s]=(...e)=>{let n=r.apply(t,e);return!1===n&&(n=i.apply(t,e)),n||""}}n.renderer=t}if(e.tokenizer){const t=this.defaults.tokenizer||new se(this.defaults);for(const n in e.tokenizer){if(!(n in t))throw new Error(`tokenizer '${n}' does not exist`);if(["options","rules","lexer"].includes(n))continue;const s=n,r=e.tokenizer[s],i=t[s];t[s]=(...e)=>{let n=r.apply(t,e);return!1===n&&(n=i.apply(t,e)),n}}n.tokenizer=t}if(e.hooks){const t=this.defaults.hooks||new ae;for(const n in e.hooks){if(!(n in t))throw new Error(`hook '${n}' does not exist`);if(["options","block"].includes(n))continue;const s=n,r=e.hooks[s],i=t[s];ae.passThroughHooks.has(n)?t[s]=e=>{if(this.defaults.async)return Promise.resolve(r.call(t,e)).then((e=>i.call(t,e)));const n=r.call(t,e);return i.call(t,n)}:t[s]=(...e)=>{let n=r.apply(t,e);return!1===n&&(n=i.apply(t,e)),n}}n.hooks=t}if(e.walkTokens){const t=this.defaults.walkTokens,s=e.walkTokens;n.walkTokens=function(e){let n=[];return n.push(s.call(this,e)),t&&(n=n.concat(t.call(this,e))),n}}this.defaults={...this.defaults,...n}})),this}setOptions(e){return this.defaults={...this.defaults,...e},this}lexer(e,t){return re.lex(e,t??this.defaults)}parser(e,t){return oe.parse(e,t??this.defaults)}parseMarkdown(e){return(t,n)=>{const s={...n},r={...this.defaults,...s},i=this.onError(!!r.silent,!!r.async);if(!0===this.defaults.async&&!1===s.async)return i(new Error("marked(): The async option was set to true by an extension. Remove async: false from the parse options object to return a Promise."));if(null==t)return i(new Error("marked(): input parameter is undefined or null"));if("string"!=typeof t)return i(new Error("marked(): input parameter is of type "+Object.prototype.toString.call(t)+", string expected"));r.hooks&&(r.hooks.options=r,r.hooks.block=e);const l=r.hooks?r.hooks.provideLexer():e?re.lex:re.lexInline,o=r.hooks?r.hooks.provideParser():e?oe.parse:oe.parseInline;if(r.async)return Promise.resolve(r.hooks?r.hooks.preprocess(t):t).then((e=>l(e,r))).then((e=>r.hooks?r.hooks.processAllTokens(e):e)).then((e=>r.walkTokens?Promise.all(this.walkTokens(e,r.walkTokens)).then((()=>e)):e)).then((e=>o(e,r))).then((e=>r.hooks?r.hooks.postprocess(e):e)).catch(i);try{r.hooks&&(t=r.hooks.preprocess(t));let e=l(t,r);r.hooks&&(e=r.hooks.processAllTokens(e)),r.walkTokens&&this.walkTokens(e,r.walkTokens);let n=o(e,r);return r.hooks&&(n=r.hooks.postprocess(n)),n}catch(e){return i(e)}}}onError(e,t){return n=>{if(n.message+="\nPlease report this to https://github.com/markedjs/marked.",e){const e="<p>An error occurred:</p><pre>"+W(n.message+"",!0)+"</pre>";return t?Promise.resolve(e):e}if(t)return Promise.reject(n);throw n}}}const he=new ce;function pe(e,t){return he.parse(e,t)}pe.options=pe.setOptions=function(e){return he.setOptions(e),pe.defaults=he.defaults,n(pe.defaults),pe},pe.getDefaults=t,pe.defaults=e.defaults,pe.use=function(...e){return he.use(...e),pe.defaults=he.defaults,n(pe.defaults),pe},pe.walkTokens=function(e,t){return he.walkTokens(e,t)},pe.parseInline=he.parseInline,pe.Parser=oe,pe.parser=oe.parse,pe.Renderer=ie,pe.TextRenderer=le,pe.Lexer=re,pe.lexer=re.lex,pe.Tokenizer=se,pe.Hooks=ae,pe.parse=pe;const ue=pe.options,ge=pe.setOptions,ke=pe.use,de=pe.walkTokens,fe=pe.parseInline,xe=pe,be=oe.parse,we=re.lex;e.Hooks=ae,e.Lexer=re,e.Marked=ce,e.Parser=oe,e.Renderer=ie,e.TextRenderer=le,e.Tokenizer=se,e.getDefaults=t,e.lexer=we,e.marked=pe,e.options=ue,e.parse=xe,e.parseInline=fe,e.parser=be,e.setOptions=ge,e.use=ke,e.walkTokens=de}));
+</script>
+
+<script>
+  const MCKEY = "main-container";
+  const NEXTIDKEY = "data-nextid";
+  const MODRESIZERIGHT = 1;
+  const MODRESIZEBOTTOM = 2;
+  const MODMOVECARDS = 4;
+  const MINCARDWIDTH = 7;
+  const MINCARDHEIGHT = 2;
+  const CARDOFSX = 2;
+  const CARDOFSY = 2;
+  const AUTOMARKDOWNDELAY = 300; // ms
+
+  // Funny math!
+  function clamp(v, min, max) {
+    if(min > max) { const tmp = min; min = max; max = tmp; }
+    if(v < min) v = min;
+    if(v > max) v = max;
+    return v;
+  }
+  function except(a, b) {
+    return a.filter(x => !b.has(x));
+  }
+  function pxToRem(pxValue) { // ai generated
+    const htmlFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize);
+    return pxValue / htmlFontSize;
+  }
+  function pxToEm(pxValue,emTarget) {
+    const fontSize = parseFloat(getComputedStyle(emTarget).fontSize);
+    return pxValue / fontSize;
+  }
+  function remToPx(remValue) {
+    const htmlFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize);
+    return remValue * htmlFontSize;
+  }
+  function emToRem(emValue, emTarget) {
+    const htmlFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize);
+    const targetFontSize = parseFloat(getComputedStyle(emTarget).fontSize);
+    return emValue * targetFontSize / htmlFontSize;
+  }
+
+  // Simple Html helpers
+  function removeSelf(element) { element.parentNode.removeChild(element); }
+  function toggleHidden(element) { return element.classList.toggle('hidden'); }
+  function setHidden(element) { return element.classList.add('hidden'); }
+  function setUnhidden(element) { return element.classList.remove('hidden'); }
+  function isHidden(element) { return element.classList.contains('hidden'); }
+  function toggleHiddenChildren(element) { let hid = null; Array.from(element.children).forEach(e => hid = toggleHidden(e)); return hid; }
+  function findParentOrSelf(currentElement, check) {
+    while (currentElement) {
+      if (check(currentElement)) {
+        return currentElement;
+      }
+      currentElement = currentElement.parentElement; // Move up the DOM tree.
+    }
+    return null;
+  }
+  function setDateElement(tm, datetime) {
+    const now = new Date(datetime);
+    tm.setAttribute("datetime", now.toISOString());
+    tm.setAttribute("title", now.toISOString());
+    tm.textContent = now.toLocaleDateString();
+  }
+
+  function radio(element) {
+    Array.from(element.parentNode.children).forEach(x => x.removeAttribute("data-selected"));
+    element.setAttribute("data-selected", "");
+  }
+  function getSelectedRadio(parent) {
+    return parent.querySelector("[data-selected]");
+  }
+
+  // Simple Card helpers
+  function getContainingCard(element) { return findParentOrSelf(element, (e) => e.hasAttribute("data-topcard")); }
+  function getContainingMenu(element) { return findParentOrSelf(element, (e) => e.classList.contains("menu")); }
+  function getCardTitle(card) { return card.querySelector('.top .title'); }
+  function getCardDate(card) { return card.querySelector('.top time'); }
+  function getCardContent(card) { return card.querySelector(':scope > .content'); }
+  function getCardEditor(card) { return card.querySelector('.content .editor'); }
+  function getCardMenu(card) { return card.querySelector('.menu'); }
+  function getCardTitleEdit(card) { return card.querySelector('.edit-title'); }
+  function getCardFrom(card) { return card.querySelector(".card-from"); }
+  function getCardType(card) { return card.querySelector(".card-type"); }
+  function getCardId(card) { return card.querySelector(".card-id"); } // Id from INFO, not actual id
+  function getCardRef(card) { return card.querySelector(".card-ref"); } // Id from INFO, not actual id
+  function getCardParent(card) { return card.querySelector(".card-parent"); }
+  function getCardChildren(card) { return window[MCKEY].querySelectorAll(`.card[data-parent="${card.id}"]`) }
+  function getRootCards() { return window[MCKEY].querySelectorAll(`.card:not([data-parent])`) }
+  function bringToFront(card) { card.style.zIndex = findMaxCardIndex() + 1; } // Increase forever
+  function getCardAllChildren(card) {
+    let seen = {};
+    seen[card.id] = true; // can't be a child of yourself (well you can... but)
+    let queue = Array.from(getCardChildren(card));
+    let result = [];
+    while(queue.length) {
+      let next = queue.pop();
+      if(next.id in seen) continue;
+      result.push(next);
+      queue.push(...Array.from(getCardChildren(next)));
+      seen[next.id] = true;
+    }
+    return result;
+  }
+  function setCardParent(card, parent) { // parent should be a string
+    let cp = getCardParent(card); // the element, not the value
+    let cpmenu = getCardMenu(card).querySelector(".set-parent");
+    parent = parent || "";
+    cp.textContent = parent;
+    cp.href = "#" + parent;
+    let con = card.parentNode.querySelector(`.card-connector[data-cardset="${card.id}"]`);
+    if(parent) {
+      card.setAttribute("data-parent", parent);
+      let pelm = document.getElementById(parent);
+      if(!pelm) {
+        console.warn("Couldn't set card parent connector for " + parent + ", element doesn't exist");
+        return;
+      }
+      let cofs = getOffset(card);
+      let pofs = getOffset(pelm);
+      pofs.x += pofs.width / 2;
+      pofs.y += pofs.height / 2;
+      cofs.x += cofs.width / 2;
+      cofs.y += cofs.height / 2;
+      const xofs = pofs.x - cofs.x;
+      const yofs = pofs.y - cofs.y;
+      con.style.left = cofs.x + "em";
+      con.style.top = cofs.y + "em";
+      con.style.width = Math.abs(xofs) + "em";
+      con.style.height = Math.abs(yofs) + "em";
+      con.style.transform = `scale(${Math.sign(xofs) || 1}, ${Math.sign(yofs) || 1})`;
+      setUnhidden(con);
+      cpmenu.textContent = "Clear parent";
+    } else {
+      card.removeAttribute("data-parent");
+      cpmenu.textContent = "Set parent";
+      setHidden(con);
+    }
+  }
+
+  // Template stuff
+  function copyTemplateSingle(name) { 
+    let result = document.getElementById(name).content.cloneNode(true).firstElementChild; 
+    removeWhitespaceNodes(result);
+    return result;
+  }
+  function copyTemplateSafe(name) {
+    let t = document.getElementById(name);
+    if(!t) return document.createDocumentFragment();
+    let result = t.content.cloneNode(true);
+    removeWhitespaceNodes(result);
+    return result;
+  }
+  function removeWhitespaceNodes(parentNode) {
+    for (var i = parentNode.childNodes.length - 1; i >= 0; --i) { 
+      var child = parentNode.childNodes[i];
+      if (child.nodeType === Node.TEXT_NODE && !/\S/.test(child.nodeValue)) {
+        parentNode.removeChild(child);
+      } else if (child.nodeType === Node.ELEMENT_NODE) {
+        removeWhitespaceNodes(child);
+      }
+    }
+  }
+
+  // Name-related stuff (user supplied?)
+  function getLocalName() {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get('local');
+  }
+  function getServerName() {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get('server');
+  }
+  function getRemoteName() {
+    return getLocalName() || getServerName();
+  }
+  function getCurrentName() {
+    const rname = getRemoteName();
+    if(rname) return rname;
+    const parts = window.location.pathname.split('/').filter(x => x);
+    if(parts.length === 0) return "deskmess";
+    const lastp = parts[parts.length - 1];
+    const lastd = lastp.lastIndexOf('.');
+    return lastd === -1 ? lastp: lastp.substring(0, lastd);
+  }
+
+  // Meta?
+  function setSaved() { window["action-save"].classList.remove("unsaved"); }
+  function setUnsaved() { window["action-save"].classList.add("unsaved"); }
+  function isUnsaved() { return window["action-save"].classList.contains("unsaved"); }
+  function getProductVersion() { return window["app-version"].textContent; }
+  function isInFooter(element) { return findParentOrSelf(element, (e) => e.nodeName.toLowerCase() == 'footer'); }
+  function findDraghandle(ce) {
+    if(["input", "select", "button"].includes(ce.tagName.toLowerCase())) return null;
+    return findParentOrSelf(ce, (e) => e.classList.contains("draghandle"));
+  }
+  function nextCardId() {
+    const nextid = parseInt(window[MCKEY].getAttribute(NEXTIDKEY));
+    window[MCKEY].setAttribute(NEXTIDKEY, nextid + 1);
+    return nextid;
+  }
+  function updateNextCardId(id) {
+    const nextid = parseInt(window[MCKEY].getAttribute(NEXTIDKEY));
+    const maxid = Math.max(parseInt(id) + 1, nextid);
+    window[MCKEY].setAttribute(NEXTIDKEY, maxid);
+    return maxid;
+  }
+  function findMaxCardIndex() {
+    const cards = window[MCKEY].querySelectorAll(":scope > [data-topcard]");
+    let maxZ = 0;
+    cards.forEach(card => {
+      maxZ = Math.max(maxZ, parseFloat(card.style.zIndex));
+    });
+    return maxZ;
+  }
+
+  function addError(error) {
+    let errelm = copyTemplateSingle("template-error");
+    errelm.textContent = error;
+    window["errors-container"].appendChild(errelm);
+    setTimeout(() => {
+      errelm.style.opacity = 0;
+      setTimeout(() => removeSelf(errelm), 2000);
+    }, 10000);
+  }
+
+  function downloadBlob(blob, name) {
+    // Create an anchor element to create the download link
+    var a = document.createElement('a');
+    a.download = name;
+    a.href = URL.createObjectURL(blob);
+    a.style.display = "none";
+    // Append the anchor to the body and trigger the click event
+    document.body.appendChild(a);
+    a.click();
+    // Clean up - remove the anchor element and revoke the object URL
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(a.href);
+  }
+
+  function exportCard(card) {
+    const ofs = getOffset(card);
+    let cdata = {
+      title: getCardTitle(card).textContent,
+      date: getCardDate(card).getAttribute('datetime'),
+      color: card.getAttribute("data-color"),
+      id: getCardId(card).textContent,
+      ref: getCardRef(card).textContent,
+      parent: getCardParent(card).textContent,
+      x: ofs.x,
+      y: ofs.y,
+      z: ofs.z,
+      width: ofs.width,
+      height: ofs.height,
+      type: getCardType(card).textContent,
+      from: getCardFrom(card).textContent
+    };
+    const editor = getCardEditor(card);
+    if(editor) {
+      if(editor.tagName.toLowerCase() == "textarea")
+        cdata.text = editor.value;
+      cdata.is_edit = !isHidden(editor);
+    }
+    if(cdata.type == "chat") {
+      cdata.messages = Array.from(card.querySelectorAll(".content .message-container")).map(
+        emsg => parseMessage(emsg));
+    }
+    if(cdata.type == "image") {
+      cdata.image_data = getCardContent(card).querySelector("img").src;
+    }
+    if(cdata.type == "drawing") {
+      cdata.draw_data = getCardContent(card).querySelector("svg").innerHTML;
+    }
+    return cdata;
+  }
+
+  function importCard(cdata) {
+    let cardsec = copyTemplateSafe("template-card");
+    let card = cardsec.firstElementChild;
+    updateNextCardId(cdata.id); // Make sure next card id is proper just in case id is huge
+    card.id = "card_" + cdata.id;
+    Array.from(cardsec.children).forEach(c => c.setAttribute("data-cardset", card.id));
+    card.setAttribute("data-color", cdata.color);
+    getCardId(card).textContent = cdata.id;
+    let cardref = getCardRef(card);
+    cardref.textContent = card.id;
+    cardref.href = "#" + card.id;
+    const newControl = window['action-new' + cdata.type];
+    if(newControl) card.querySelector(".type-icon").textContent = newControl.textContent;
+    getCardType(card).textContent = cdata.type;
+    getCardFrom(card).textContent = cdata.from;
+    getCardTitle(card).textContent = cdata.title;
+    setCardParent(card, cdata.parent); // bit more complicated...
+    setDateElement(getCardDate(card), cdata.date);
+    card.style.zIndex = cdata.z;
+    card.style.left = cdata.x + "em";
+    card.style.top = cdata.y + "em";
+    card.style.width = cdata.width + "em";
+    card.style.height = cdata.height + "em";
+    let content = getCardContent(card);
+    content.appendChild(copyTemplateSafe("template-" + cdata.type));
+    let menu = getCardMenu(card);
+    menu.insertBefore(copyTemplateSafe("template-" + cdata.type + "-menu"), menu.querySelector('.card-info'));
+    window[MCKEY].appendChild(cardsec);
+    const editor = getCardEditor(card);
+    if(editor) {
+      if(editor.tagName.toLowerCase() == "textarea")
+        editor.textContent = cdata.text;
+      let toggler = menu.querySelector(".toggle-editor");
+      let toggler2 = card.querySelector(".toggle-editor-direct");
+      if(toggler && toggler2) {
+        setUnhidden(toggler);
+        setUnhidden(toggler2);
+        if(!cdata.is_edit) { toggler.click(); }
+      }
+    }
+    if(cdata.type == "text") {
+      text_updateMarkdown(card); // TODO: right now, this wastes cpu by doing markdown twice
+    } else if(cdata.type == "todo") {
+      todo_updateAll(card);
+    } else if(cdata.type == "chat") {
+      // Need to recreate all messages!
+      let melem = content.querySelector(".messages");
+      cdata.messages.forEach(m => {
+        melem.appendChild(createMessage(m.message, m.date));
+      });
+      // Do we scroll to the bottom here? I guess...
+      melem.scrollTop = melem.scrollHeight;
+    } else if(cdata.type == "image") {
+      content.querySelector("img").setAttribute("src", cdata.image_data);
+    } else if(cdata.type == "drawing") {
+      if(cdata.draw_data) 
+        getCardContent(card).querySelector("svg").innerHTML = cdata.draw_data;
+    }
+    return card;
+  }
+
+  function addCard(type, extra) {
+    if(addCard.offset) { // horrible, I don't care though :)
+      addCard.offset.x += CARDOFSX;
+      addCard.offset.y += CARDOFSY;
+    } else {
+      addCard.offset = { x: CARDOFSX, y: CARDOFSY };
+    }
+    const mofs = getMainOffset();
+    const nextid = nextCardId();
+    let cdata = {
+      title: "Card " + nextid,
+      date: new Date().toISOString(),
+      color: "teal",
+      id: nextid,
+      x: addCard.offset.x - pxToEm(mofs.x, window[MCKEY]),
+      y: addCard.offset.y - pxToEm(mofs.y, window[MCKEY]),
+      z: findMaxCardIndex() + 1, // TODO: could this get slow?
+      parent: "",
+      width: 25,
+      height: 30,
+      type: type,
+      from: getProductVersion(),
+      is_edit: true,
+      text: ""
+    };
+    if(cdata.type == "chat") {
+      cdata.messages = [];
+    }
+    if(extra) {
+      Object.keys(extra).forEach(k => cdata[k] = extra[k]);
+    }
+    let result = importCard(cdata);
+    setUnsaved();
+    rebuildTree();
+    return result;
+  }
+
+  function downloadPage() {
+    // Get the HTML of the current page
+    var doc = document.documentElement.outerHTML;
+    doc = "<!DOCTYPE html>\n" + doc;
+    // Create a Blob object containing the HTML content
+    var blob = new Blob([doc], {type: 'text/html'});
+    downloadBlob(blob, getCurrentName() + ".html");
+  }
+
+  function downloadExport() {
+    const exp = exportPage();
+    var blob = new Blob([exp], {type: 'application/json'});
+    downloadBlob(blob, getCurrentName() + ".json");
+  }
+
+  function exportPage() {
+    offset = getMainOffset();
+    let exp = {
+      file_version: "1",
+      app_version: getProductVersion(),
+      export_date: new Date().toISOString(),
+      offset: offset,
+      modern: controlEnabled(window['action-modern']),
+      dark_mode: controlEnabled(window['action-darkmode']),
+      page_view: controlEnabled(window['action-pageview']),
+      grid_snap: controlEnabled(window['action-gridsnap']),
+      open_sidebar: controlEnabled(window['action-sidebar']),
+      cards: {}
+    };
+    document.querySelectorAll(".card").forEach(card => {
+      exp.cards[card.id] = exportCard(card);
+    });
+    return JSON.stringify(exp);
+  }
+
+  function importTrigger(event) {
+    const file = event.target.files[0];
+    if(file && confirm("Importing will OVERWRITE all existing data on this page! This is intended for version upgrades!\n\nAre you sure you want to remove all data and import?")) {
+      console.log("User is importing " + file.name);
+      const reader = new FileReader();
+      reader.onload = (e) => importPage(e.target.result);
+      reader.readAsText(file);
+    } else {
+      console.log("Quit import (no files)");
+    }
+  }
+
+  function importPage(page, forceSaveState) {
+    try {
+      const jsonData = JSON.parse(page);
+      console.log('Parsed JSON successfully');
+      if(jsonData.file_version != "1") {
+        throw "Invalid or unknown file version";
+      }
+      window[MCKEY].innerHTML = "";
+      window[MCKEY].style = "";
+      if(jsonData.offset) {
+        window[MCKEY].style.fontSize = jsonData.offset.fs + "em";
+        window[MCKEY].style.left = jsonData.offset.x + "px";
+        window[MCKEY].style.top = jsonData.offset.y + "px";
+      }
+      setControl(window['action-modern'], jsonData.modern);
+      setControl(window['action-darkmode'], jsonData.dark_mode);
+      setControl(window['action-pageview'], jsonData.page_view);
+      setControl(window['action-gridsnap'], jsonData.grid_snap);
+      setControl(window['action-sidebar'], jsonData.open_sidebar);
+      Object.keys(jsonData.cards).forEach(key => importCard(jsonData.cards[key]));
+      // After, some parents may need to be reconnected
+      document.querySelectorAll(".card").forEach(card => {
+        setCardParent(card, getCardParent(card).textContent);
+      });
+      // TODO: this is bad
+      if(forceSaveState === undefined) forceSaveState = !getRemoteName();
+      if(forceSaveState) setSaved();
+      else setUnsaved();
+      rebuildTree();
+      window.location.hash = "";
+      console.log('Successfully imported data');
+    } catch (err) {
+      console.error(err, err.stack);
+      alert(`Couldn't parse import: ${err}`);
+    }
+  }
+
+  function importImageTrigger(event) {
+    const file = event.target.files[0];
+    if(file) {
+      console.log("User is importing image " + file.name);
+      const reader = new FileReader();
+      reader.onload = (e) => addCard("image", {image_data:e.target.result});
+      reader.readAsDataURL(file);
+    } else {
+      console.log("Quit image import (no files)");
+    }
+  }
+
+  function rebuildTree() {
+    let tree = window['tree'];
+    tree.innerHTML = "";
+    let seen = new Set();
+    getRootCards().forEach(c => tree.appendChild(buildSubtree(c, seen)));
+    let allCards = Array.from(window[MCKEY].querySelectorAll(".card")).map((x) => x.id);
+    let leftover = except(allCards, seen);
+    if(leftover.length) {
+      console.log(`There are ${leftover.length} cards stuck in cycles`);
+      let circref = copyTemplateSingle("template-circularref");
+      tree.appendChild(circref);
+      while(leftover.length) {
+        let subtree = buildSubtree(window[leftover.pop()], seen);
+        tree.append(subtree);
+        leftover = except(leftover, seen);
+      }
+    }
+  }
+  function buildSubtree(card, seen) {
+    let nodelm = copyTemplateSingle("template-treenode");
+    let titlelm = nodelm.querySelector(".title");
+    titlelm.textContent = getCardTitle(card).textContent;
+    titlelm.href = "#" + card.id;
+    seen.add(titlelm.href.split("#")[1]);
+    let childelm = nodelm.querySelector(".children");
+    let children = Array.from(getCardChildren(card)).filter(c => !seen.has(c.id));
+    if(children.length) {
+      children.forEach(c => childelm.appendChild(buildSubtree(c, seen)));
+    } else {
+      setHidden(childelm);
+      let expand = nodelm.querySelector(".expand");
+      expand.classList.add("no-interaction");
+      expand.textContent = " ";
+    }
+    return nodelm;
+  }
+
+  function getOffset(element) {
+    return {
+        x : parseFloat(element.style.left) || 0,
+        y : parseFloat(element.style.top) || 0,
+        z : parseFloat(element.style.zIndex) || 0,
+        width: parseFloat(element.style.width) || 1,
+        height: parseFloat(element.style.height) || 1,
+        fs : parseFloat(element.style.fontSize) || 1
+    }
+  }
+  function getMainOffset() {
+    return getOffset(window[MCKEY]);
+  }
+
+  function createMessage(message, date) {
+    date = date || new Date().toISOString();
+    let emsg = copyTemplateSingle("template-message");
+    setDateElement(emsg.querySelector('time'), date);
+    let emsgmsg = emsg.querySelector('.message');
+    emsgmsg.innerHTML = marked.parseInline(message);
+    emsgmsg.setAttribute("data-message", message);
+    return emsg;
+  }
+  function parseMessage(emsg) {
+    return {
+      date: emsg.querySelector('time').getAttribute("datetime"),
+      message: emsg.querySelector('.message').getAttribute("data-message")
+    }
+  }
+  function sendMessage(card, message) {
+    let emsg = createMessage(message);
+    let content = getCardContent(card);
+    let messages = content.querySelector(".messages");
+    messages.appendChild(emsg);
+    messages.scrollTop = messages.scrollHeight;
+    setUnsaved();
+  }
+
+  let pendingCardAction = null;
+  function setPendingCardAction(action) {
+    pendingCardAction = (card) => {
+      console.log("Performing pending card action");
+      action(card);
+      removePendingCardAction();
+    };
+    window[MCKEY].classList.add("pending-action");
+    setUnhidden(window["action-cancelpending"]);
+  }
+  function removePendingCardAction() {
+    pendingCardAction = null;
+    window[MCKEY].classList.remove("pending-action");
+    setHidden(window["action-cancelpending"]);
+  }
+
+  function toggleControl(element, classname) {
+    if(element.classList.contains("deactivated")) {
+      element.classList.remove("deactivated");
+      document.body.classList.add(classname);
+    } else {
+      element.classList.add("deactivated");
+      document.body.classList.remove(classname);
+    }
+  }
+  function controlEnabled(element) {
+    return !element.classList.contains("deactivated");
+  }
+  function setControl(element, state) {
+    if((state || false) != (controlEnabled(element) || false))
+      element.click();
+  }
+
+  // Open the exports db, creating the db + table if it doesn't exist.
+  function exportsDbWork(success) {
+    const request = indexedDB.open("exportsDb", 1);
+
+    request.onupgradeneeded = function(event) {
+        const db = event.target.result;
+        // Create an object store for "exports" if it doesn't exist
+        if (!db.objectStoreNames.contains('exports')) {
+            db.createObjectStore('exports', { keyPath: 'name' });
+        }
+    };
+    request.onsuccess = function(event) {
+      success(event.target.result);
+    };
+
+    request.onerror = function(event) {
+      console.error('Error opening IndexedDB', event.target.errorCode);
+      addError("Couldn't open underlying database");
+    };
+  }
+
+  function exportsDbGet(name, success) {
+    exportsDbWork((db) => {
+      // Load the local query value from IndexedDB
+      const transaction = db.transaction(['exports'], 'readonly');
+      const store = transaction.objectStore('exports');
+      const request = store.get(name);
+      request.onsuccess = function(event) {
+        if(success) success(event.target.result);
+      };
+    });
+  }
+
+  function exportsDbPut(name, value, success) {
+    exportsDbWork((db) => {
+      const transaction = db.transaction(['exports'], 'readwrite');
+      const store = transaction.objectStore('exports');
+      const object = { name: name, value: value };
+      const request = store.put(object);
+      request.onsuccess = function(event) {
+        if(success) success(event); // ??
+      };
+    });
+  }
+
+  function serverGet(url, success) {
+    fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'text/plain;charset=UTF-8'
+      }
+    })
+      .then(response => {
+        if(response.status === 404) {
+          console.log("Special exception: 404 means not created yet");
+          return null;
+        }
+        return response.text();
+      })
+      .then(data => {
+        if(success) success(data);
+      })
+      .catch((error) => {
+        const err = `Error reading from ${url}: ${error}`;
+        console.error(err);
+        addError(err);
+      });
+  }
+  function serverPut(url, value, success) {
+    fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'text/plain;charset=UTF-8'
+      },
+      body: value
+    })
+      .then(response => response.text())
+      .then(data => {
+        console.log(`Saved to ${url}:`, data);
+        if(success) success(data); // ??
+      })
+      .catch((error) => {
+        const err = `Error writing to ${url}: ${error}`;
+        console.error(err);
+        addError(err);
+      });
+  }
+
+  window.addEventListener("hashchange", function(event) {
+    const cid = window.location.hash.substring(1);
+    if(!cid) return;
+    const card = document.getElementById(cid);
+    if(card) {
+      const ofs = getOffset(card);
+      console.log("Focusing card " + cid, ofs);
+      let mc = window[MCKEY];
+      mc.style.left = remToPx(CARDOFSX - emToRem(ofs.x, mc)) + "px";
+      mc.style.top = remToPx(CARDOFSY - emToRem(ofs.y, mc)) + "px";
+      bringToFront(card);
+    }
+  });
+
+  document.addEventListener("DOMContentLoaded", function () {
+    let main = window[MCKEY];
+
+    let localParam = getLocalName();
+    let serverParam = getServerName();
+
+    if(serverParam) {
+      localParam = null;
+      if(main.innerHTML !== "" && !confirm("You're trying to load a server save on top of an existing save. Your original file will not be modified. Are you sure you want to load over existing data?")) {
+        serverParam = null;
+      }
+    } else if(localParam) {
+      if(main.innerHTML !== "" && !confirm("You're trying to load a browser save on top of an existing save. Your original file will not be modified. Are you sure you want to load over existing data?")) {
+        localParam = null;
+      }
+    }
+
+    if(localParam) {
+      console.log("Using local IndexedDB to store " + localParam);
+      window["action-export"].addEventListener("click", () => {downloadExport();});
+      window["action-save"].addEventListener("click", () => { exportsDbPut(localParam, exportPage(), (e) => {
+        setSaved();
+        console.log(`Saved to ${localParam}`);
+      })});
+      exportsDbGet(localParam, (value) => {
+        if(value) {
+          importPage(value.value, true);
+        } else {
+          alert(`You are creating a new browser-backed save at ${localParam}. Auto saves are enabled and all saves are stored in the browser. Bookmark this page for future use!`);
+          window["action-save"].click();
+        }
+        setInterval(() => window["action-save"].click(), 60000);
+      });
+    } else if (serverParam) {
+      console.log("Using server to store: " + serverParam);
+      window["action-export"].addEventListener("click", () => {downloadExport();});
+      window["action-save"].addEventListener("click", () => { serverPut(serverParam, exportPage(), (e) => {
+        setSaved();
+        console.log(`Saved to ${serverParam}`);
+      })});
+      serverGet(serverParam, (value) => {
+        if(value) {
+          importPage(value, true);
+        } else {
+          alert(`You are creating a new server-backed save at ${serverParam}. Auto saves are enabled and all saves are stored on the server. Bookmark this page for future use!`);
+          window["action-save"].click();
+        }
+        setInterval(() => window["action-save"].click(), 60000);
+      });
+    } else {
+      window["action-save"].addEventListener("click", () => {removePendingCardAction(); setSaved(); downloadPage();});
+      window["action-export"].addEventListener("click", () => {downloadExport(); setSaved();});
+    }
+
+    window["action-import"].addEventListener("click", () => window['import-file'].click());
+    window["action-gridsnap"].addEventListener("click", (event) => toggleControl(event.target, "grid-snap"));
+    window["action-pageview"].addEventListener("click", (event) => toggleControl(event.target, "page-view"));
+    window["action-darkmode"].addEventListener("click", (event) => toggleControl(event.target, "dark-mode"));
+    window["action-modern"].addEventListener("click", (event) => toggleControl(event.target, "modern"));
+    window["action-sidebar"].addEventListener("click", (event) => toggleControl(event.target, "open-sidebar"));
+    window["action-cancelpending"].addEventListener("click", () => {removePendingCardAction();});
+    window["action-newtext"].addEventListener("click", () => addCard("text"));
+    window["action-newchat"].addEventListener("click", () => addCard("chat"));
+    window["action-newtodo"].addEventListener("click", () => addCard("todo"));
+    window["action-newdrawing"].addEventListener("click", () => addCard("drawing"));
+    window["action-newimage"].addEventListener("click", () => window['import-image'].click()); //addCard("image"));
+    window["action-resetview"].addEventListener("click", () => main.style = "");
+
+    window.addEventListener('beforeunload', function (event) {
+      if (isUnsaved()) {
+        event.preventDefault();
+        event.returnValue = ''; // Chrome requires returnValue to be set
+      }
+    });
+
+    let lastBodyMouse = null;
+    window['main-block'].addEventListener("wheel", (event) => {
+      if(getContainingCard(event.target)) { return; }
+      if(findParentOrSelf(event.target, (e) => e.id=="sidebar")) { return; }
+      // NOTE: CAN'T do this, because need to scroll page now
+      if(controlEnabled(window["action-pageview"])) { return; }
+      var delta = Math.max(-1, Math.min(1, (event.wheelDelta || -event.detail)));
+      const mofs = getMainOffset();
+      const xofs = event.clientX - mofs.x;
+      const yofs = event.clientY - mofs.y;
+      const newfs = Math.max(mofs.fs * (delta < 0 ? 0.8 : 1.2), 0.1);
+      const ratio = newfs / mofs.fs;
+      main.style.fontSize = newfs + "em";
+      // Put canvas at user pointer minus original relative offset scaled by zoom.
+      // So, if user was at 0,0, new canvas location would simply be under cursor.
+      // Basically, want to preserve the relative offset into canvas underneath cursor
+      main.style.left = (event.clientX - xofs * ratio) + "px";
+      main.style.top = (event.clientY - yofs * ratio) + "px";
+    });
+    window['main-block'].addEventListener("mousedown", (event) => {
+      if(event.button === 0) {
+        if(isInFooter(event.target)) return;
+        let card = getContainingCard(event.target);
+        let cards = [];
+        let mods = 0;
+        if(card) {
+          if(!getContainingMenu(event.target)) setHidden(getCardMenu(card));
+          cards.push({card:card, cofs:getOffset(card), main: true});
+          bringToFront(card);
+          if(event.target.classList.contains("right-resize")) {
+            mods = MODRESIZERIGHT;
+            getCardChildren(card).forEach(c => cards.push({card:c, cofs:getOffset(c)}));
+          } else if(event.target.classList.contains("bottom-resize")) {
+            mods = MODRESIZEBOTTOM;
+            getCardChildren(card).forEach(c => cards.push({card:c, cofs:getOffset(c)}));
+          } else if(event.target.classList.contains("corner-resize")) {
+            mods = MODRESIZERIGHT | MODRESIZEBOTTOM;
+            getCardChildren(card).forEach(c => cards.push({card:c, cofs:getOffset(c)}));
+          } else if(findDraghandle(event.target)) {
+            if(pendingCardAction) {
+              pendingCardAction(card);
+              return;
+            }
+            // Don't do dragging if we're in pageview mode
+            if(controlEnabled(window["action-pageview"])) { return; }
+            mods = MODMOVECARDS;
+            getCardAllChildren(card).forEach(c => cards.push({card:c, cofs:getOffset(c)}));
+          } else {
+            return;
+          }
+        }
+        lastBodyMouse = {
+          x : event.clientX, xs: event.clientX,
+          y : event.clientY, ys: event.clientY,
+          cards: cards,
+          mods: mods,
+          snapEm : controlEnabled(window["action-gridsnap"]) ?
+            (v) => Math.round(v) : (v) => v 
+        };
+        event.preventDefault();
+        window.location.hash = ""; // to make life easier for people 
+        return false;
+      }
+    });
+    window['main-block'].addEventListener("mousemove", (event) => {
+      if(lastBodyMouse) {
+        addCard.offset = null; // any movement will reset the accum offset
+        const mofs = getMainOffset();
+        if(lastBodyMouse.mods) { // Working on cards or something
+          const xofs = pxToRem(event.clientX - lastBodyMouse.xs) / mofs.fs;
+          const yofs = pxToRem(event.clientY - lastBodyMouse.ys) / mofs.fs;
+          lastBodyMouse.cards.forEach(c => {
+            if(c.main) {
+              if(lastBodyMouse.mods & MODRESIZERIGHT) {
+                c.card.style.width = lastBodyMouse.snapEm(Math.max(c.cofs.width + xofs, MINCARDWIDTH)) + "em";
+              }
+              if(lastBodyMouse.mods & MODRESIZEBOTTOM) {
+                c.card.style.height = lastBodyMouse.snapEm(Math.max(c.cofs.height + yofs, MINCARDHEIGHT)) + "em";
+              }
+            }
+            if(lastBodyMouse.mods & MODMOVECARDS) {
+              c.card.style.left = lastBodyMouse.snapEm(c.cofs.x + xofs) + "em";
+              c.card.style.top = lastBodyMouse.snapEm(c.cofs.y + yofs) + "em";
+            }
+            // HORRIBLE!!
+            setCardParent(c.card, c.card.getAttribute("data-parent"));
+          });
+        }
+        else { // Working solely on main
+          main.style.left = mofs.x + (event.clientX - lastBodyMouse.x) + "px";
+          main.style.top = mofs.y + (event.clientY - lastBodyMouse.y) + "px";
+        }
+        lastBodyMouse.x = event.clientX;
+        lastBodyMouse.y = event.clientY;
+      }
+    });
+    window['main-block'].addEventListener("mouseup", (event) => {
+      if(event.button === 0) {
+        if(lastBodyMouse) {
+          lastBodyMouse = null;
+          event.preventDefault();
+          console.log("Master mouse up")
+        }
+      }
+    });
+  });
+
+  function cardEvent(event) { event.preventDefault(); return getContainingCard(event.target); }
+  function setValueAttr(event) { event.target.setAttribute('value', event.target.value); }
+
+  function title_keydown(event) {
+    if(event.keyCode==13){
+      getCardMenu(cardEvent(event)).querySelector('.toggle-title').click()
+    }
+  }
+  function title_input(event) {
+    getCardTitle(getContainingCard(event.target)).textContent = event.target.value;
+  }
+
+  function menu_color(event) {
+    let card = cardEvent(event);
+    card.setAttribute("data-color", event.target.getAttribute("data-color"));
+    setUnsaved();
+  }
+  function menu_toggleTitle(event) {
+    let card = cardEvent(event);
+    let t = getCardTitle(card);
+    let te = getCardTitleEdit(card);
+    te.value = t.textContent; 
+    toggleHidden(t);
+    if(toggleHidden(te)){
+      setUnsaved();
+      rebuildTree();
+    } else {
+      te.focus();
+    }
+  }
+
+  function menu_deleteraw(card) {
+    console.log("Deleting card " + card.id);
+    window[MCKEY].querySelectorAll(`[data-cardset="${card.id}"]`).forEach(e => removeSelf(e));
+  }
+  function menu_delete(event) {
+    let card = cardEvent(event);
+    if(confirm('Really delete \''+getCardTitle(card).textContent+'\'?')) {
+      getCardChildren(card).forEach(c => setCardParent(c, null));
+      menu_deleteraw(card);
+      setUnsaved();
+      rebuildTree();
+    }
+  }
+  function menu_deletetree(event) {
+    let card = cardEvent(event);
+    let children = getCardAllChildren(card);
+    if(confirm(`There are ${children.length} child card(s) under parent '${getCardTitle(card).textContent}'.\n\nReally delete WHOLE tree?`)) {
+      console.log("Deleting full card tree " + card.id);
+      children.forEach(c => menu_deleteraw(c));
+      menu_deleteraw(card);
+      setUnsaved();
+      rebuildTree();
+    }
+  }
+
+  function menu_setUnsetParent(event) {
+    let card = cardEvent(event);
+    // If card already has a parent, need to unset it. Otherwise begin the
+    // process of selecting a parent.
+    let cp = getCardParent(card);
+    if(cp.textContent) {
+      if(confirm("Are you sure you want to detach this card from the parent?")) {
+        setCardParent(card, null);
+        setUnsaved();
+        rebuildTree();
+      }
+    } else {
+      // Need to enable the special... kinda weird "click on parent to set" thing.
+      // Setting the menu and the parent will only happen after the fact.
+      let onClick = (parent) => {
+        const pref = parent.id;
+        const cref = card.id;
+        if(pref == cref) {
+          alert("Can't set self as parent!");
+          return false;
+        }
+        setCardParent(card, pref);
+        setUnsaved();
+        rebuildTree();
+      };
+      setPendingCardAction(onClick);
+      console.log("User must now select a parent card");
+    }
+  }
+
+  function text_updateMarkdown(card) {
+    let content = getCardContent(card);
+    content.querySelector(".markdown").innerHTML =
+      marked.parse(getCardEditor(card).value);
+    console.log("Updating markdown in " + card.id);
+  }
+
+  function todo_parseLine(line) {
+    const matches = line.match(/^(.*?)(\s+\(done\s*([0-9:tTzZ.-]+)?\))?$/);
+    if(!matches) return null;
+    let [_, text, doneSection, doneDate] = matches;
+    return {
+      done: doneSection ? true : false,
+      date: doneDate ? new Date(doneDate) : null,
+      text: text.trim()
+    };
+  }
+  function todo_createLine(data) {
+    if(data.done) {
+      if(data.date)
+        return data.text + " (done " + data.date.toISOString() + ")";
+      else
+        return data.text + " (done)";
+    } else {
+      return data.text;
+    }
+  }
+
+  function todo_renderItem(data, refid) {
+    let item = copyTemplateSafe("template-todo-item");
+    item.firstElementChild.setAttribute("data-refid", refid);
+    let ttext = item.querySelector(".todo-text");
+    ttext.innerHTML = marked.parseInline(data.text);
+    ttext.setAttribute("data-raw", data.text);
+    if(data.done) {
+      ttext.style.textDecoration = "line-through";
+      item.querySelector("input").setAttribute('checked', true);
+      if(data.date)
+        setDateElement(item.querySelector("time"), data.date.toISOString());
+    }
+    return item;
+  }
+
+  function todo_updateAll(card) {
+    let content = getCardContent(card);
+    let editor = getCardEditor(card);
+    let list = content.querySelector(".todo-list");
+    list.innerHTML = "";
+    let lines = editor.value.split('\n'); //.filter(line => line.trim() !== '');
+    for(let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if(!line) continue;
+      const parsed = todo_parseLine(line);
+      if(!parsed) {
+        console.warn("Couldn't parse todo line: " + line);
+        continue;
+      }
+      list.appendChild(todo_renderItem(parsed, i));
+    }
+  }
+  function todo_changeState(checkbox) {
+    let card = getContainingCard(checkbox);
+    let editor = getCardEditor(card);
+    let item = findParentOrSelf(checkbox, (e) => e.classList.contains("todo-item"));
+    const linenum = parseInt(item.getAttribute("data-refid"));
+    let data = {
+      text: item.querySelector('.todo-text').getAttribute("data-raw"),
+      done: checkbox.checked
+    };
+    if(data.done) data.date = new Date();
+    let newItem = todo_renderItem(data, linenum);
+    item.parentNode.replaceChild(newItem, item);
+    let lines = editor.value.split('\n');
+    lines[linenum] = todo_createLine(data);
+    let text = lines.join('\n');
+    editor.value = text;
+    editor.textContent = text;
+    setUnsaved();
+  }
+
+  function newAutoGenerate(fn) {
+    let autoTimeout = null;
+    return (editor) => {
+      if(autoTimeout !== null) {
+        clearTimeout(autoTimeout);
+      }
+      autoTimeout = setTimeout(() => {
+        fn(getContainingCard(editor))
+      }, AUTOMARKDOWNDELAY);
+    }
+  }
+
+  let text_autoMarkdown = newAutoGenerate(text_updateMarkdown);
+  let todo_autoGenerate = newAutoGenerate(todo_updateAll);
+
+  function treenode_expand(element) {
+    let tnode = findParentOrSelf(element, (e) => e.classList.contains('tree-node'));
+    if(toggleHidden(tnode.querySelector(".children"))) {
+      element.textContent = "▶";
+    } else {
+      element.textContent = "▼";
+    }
+  }
+
+  let drawing_updatePoint = null;
+  let drawing_target = "???";
+  let drawing_events = 0;
+  function drawing_position(svgrect, event) {
+    const pX = event.clientX - svgrect.left;
+    const pY = event.clientY - svgrect.top;
+    return {
+      x: pxToEm(pX, event.target).toFixed(2),
+      y: pxToEm(pY, event.target).toFixed(2),
+    };
+  }
+  function getDrawingSvg(card) {
+    return getCardContent(card).querySelector(".draw-main svg");
+  }
+  function updateDrawingRedo(card) {
+    let redo = getCardContent(card).querySelector(".redo");
+    if(card.redos && card.redos.length) {
+      redo.removeAttribute("disabled");
+    } else {
+      redo.setAttribute("disabled", "");
+    }
+  }
+  function drawing_undo(event) {
+    const card = getContainingCard(event.target);
+    let svg = getDrawingSvg(card);
+    let last = svg.lastElementChild;
+    if(last) {
+      card.redos = card.redos || [];
+      card.redos.push(last);
+      removeSelf(last);
+      updateDrawingRedo(card);
+      setUnsaved();
+      console.log("Undo in " + card.id);
+    } else {
+      console.warn("Nothing to undo");
+    }
+  }
+  function drawing_redo(event) {
+    const card = getContainingCard(event.target);
+    if(card.redos && card.redos.length) {
+      let svg = getDrawingSvg(card);
+      svg.appendChild(card.redos.pop());
+      updateDrawingRedo(card);
+      setUnsaved();
+      console.log("Redo in " + card.id);
+    } else {
+      console.warn("Nothing to redo!");
+    }
+
+  }
+  function drawing_mouseDown(event) {
+    if(event.button !== 0) { return; }
+    const card = getContainingCard(event.target);
+    const editor = getCardEditor(card);
+    if(isHidden(editor)) { return; }
+    const svg = getDrawingSvg(card);
+    const rect = svg.getBoundingClientRect();
+    const opos = drawing_position(rect, event);
+    const tool = getSelectedRadio(editor.querySelector('.tools')).getAttribute("data-tool");
+    const color = editor.querySelector('input[name="color"]').value;
+    const size = (getSelectedRadio(editor.querySelector('.sizes')).textContent * 0.05).toFixed(2);
+    if(tool == "pencil" || tool == "line") {
+      let path = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+      path.setAttribute("class", "s");
+      path.setAttribute("stroke", color);
+      path.setAttribute("stroke-width", size);
+      const baseline = `${opos.x} ${opos.y}`;
+      svg.appendChild(path);
+      if(tool == "pencil") {
+        path.setAttribute("points", baseline + " " + baseline);
+        drawing_updatePoint = (e) => {
+          const pos = drawing_position(rect, e);
+          path.setAttribute("points", path.getAttribute("points") + ` ${pos.x} ${pos.y}`);
+        }
+      } else {
+        drawing_updatePoint = (e) => {
+          const pos = drawing_position(rect, e);
+          path.setAttribute("points", baseline + ` ${pos.x} ${pos.y}`);
+        }
+      }
+    } else if(tool == "rectangle" || tool == "rectangle-fill") {
+      let path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      if(tool == "rectangle") {
+        path.setAttribute("stroke", color);
+        path.setAttribute("stroke-width", size);
+        path.setAttribute("fill", "none");
+      } else if(tool == "rectangle-fill") {
+        path.setAttribute("fill", color);
+      }
+      svg.appendChild(path);
+      drawing_updatePoint = (e) => {
+        const pos = drawing_position(rect, e);
+        path.setAttribute("d", `M${opos.x},${opos.y} L${pos.x},${opos.y} L${pos.x},${pos.y} L${opos.x},${pos.y} L${opos.x},${opos.y}`);
+      }
+    } else {
+      console.warn("Unknown tool: " + tool);
+      return;
+    }
+    drawing_target = tool + " " + card.id;
+    drawing_events = 0;
+    card.redos = [];
+    updateDrawingRedo(card);
+    setUnsaved();
+    console.log("SVG mouse down on " + drawing_target);
+  }
+  function drawing_mouseMove(event) {
+    if(drawing_updatePoint) {
+      drawing_events++;
+      drawing_updatePoint(event);
+    }
+  }
+  function drawing_mouseUp(event) {
+    if(drawing_updatePoint) {
+      drawing_updatePoint = null;
+      console.log(`SVG mouse up on ${drawing_target} (${drawing_events} events)`);
+    }
+  }
+
+</script>
+
+</head><body id="main-block" class="grid-snap open-sidebar">
+
+  <div id="main-container" style="font-size: 1em; left: 0px; top: 0px;" data-nextid="11"><div class="card" data-topcard="" data-color="teal" id="card_1" data-cardset="card_1" style="z-index: 466; left: 1em; top: 1em; width: 32em; height: 23em;"><div class="top"><div class="titlearea draghandle"><span class="type-icon" onclick="menu_toggleTitle(event)">📄</span><span class="title">Introduction</span><input type="text" class="edit-title hidden" onkeydown="title_keydown(event)" oninput="title_input(event)" onchange="setValueAttr(event)"><time datetime="2025-02-26T23:53:58.971Z" title="2025-02-26T23:53:58.971Z">2/26/2025</time></div><a href="#" class="toggle-editor-direct" onclick="toggleHidden(getCardEditor(cardEvent(event)))">📝</a><a href="#" class="toggle-menu" onclick="toggleHidden(getCardMenu(cardEvent(event)))">⚙️</a><div class="menu hidden"><div class="colors"><a href="#" data-color="teal" onclick="menu_color(event)"></a><a href="#" data-color="blue" onclick="menu_color(event)"></a><a href="#" data-color="red" onclick="menu_color(event)"></a><a href="#" data-color="purple" onclick="menu_color(event)"></a><a href="#" data-color="gray" onclick="menu_color(event)"></a></div><a href="#" class="toggle-title" onclick="menu_toggleTitle(event)">Set title</a><a href="#" class="toggle-editor" onclick="toggleHidden(getCardEditor(cardEvent(event)))">Toggle editor</a><a href="#" class="set-parent" onclick="menu_setUnsetParent(event)">Set parent</a><a href="#" onclick="menu_delete(event)">Delete card</a><a href="#" onclick="menu_deletetree(event)">Delete tree</a><div class="card-info"><div>id: <span class="card-id">1</span></div><div>ref: <a href="#card_1" class="card-ref">card_1</a></div><div>type: <span class="card-type">text</span></div><div>from: <span class="card-from">v0.6.1</span></div><div>parent: <a href="#" class="card-parent"></a></div></div></div></div><div class="content"><div class="markdown card-main"><h2>Desk Mess</h2>
+<p>A local-only, single-file, lightweight visual project planner and notetaking app inspired by <a href="https://tiddlywiki.com/">tiddlywiki</a> and <a href="https://feather.wiki/">featherwiki</a>.</p>
+<p>Create cards (like windows) anywhere and link them together to form trees. The current cards are:</p>
+<ul>
+<li>Markdown page, like the one you see here</li>
+<li>Chat page, for things like <a href="https://en.wikipedia.org/wiki/Rubber_duck_debugging">rubberducking</a></li>
+<li>Todo list, tracking date of completion</li>
+</ul>
+<p>You can also leave yourself <a href="#card_2">links to cards</a> to help with cross-referencing.</p>
+</div><textarea class="editor hidden" style="height: 33%" oninput="setUnsaved(); text_autoMarkdown(event.target);" onchange="event.target.textContent=event.target.value;">## Desk Mess
+
+A local-only, single-file, lightweight visual project planner and notetaking app inspired by [tiddlywiki](https://tiddlywiki.com/) and [featherwiki](https://feather.wiki/).
+
+Create cards (like windows) anywhere and link them together to form trees. The current cards are:
+- Markdown page, like the one you see here
+- Chat page, for things like [rubberducking](https://en.wikipedia.org/wiki/Rubber_duck_debugging)
+- Todo list, tracking date of completion
+
+You can also leave yourself [links to cards](#card_2) to help with cross-referencing.</textarea></div><div class="right-resize"></div><div class="bottom-resize"></div><div class="corner-resize"></div></div><div class="card-connector no-interaction hidden" data-cardset="card_1"></div><div class="card" data-topcard="" data-color="blue" id="card_2" data-cardset="card_2" data-parent="card_1" style="z-index: 475; left: 1em; top: 26em; width: 32em; height: 16.5em;"><div class="top"><div class="titlearea draghandle"><span class="type-icon" onclick="menu_toggleTitle(event)">📄</span><span class="title">Navigation</span><input type="text" class="edit-title hidden" onkeydown="title_keydown(event)" oninput="title_input(event)" onchange="setValueAttr(event)"><time datetime="2025-02-26T23:59:27.656Z" title="2025-02-26T23:59:27.656Z">2/26/2025</time></div><a href="#" class="toggle-editor-direct" onclick="toggleHidden(getCardEditor(cardEvent(event)))">📝</a><a href="#" class="toggle-menu" onclick="toggleHidden(getCardMenu(cardEvent(event)))">⚙️</a><div class="menu hidden"><div class="colors"><a href="#" data-color="teal" onclick="menu_color(event)"></a><a href="#" data-color="blue" onclick="menu_color(event)"></a><a href="#" data-color="red" onclick="menu_color(event)"></a><a href="#" data-color="purple" onclick="menu_color(event)"></a><a href="#" data-color="gray" onclick="menu_color(event)"></a></div><a href="#" class="toggle-title" onclick="menu_toggleTitle(event)">Set title</a><a href="#" class="toggle-editor" onclick="toggleHidden(getCardEditor(cardEvent(event)))">Toggle editor</a><a href="#" class="set-parent" onclick="menu_setUnsetParent(event)">Clear parent</a><a href="#" onclick="menu_delete(event)">Delete card</a><a href="#" onclick="menu_deletetree(event)">Delete tree</a><div class="card-info"><div>id: <span class="card-id">2</span></div><div>ref: <a href="#card_2" class="card-ref">card_2</a></div><div>type: <span class="card-type">text</span></div><div>from: <span class="card-from">v0.6.1</span></div><div>parent: <a href="#card_1" class="card-parent">card_1</a></div></div></div></div><div class="content"><div class="markdown card-main"><ul>
+<li>Drag card titles to move them around<ul>
+<li>Dragging a parent card drags all children as well</li>
+</ul>
+</li>
+<li>You can resize cards along the right and bottom edge</li>
+<li>Drag on the background to pan the view</li>
+<li>Scroll on the background to zoom in and out</li>
+<li>Click the 🧭 icon at the bottom right to reset view</li>
+<li>Use 📐 to toggle grid snapping. Cards won't re-snap until moved and resized</li>
+<li>Toggle a "list" view with 📃</li>
+</ul>
+</div><textarea class="editor hidden" style="height: 33%" oninput="setUnsaved(); text_autoMarkdown(event.target);" onchange="event.target.textContent=event.target.value;">- Drag card titles to move them around
+  - Dragging a parent card drags all children as well
+- You can resize cards along the right and bottom edge
+- Drag on the background to pan the view
+- Scroll on the background to zoom in and out
+- Click the 🧭 icon at the bottom right to reset view
+- Use 📐 to toggle grid snapping. Cards won't re-snap until moved and resized
+- Toggle a "list" view with 📃</textarea></div><div class="right-resize"></div><div class="bottom-resize"></div><div class="corner-resize"></div></div><div class="card-connector no-interaction" data-cardset="card_2" style="left: 17em; top: 34.25em; width: 0em; height: 21.75em; transform: scale(1, -1);"></div><div class="card" data-topcard="" data-color="purple" id="card_3" data-cardset="card_3" data-parent="card_1" style="z-index: 470; left: 35em; top: 1em; width: 25em; height: 30em;"><div class="top"><div class="titlearea draghandle"><span class="type-icon" onclick="menu_toggleTitle(event)">💬</span><span class="title">Functionality</span><input type="text" class="edit-title hidden" onkeydown="title_keydown(event)" oninput="title_input(event)" onchange="setValueAttr(event)"><time datetime="2025-02-27T00:03:46.276Z" title="2025-02-27T00:03:46.276Z">2/26/2025</time></div><a href="#" class="toggle-editor-direct" onclick="toggleHidden(getCardEditor(cardEvent(event)))">📝</a><a href="#" class="toggle-menu" onclick="toggleHidden(getCardMenu(cardEvent(event)))">⚙️</a><div class="menu hidden"><div class="colors"><a href="#" data-color="teal" onclick="menu_color(event)"></a><a href="#" data-color="blue" onclick="menu_color(event)"></a><a href="#" data-color="red" onclick="menu_color(event)"></a><a href="#" data-color="purple" onclick="menu_color(event)"></a><a href="#" data-color="gray" onclick="menu_color(event)"></a></div><a href="#" class="toggle-title" onclick="menu_toggleTitle(event)">Set title</a><a href="#" class="toggle-editor" onclick="toggleHidden(getCardEditor(cardEvent(event)))">Toggle editor</a><a href="#" class="set-parent" onclick="menu_setUnsetParent(event)">Clear parent</a><a href="#" onclick="menu_delete(event)">Delete card</a><a href="#" onclick="menu_deletetree(event)">Delete tree</a><div class="card-info"><div>id: <span class="card-id">3</span></div><div>ref: <a href="#card_3" class="card-ref">card_3</a></div><div>type: <span class="card-type">chat</span></div><div>from: <span class="card-from">v0.6.1</span></div><div>parent: <a href="#card_1" class="card-parent">card_1</a></div></div></div></div><div class="content"><div class="messages card-main"><div class="message-container"><time datetime="2025-02-27T00:05:12.744Z" title="2025-02-27T00:05:12.744Z">2/26/2025</time><span class="message" data-message="Create new cards with 📄 (new page), 💬 (new chat), and ✅ (new todo)">Create new cards with 📄 (new page), 💬 (new chat), and ✅ (new todo)</span></div><div class="message-container"><time datetime="2025-02-27T00:05:31.693Z" title="2025-02-27T00:05:31.693Z">2/26/2025</time><span class="message" data-message="Change title by clicking on the icon to the left of the title">Change title by clicking on the icon to the left of the title</span></div><div class="message-container"><time datetime="2025-02-27T00:05:59.475Z" title="2025-02-27T00:05:59.475Z">2/26/2025</time><span class="message" data-message="Toggle the editor for a card with the 📝 icon on the right">Toggle the editor for a card with the 📝 icon on the right</span></div><div class="message-container"><time datetime="2025-02-27T00:06:32.013Z" title="2025-02-27T00:06:32.013Z">2/26/2025</time><span class="message" data-message="Change card color, set parent, delete card, and get information with ⚙️ on the right">Change card color, set parent, delete card, and get information with ⚙️ on the right</span></div><div class="message-container"><time datetime="2025-03-03T00:09:38.751Z" title="2025-03-03T00:09:38.751Z">3/2/2025</time><span class="message" data-message="Import images with 🖼️. Each image must be less than 1.4mb in size (browser limitation). Embeds into save">Import images with 🖼️. Each image must be less than 1.4mb in size (browser limitation). Embeds into save</span></div><div class="message-container"><time datetime="2025-03-03T00:10:31.780Z" title="2025-03-03T00:10:31.780Z">3/2/2025</time><span class="message" data-message="Draw simple vector graphics with ✏️. Also embedded into save.">Draw simple vector graphics with ✏️. Also embedded into save.</span></div></div><textarea class="editor" onkeydown="if(event.keyCode===13 &amp;&amp; !event.shiftKey){card=cardEvent(event); sendMessage(card,event.target.value); event.target.value='';}"></textarea></div><div class="right-resize"></div><div class="bottom-resize"></div><div class="corner-resize"></div></div><div class="card-connector no-interaction" data-cardset="card_3" style="left: 47.5em; top: 16em; width: 30.5em; height: 3.5em; transform: scale(-1);"></div><div class="card" data-topcard="" data-color="gray" id="card_4" data-cardset="card_4" data-parent="card_3" style="z-index: 237; left: 35em; top: 33em; width: 25em; height: 14.5em;"><div class="top"><div class="titlearea draghandle"><span class="type-icon" onclick="menu_toggleTitle(event)">✅</span><span class="title">Goals</span><input type="text" class="edit-title hidden" onkeydown="title_keydown(event)" oninput="title_input(event)" onchange="setValueAttr(event)"><time datetime="2025-02-27T00:06:49.104Z" title="2025-02-27T00:06:49.104Z">2/26/2025</time></div><a href="#" class="toggle-editor-direct" onclick="toggleHidden(getCardEditor(cardEvent(event)))">📝</a><a href="#" class="toggle-menu" onclick="toggleHidden(getCardMenu(cardEvent(event)))">⚙️</a><div class="menu hidden"><div class="colors"><a href="#" data-color="teal" onclick="menu_color(event)"></a><a href="#" data-color="blue" onclick="menu_color(event)"></a><a href="#" data-color="red" onclick="menu_color(event)"></a><a href="#" data-color="purple" onclick="menu_color(event)"></a><a href="#" data-color="gray" onclick="menu_color(event)"></a></div><a href="#" class="toggle-title" onclick="menu_toggleTitle(event)">Set title</a><a href="#" class="toggle-editor" onclick="toggleHidden(getCardEditor(cardEvent(event)))">Toggle editor</a><a href="#" class="set-parent" onclick="menu_setUnsetParent(event)">Clear parent</a><a href="#" onclick="menu_delete(event)">Delete card</a><a href="#" onclick="menu_deletetree(event)">Delete tree</a><div class="card-info"><div>id: <span class="card-id">4</span></div><div>ref: <a href="#card_4" class="card-ref">card_4</a></div><div>type: <span class="card-type">todo</span></div><div>from: <span class="card-from">v0.6.1</span></div><div>parent: <a href="#card_3" class="card-parent">card_3</a></div></div></div></div><div class="content"><div class="todo-list card-main"><div class="todo-item" data-refid="0"><input type="checkbox" onchange="todo_changeState(event.target)" checked="true"><span class="todo-text" data-raw="Add colored cards" style="text-decoration: line-through;">Add colored cards</span><time datetime="2025-02-24T00:07:08.055Z" title="2025-02-24T00:07:08.055Z">2/23/2025</time></div><div class="todo-item" data-refid="1"><input type="checkbox" onchange="todo_changeState(event.target)" checked="true"><span class="todo-text" data-raw="Add grid snapping" style="text-decoration: line-through;">Add grid snapping</span><time datetime="2025-02-27T00:07:30.399Z" title="2025-02-27T00:07:30.399Z">2/26/2025</time></div><div class="todo-item" data-refid="3"><input type="checkbox" onchange="todo_changeState(event.target)"><span class="todo-text" data-raw="You can leave blank lines in todo editor">You can leave blank lines in todo editor</span><time></time></div></div><textarea class="editor" style="height: 33%" oninput="setUnsaved(); todo_autoGenerate(event.target);" onchange="event.target.textContent=event.target.value;">Add colored cards (done 2025-02-24T00:07:08.055Z)
+Add grid snapping (done 2025-02-27T00:07:30.399Z)
+
+You can leave blank lines in todo editor
+
+</textarea></div><div class="right-resize"></div><div class="bottom-resize"></div><div class="corner-resize"></div></div><div class="card-connector no-interaction" data-cardset="card_4" style="left: 47.5em; top: 40.25em; width: 0em; height: 24.25em; transform: scale(1, -1);"></div><div class="card" data-topcard="" data-color="red" id="card_5" data-cardset="card_5" data-parent="card_1" style="z-index: 443; left: -23em; top: 47em; width: 38.75em; height: 23em;"><div class="top"><div class="titlearea draghandle"><span class="type-icon" onclick="menu_toggleTitle(event)">📄</span><span class="title">Saving</span><input type="text" class="edit-title hidden" onkeydown="title_keydown(event)" oninput="title_input(event)" onchange="setValueAttr(event)"><time datetime="2025-02-27T00:08:52.464Z" title="2025-02-27T00:08:52.464Z">2/26/2025</time></div><a href="#" class="toggle-editor-direct" onclick="toggleHidden(getCardEditor(cardEvent(event)))">📝</a><a href="#" class="toggle-menu" onclick="toggleHidden(getCardMenu(cardEvent(event)))">⚙️</a><div class="menu hidden"><div class="colors"><a href="#" data-color="teal" onclick="menu_color(event)"></a><a href="#" data-color="blue" onclick="menu_color(event)"></a><a href="#" data-color="red" onclick="menu_color(event)"></a><a href="#" data-color="purple" onclick="menu_color(event)"></a><a href="#" data-color="gray" onclick="menu_color(event)"></a></div><a href="#" class="toggle-title" onclick="menu_toggleTitle(event)">Set title</a><a href="#" class="toggle-editor" onclick="toggleHidden(getCardEditor(cardEvent(event)))">Toggle editor</a><a href="#" class="set-parent" onclick="menu_setUnsetParent(event)">Clear parent</a><a href="#" onclick="menu_delete(event)">Delete card</a><a href="#" onclick="menu_deletetree(event)">Delete tree</a><div class="card-info"><div>id: <span class="card-id">5</span></div><div>ref: <a href="#card_5" class="card-ref">card_5</a></div><div>type: <span class="card-type">text</span></div><div>from: <span class="card-from">v0.6.1</span></div><div>parent: <a href="#card_1" class="card-parent">card_1</a></div></div></div></div><div class="content"><div class="markdown card-main"><h2>NOTES ABOUT SAVING</h2>
+<p>This is a local-first app. It makes no contact with any server. </p>
+<p>You can save a full, working copy of the page exactly as is with the 💾 control at the bottom right. You can even save a copy of this very page! They are unfortunately always a new file on your system due to browser security features. See <a href="#card_6">Alt saving</a> for an alternative save method (still local).</p>
+<p>Saved files will never change versions or get styling/scripting updates, because they are always just copies which contain the full app as-is when saving.</p>
+<p>If you wish to update, export just the data with 📤, then grab the <a href="https://github.com/randomouscrap98/deskmess">latest index.html</a> and import with 📥</p>
+</div><textarea class="editor hidden" style="height: 33%" oninput="setUnsaved(); text_autoMarkdown(event.target);" onchange="event.target.textContent=event.target.value;">## NOTES ABOUT SAVING
+
+This is a local-first app. It makes no contact with any server. 
+
+You can save a full, working copy of the page exactly as is with the 💾 control at the bottom right. You can even save a copy of this very page! They are unfortunately always a new file on your system due to browser security features. See [Alt saving](#card_6) for an alternative save method (still local).
+
+Saved files will never change versions or get styling/scripting updates, because they are always just copies which contain the full app as-is when saving.
+
+If you wish to update, export just the data with 📤, then grab the [latest index.html](https://github.com/randomouscrap98/deskmess) and import with 📥</textarea></div><div class="right-resize"></div><div class="bottom-resize"></div><div class="corner-resize"></div></div><div class="card-connector no-interaction" data-cardset="card_5" style="left: -3.625em; top: 58.5em; width: 20.625em; height: 46em; transform: scale(1, -1);"></div><div class="card" data-topcard="" data-color="red" id="card_6" data-cardset="card_6" data-parent="card_5" style="z-index: 429; left: 19em; top: 54em; width: 54.5em; height: 32em;"><div class="top"><div class="titlearea draghandle"><span class="type-icon" onclick="menu_toggleTitle(event)">📄</span><span class="title">Alt saving</span><input type="text" class="edit-title hidden" onkeydown="title_keydown(event)" oninput="title_input(event)" onchange="setValueAttr(event)"><time datetime="2025-02-27T00:13:37.963Z" title="2025-02-27T00:13:37.963Z">2/26/2025</time></div><a href="#" class="toggle-editor-direct" onclick="toggleHidden(getCardEditor(cardEvent(event)))">📝</a><a href="#" class="toggle-menu" onclick="toggleHidden(getCardMenu(cardEvent(event)))">⚙️</a><div class="menu hidden"><div class="colors"><a href="#" data-color="teal" onclick="menu_color(event)"></a><a href="#" data-color="blue" onclick="menu_color(event)"></a><a href="#" data-color="red" onclick="menu_color(event)"></a><a href="#" data-color="purple" onclick="menu_color(event)"></a><a href="#" data-color="gray" onclick="menu_color(event)"></a></div><a href="#" class="toggle-title" onclick="menu_toggleTitle(event)">Set title</a><a href="#" class="toggle-editor" onclick="toggleHidden(getCardEditor(cardEvent(event)))">Toggle editor</a><a href="#" class="set-parent" onclick="menu_setUnsetParent(event)">Clear parent</a><a href="#" onclick="menu_delete(event)">Delete card</a><a href="#" onclick="menu_deletetree(event)">Delete tree</a><div class="card-info"><div>id: <span class="card-id">6</span></div><div>ref: <a href="#card_6" class="card-ref">card_6</a></div><div>type: <span class="card-type">text</span></div><div>from: <span class="card-from">v0.6.1</span></div><div>parent: <a href="#card_5" class="card-parent">card_5</a></div></div></div></div><div class="content"><div class="markdown card-main"><p>There is <strong>no autosaving</strong> by default. Using the normal method, you're responsible for saving and keeping track of local copies.</p>
+<p>If this is a bit too much, you can save your files using the browser's <a href="https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API">local storage</a> by adding <code>?local=name</code> (replace name with whatever you like). This will:</p>
+<ul>
+<li>Enable auto saving every minute to the browser</li>
+<li>Override 💾 to save into the browser</li>
+</ul>
+<p>You can use this feature without downloading index.html and it's still all saved locally! Try out the <a href="deskmess.html">blank page</a> and add your <code>?local=name</code> to the url. Bookmark the page and you can come back to it, just make sure to <strong>use the same browser</strong> and <strong>don't clear local storage</strong>.</p>
+<h3>Portable version</h3>
+<p>If neither of those options sound good and you have python installed, try the portable server option. If you've downloaded one of the releases, you can run <code>python3 server.py</code> within the release folder and visit <a href="http://localhost:60003">http://localhost:60003</a> to get a local instance of a server-based desk mess. Saves are stored in a local folder <code>notes</code> next to <code>server.py</code>. You can put the release folder on a flash drive and have a simple way to keep your notes with you.</p>
+<p>For more information, see <a href="https://feather.wiki/">https://feather.wiki/</a></p>
+</div><textarea class="editor hidden" style="height: 33%" oninput="setUnsaved(); text_autoMarkdown(event.target);" onchange="event.target.textContent=event.target.value;">There is **no autosaving** by default. Using the normal method, you're responsible for saving and keeping track of local copies.
+
+If this is a bit too much, you can save your files using the browser's [local storage](https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API) by adding `?local=name` (replace name with whatever you like). This will:
+- Enable auto saving every minute to the browser
+- Override 💾 to save into the browser
+
+You can use this feature without downloading index.html and it's still all saved locally! Try out the [blank page](deskmess.html) and add your `?local=name` to the url. Bookmark the page and you can come back to it, just make sure to **use the same browser** and **don't clear local storage**.
+
+### Portable version
+
+If neither of those options sound good and you have python installed, try the portable server option. If you've downloaded one of the releases, you can run `python3 server.py` within the release folder and visit http://localhost:60003 to get a local instance of a server-based desk mess. Saves are stored in a local folder `notes` next to `server.py`. You can put the release folder on a flash drive and have a simple way to keep your notes with you.
+
+
+For more information, see https://feather.wiki/</textarea></div><div class="right-resize"></div><div class="bottom-resize"></div><div class="corner-resize"></div></div><div class="card-connector no-interaction" data-cardset="card_6" style="left: 46.25em; top: 70em; width: 49.875em; height: 11.5em; transform: scale(-1);"></div><div class="card" data-topcard="" data-color="teal" id="card_7" data-cardset="card_7" style="z-index: 442; left: 63em; top: 1em; width: 25em; height: 18em;"><div class="top"><div class="titlearea draghandle"><span class="type-icon" onclick="menu_toggleTitle(event)">🖼️</span><span class="title">An imported sketch</span><input type="text" class="edit-title hidden" onkeydown="title_keydown(event)" oninput="title_input(event)" onchange="setValueAttr(event)"><time datetime="2025-03-03T00:20:05.166Z" title="2025-03-03T00:20:05.166Z">3/2/2025</time></div><a href="#" class="toggle-editor-direct hidden" onclick="toggleHidden(getCardEditor(cardEvent(event)))">📝</a><a href="#" class="toggle-menu" onclick="toggleHidden(getCardMenu(cardEvent(event)))">⚙️</a><div class="menu hidden"><div class="colors"><a href="#" data-color="teal" onclick="menu_color(event)"></a><a href="#" data-color="blue" onclick="menu_color(event)"></a><a href="#" data-color="red" onclick="menu_color(event)"></a><a href="#" data-color="purple" onclick="menu_color(event)"></a><a href="#" data-color="gray" onclick="menu_color(event)"></a></div><a href="#" class="toggle-title" onclick="menu_toggleTitle(event)">Set title</a><a href="#" class="toggle-editor hidden" onclick="toggleHidden(getCardEditor(cardEvent(event)))">Toggle editor</a><a href="#" class="set-parent" onclick="menu_setUnsetParent(event)">Set parent</a><a href="#" onclick="menu_delete(event)">Delete card</a><a href="#" onclick="menu_deletetree(event)">Delete tree</a><div class="card-info"><div>id: <span class="card-id">7</span></div><div>ref: <a href="#card_7" class="card-ref">card_7</a></div><div>type: <span class="card-type">image</span></div><div>from: <span class="card-from">v0.8</span></div><div>parent: <a href="#" class="card-parent"></a></div></div></div></div><div class="content"><div class="card-main image-container"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABH0AAALiAQMAAAB+ODhbAAAAAXNSR0IArs4c6QAAAAZQTFRF////AAAAVcLTfgAAIABJREFUeJztnU9z5DiW2Mlib3MO68b45HZErzC2D3udjb2UbbXQt/0Kvrm/gXtO1kTXCCyXY8thb6x89Km1H2McMR6xthyWD45R+ObLtliuQ/lgr6iVbVEWizDeA0DiHzNJZqayDnrRXZKYmeQvgQfg4eHhIUme5Eme5Eme5Eme5Eme5Eme5Eme5Eme5Eme5Eme5Eme5Eme5Eme5Eme5Eme5Eme5Eme5Eme5Eme5EmeZLEIUewbwRHxiQGxTwwolzxi3xC22OXD2j2CJMnP4R+iiucAf9tv3WUN/CtEBT+oUFLuEYhA/eRC1dKnAMSghJiuJKwv8WafQCk8PBWN+isTooY/i/0BZZ0slkuXINUatRchjXy8KSAjHMppT0JLUOTKvUj2CMRfxbro/QGlHRM1ada/8bEk+yiLh1X7xhiEgP58SqM8FV2SdPumsITLAko/IRVKoICSat8Ug2R77HCiQj4pI1EK3a9tGAr/xGos2eOoHpVsr6ZhRPK7Ykt32pIFRS62cRdtiG+je2Wvt3CTVBjZ/F5881uYiYGWarN7jfZCbEZ3QFXh0C2Ukh5VszJ4Yc6dDXy++YwuVbciUaDJOjrUOwBt1NNmFf6gBqgfSNI5tz62/6AbtbVckXD1Q04Se0utJNOJHKDNbKu8wHtoDGEBqT+n3cVFOB551yQhCJQNfga71eUTiuin8M93WwTCfzN8bhp0IkS02ZobHMI/P9s2UI5NlYrA1KeiV/cROQovbaRDXyRpC8pcJaAywcvp2l6FFcFnNhvRMnDeIVAe6/TZOiAaaFm+mcWHeoOPpbG5GVs3YetNcmqu0GoTHujsqxSVJ9qi1k6xM9MuEQyqa7Ohg4suq4lyoRWR179YewftsSXwD7jh0o0GV/x+NY4X+cLZhx7psUUwCbSZhxs9nRXWS6idEwUHePRvgXsy32xsVQM69iW8WHiPDIBw0IGObDOPe6oU8Cf46wb34VeiljBMTB/+RoCG+s42qXrZf76WQLzc2IIdPr1Rd8ZFI4e95Ffe4DxZ0iq8pg2jpUDYt/7jpRWWx4DcJ5TzgCoc07KlCrS2c2czNeFImSHZUoXmax6XLVDN58tQ9POK1W/IH3mhg6wbwXPxsnwMECN0XVWn5WNgDEI+JS85yBds3wRP8iRP8iSfvLBPK24Ip1af0hIMcZzwMfv2cSUTjn9zrbW0c2HoA6pMyaTLJg7bE20eZqbS0u2socwTu1ZUbWWIkQIbW2nAprtY4U+tVq4di0qtmXbtyd9/f+Sz2VZWWEKgvlbUvSk6qFXt0Qfh+asjQFtehxy+IkEVVjwqkJGIjqwgSncCJOe+Wo3wZ6am5Nhfp8qvMj4pTncCZHzkKo6K49NzfAoDuPXLXgyKss621yAJ1smXQlz0AXCoWDhplS8Wa+dKGMq7xS4Cu0Mh7tBLXSdmgMVYuGkVwresTbIoZHFwCZSD/qr5fA5U+bSvbYDevdsSEquIuEWAAm/fJiqWqI/5XCPPIWRVfoP3o13ETMlKIShggK+Kar1uQaXmmCJEvN3K6niCj2+wnmAFmGu9RrZi1m2yrekRE9fqu0kADhWmBvrZnm/Kt1RpohviS7FUlCk0/+umC32dnuTiYfByI1gOrWvJcL5+WW2KENuJi6umuNK5aP1trlMyKvTW+l7fIBDcNa2e4c8y8pFRybYC9CrQRYBIyyUWT74FoJGvlS8Kcpnp2I5L1PlpeOYBbWWqkvZtjPQGPsaef2zZ3M53zDaYNcnLLCDd3HiTLVs/GfvMrDWmoYSoLhAdKDUfiI51Q7NiANM600BEARn7fX5HxMe+Q7q0O0CTiIlulTE9Lm58r6M3iyPZsy75h7IKySI3iGsf5DZDNg9omOxkcwKqPPEMKDKPwZKfcRdoqQ3hWZjr4mnGxZ4OhrFDkyX1vsnyhQuniafiPy28jR+yHokomih8O6Zw5lX1i8V3CmORFokflLlRxNcuxAf6dh8Qtnzn/b2Zf3cH5b3ZjGSR70AFQ47JZuEyi4BWm4tz4qADWRSSsmZRORpsNyaf+feu5tKsj/iYtdfHj3mjxSwWCIjK1hpQcyw+4v09cxzSM4Ji9bvmeC98oJnWaz7Jwpzj3/EabDoTKJtmgs+IQffiqrLZjYxNURB/+F0heeX8udzYWy3TlcgrkuXG3mphk+/r9cxbMkgCIdNVwdWAk22TaMmma7WLsKu1xBlDpFNJUz5XL/IF+TbSuDh7cCbM6mThr974Xq54bYo4w3u4Qyh8f5OtnFDOnKlGbmDX0oShldZ85QRuJdAkN5uz9Wb92/lLe+wKi3QVUDZp2LfiuvMJPXznaFC4i3gVEJkU/G3FxU7YE5y1zptIUHurfHir19/7ew4VMMGXQ2pHDyIB+KV/YRBRsAn9ihXhO2HgYKXnWJhhHsgxf4pSWFuTJwwc4qWpMdw1NcvLCnUxxZvQb7aZYLWknTEP8vmOCtCIKSZyrwdrtwHB2JJX6rcFnkjcHzPhfcbfNGUNPq20zUvnA+Gy17rtc/rmLfJMcSkXegOpvYY40e6dboKApW6iP9aJ2Y7CrU53KlA1FcjsKC4nvNWs1/DzgWIiUFpMBlLhJVMKyKSVSv7IGgTSN9MfNVHyqQsc/bKRs7I1skel2IBo6pIE7TQQb5Kv+qvxOcWjpMchjdKXTJRDNxpfvNvKsvAEUUBUJLwHinZJj7Y1BJ8i+9Bhky6Jqp/Uym8eBQiF2ys10aJgj5rYjdm9RLSAppli2xLidKMxs5Q+arBo3i+iZ3V8SM63FlA0SYbywWCoSAFxU35/8Bg8Q1pLtBJiY7jhyR9FsXuzQMWvxoZMs5+OP4pmM6MfdHT40+sl5HGaGjf1sG7WJ0vwroz4PWY4r6YBmfFe9owr3TcU219gLG09oN1MFGEsW9Xb6HlzMHHLthX1aOTI3LfWZRCV9IPqG8Op7eK9sGuEi2SVoyjTfQMPFC2tafj2zQXCZXV7K0eAqkQ7YIIVp2L7PFJBrvSiS3xXsU5ZimE8vs5stCs7FB3T0+oBdKzzU32RGlz8O8Q/sVT0ilRF18SqpdLUxqXGYIaebrcjyvWcqU9bVcTfR96KkrVWvtkBaLumiQKSv4h8VQHhkA+daGRBdtu2kvICyO+Zr1hMhMlngUBhx7w8OGTsWVWy1lWFWyCgmzZDl+U8WB4+MyKIsqatEHg8zCVVr5Pb4X8H2wZCWbPj3FUd0wJ2CbRGHCMjd1vk+nw0O5DPrd9NBjMTn+qPJY8npfrBVKdO9r5VVPs/IFdYbQXc7k30DgQIxUgb1Otiv0C6F4eayhs77dzP9waUKKAyoQ21rLl95THW1jesKPCGDTx7zecOz5f/i2Mr/CP9BPKstk6s3WW1J4xBagdofsjL9sWxOLZsMs6UHM2OQ+fa4299tkQBuetke42WVUBuRMBegdSmXljgHyyobduwCwQiOlCXUZkO17z7EQQ8f/C/Wpb+BIDSVgfWoAWydSt/otiWIYA0xl+8E//HBLFtZ8zWSrRHeRf+jykSFATVU12VHffxJZjuEG3tm01Sjy2B7kodavaZgiXauhFoLzOzWIf8DA3aveXm9wd1WlA9WdxDqhMQ/6m8k0h4cfcztGjaEl99uaDaR/rHO594RB0afoAUAOkA6Z3nqosBhev5gkC8A4z6Ox88YsNlGMKnxgz0q+0aKNblRE6vwjFD7AkoFW+Dxo2HlUDB7dyJ1veBVX8p64LwbOWzhp5o5xZRb7YPtZQ3QbllAqaw0OTNF9jZMGsqx5oDSrtel0M/5SD3nY5hMe/fmSHSl5AVSVwkRyrpS3/MDSkP1AJaP5neGVDvFNd18Y0sF7U8g7lxdPATTQ5UEvdVQD/ZBs+wU14BySlY7wq2IkWOkgPVOfUbPyPG7GYN8N+qlMRZ74VWapNX3OHRXeThTw/UCsAAFN5yI6DMfWxNGzUmkCvn+rXuIg8PD7w1km0D9YtmNwMUXFfl867R50mYNbPDQ7//2TYQ7TnemF90ciWQO4SD2dmhwPWsw0Ot87nR3AjQRn0mG5SEmXJJlDGfUHLdIHMF3IX8v2OqpMSd+I0BCg2jjebZokeqMHcQyLc6fIC8hfozWma0vFIrH2ZQYeFqwybxj6lO6ibEWdkXVqN3r6hpau4BNe6uvTDQIGZvT95DZfq3rPqyT7GFhVP67e9d7QKZh4bBfJFglem5OrL/qX+Wh8m9fiCaX60qt9eDilWMDkCd2SoxRLD3kofBKtMPJ0ivSgMk29BP5YV/kbyo+8ZXDd1CZZStkfWcdrQv2sAjS/4mMG+nHD2jgfQ7JZCpvVRlUcSy+hv9Gy4I6yqT9XHCOhPOm70Jpia0CrqC9JWYiGQrSmUuqd6wValp6J16tejP7yrt06vziyIAqiN9ExfTIiNTCwh6mlanmpNAmBXn1z0xAlUKnFphoq/f+EAsBkTtljkVaCAD1XmPt2DmWn9khShVt6kflL+pvHt+HQNK/qmYFhLPGh4Dyr0rTAHJRn6JuQT7+RElb0Og+JyNKKBII3Skph3xgaQi3fZIsupaSEom//9rqQofCvkhcV3qjx+RD6V3x69vR0ZXdeIKsfQ1Jo0cqr4WX1H1dFQZ+AYf9AX50UzATUqMttTafHttPv6CBH3eL8VvV5WAccKNSArJ+J7DLjgYk9DrisEnd2eKp0RnMAUwiKsSH7FA7nqg4zCUlq9W3nwNECp/3pmY4Wd6fBPnr9FE6gxQCUairL0/ASA+AP1JMLiuAVqTlU4B0daMiKT4fQxX4mcfWtUECwVUQAlJIDDqv7WAQhXlGzmzVAouWYSikaZpl/CiQxMVzmF+qZQok2ZJB10BtPc2F3+t9N48PQK0iVc0U+0IgEhDuly8HoDeQDJDcQvpIzWQLCGt6+aZEaC1h12tBrqHeL2PdSr+g2g4RO61CujfC/FWPuzviYf3CFQCUCo+mt7gm1GgiIU0Q/IHicAxW6kUSAH8f3GaA330B6gZBl12d6iA6ABUqc9H8hlMilgJT1k0QLdgt55ru5BhX6SAkvQalzaF+NgkXyOQLL97A9THgS0DikdzAtCNNKY7cXYBD1FPc4C+k0BtjTHY5EKXoerA9ecDoNQDEtExbFTPyE2HaR0F5E99pYDQJ/UbBdRQBPoegHSlFviL5ohsVnaAUmG3yV7GUwmS2x+1ZrRmsEhtoGN5tavlcKCAugepcX9Kh28dAbLzWGlrInzs6ACrgLBPRiD57+8NQD/CWGUDQdpXOL5N1J15YgBkRaoaayp4rNmFMAokpxTdC/nxn39L2KkG+qNr8UNymCPQA0TswK1vbkB9iDB5N9KPQbdM/nf/61jgZmwviZJnCqgujgGoBV8M+60G+sW1OEgOVQndijcVha7gHSp+MUTshOGZltU/Zvvw0RrLD+5+kGVcS+WVQBUA0U4D3X9oD8A/pYDeNvQSSqgR52r2qoHC8EwLcWS3MRsfXMgPQgOx9lDe6Qh6Fg1086Hqge5kZ4RA7TFXndAkoLiIFaN9/gP/QRZgndSsOZZ3OjCbJ8Rv0psPtQTiGkg09AqUnutu2nz3uUDOtHccKK1ZC0DUAnr3QRrHRJbQlQYSvbz7ZgaQk6lPmcvFKqCDhP9Yp5UEkuMLAaDj5AsNRAyQMCWkW37d77sPgfwrmbBsaPxW5ShPkv8ogYQL1B3LghIHEkigNS2BZMfzwZRQC5fuxHgJxYD6OqKxXskS8iMn6QgQ9mjw9OtaFtN7BdS2eko9r4R6oEi0uAd0QjLRNUltAX3935gEwufirBn9WO9rBKprPRqYhrseKBbVvxIoh/ULCVQbINaygjN87Mt+eFdAXVKr4aAZB8qDKzNkHEhhnOn5PBVv6z+QPw8NULsroO4FyQyQrAYP6EIXT3vA39Z/S5bL10JXWQ8UPn5DIJ4Xon0BQGDjHHglNMhbIOmY+XN3QExqSSdrgoFNVIwDva8dF0Bzox8b7hPaKK8Xwe/cHSU3aKQ1CqiLAnHc3qSkSm6NDbtdoLweKgFUF9zlCGR81gPQjbCApOXfjQIFV2YIqQ8HoFZXCgLZ1QPX3+o/uv7y2OM3Wq8moj2h5gmmUBDoTPS19pEiUJe2YJ2dmctI8pMQKPcvzATSX7yvOpidsfM7diE8aUhrXj8DrgpuwAPXymZrnsZPVh/T4cmKbfCZGyB1HSYDtbg765exPCCykfMjcHrCaTFxoO4Or79tcyzNK70uFFhbdLPMAQ8ikLO+9k7PLZ4TgX9d9EDYzO5iQBvlJA2BThHoSsD2sv7iQ8uVzp+2VE4+an55hnZfHQQZHWwfSLmFAKgvnuyh4XcCG96DaP6u+IuD/ANqdR1Enx9s2FWHQLJLOuLnsOLzEiy08g/uAKhkt+JKlZgc8MuTrMPtVXVgQh9tdn4aEREtklbhGygjOezKrhMG1fxDSW7E+TEWaJPL4S9VPoCwhA43BYpJwUuOpHpG35Grgkjj/iT5lTi/A9ZWTjtqNcOQ/6UXhQe0OKwwDtRycX51a47XkkLOcXcQT17Q5BkXN7JpHTH/U7UBqhclpNJAH/3bYonIh9EbYU6RgmEXbXX2pskxqYwIBl/1RRpYUL/D88TLhUAP4hIrifZ72rBE5MOrRJ+WIAcR2mIfykx3vU6GtAezgaj402NYC6alNCRSWGKA4iFYAjpXl5yfnTUYMzgKcMg9oBlZST2g84+nDYTd0eLvmHJ/Lgip9H2lpNAlVaGy/Uf/XgPvBlGXucAqqxJzKy66+sUXufmiicol4cNUyd+OPPRnGQyAVqKlZUBgZ5Q9EAMg44tDnj+zSXChDCLAnCmoVP4v1Y/kn2xCk8A89+olFrHCSX9DxUcJJOeaNEn+mXzDh57lTm1orlUGSGZFe4LfttVRCZvGyKZy6MImKgcpeN6RBKpa8EeBvW+pRT/tqTGVGu55k2CYV4XWuFoIY8mkbIQrhauog1TOAAGIysb0voHQuCMcuJWghaFGBFphbcGDM7Uigz5VCGqGEmSmpJI5CUK4PfxkuiZKBVRxcdlAOpQjYwjc/k69UQ3ieos5AEDqc9jGCP5G+a1y9IXWQ6YQ/0yJcRHDEjpobwG/6GGbgLXcWE341/2nMAonF1hbuEEeMqvAh/MOd3qzLhmgDNC02P2+RVupj2qV+TLHMxj/s+H5G/tTZYJVAl54ItTD0SMvS4S3KuAEaoz2A6sEmhb+xQWEc2AMl+7v8j+Efx+Y190U/UeeK14oGchSACXMdKoXSKmGsSqw3F/piEjTF02MR6PSwsH4hTI+2g+arCVtVVbxHEIuKnxwhtFXJcZYYZxBq8KtlE4alZgeIAdAVHz43YgFUumTx+QDIf5WtmpUIagxoR7M8AboHksxDU2pPGWY5b8//mjshNJQMtQEXIU3EO/6mvrnlYn6Agoin9wo173ABp6iOrcq0ptB9FqRqgIqtUqvcyXG5PMk+SK/ACDZ7Td/Bbf5rEzyymzhQpMZx2xWyJ4G4yRA8TAY5VRO20CPzysdkEbE/1CMal1lSVwc+gT6DJ2hHYwhy5iOQxQSBEOqZOlAjwht8FzqLjPu9BqOUNIqjW6RJevALHGG5W/81yH3p+oJOqgB3MitaszEWoHJ1uhxhSOQujYri73zwJUVDffElsXAXsqE5uOVmX/jip+ygCvcegqcLxEoXzC9lw155UlgmB4NFv5SWEEs85ZhRAa0Mb9FcuGEGHZJtehIjEZ9j2/Dl1SMTK331UuEvFNRXryGRWju8VjRBaYHW7JjMK9QT6V581wTluYfDK6F9oUtS9YYRYoOTRVwsxkAjAorWNCJNZ8vAKIl5mqW3Z+OxlddDvyDcaJghCExDBaoq21fMWfDz+5g6FfboewWuBugcwGC2iQTUj1xpTP24j/QsmSLzwV6Ympjj5ifl1cqP64FZILoFij1iWpksv006jds11AuUtcp6jQm2aVNqqun1AVQmDK5MiXVuyPbXBfkAqBW5VnitawljKnqy4XIKU8BAwe2QqY4WgKtHEL6aqnmwSzElwVV1qjt2B0oEygvHoIHe49L+gYnsmVCwBrSFVQARJut4TByU84HqtEclgSgTC3ugX6GhdMwhk2nwgGcqVXfi1cTUZRU83kSNVjlVQPK2uB5rqKCwkHfLyQjy4UJKxJNRkcerRW8xHQl+k3/p1pQQIna1EcuP4qai4ai17fSy3Z3UDcwmcYJ9SVYjtzB0D5/afsgcQHdF4P+ujreYKvgSdaZGGl48Dv14w5mr+DjuIwVSI1ZSZU3tDmQ9hAUCgbwpTALb5NfLp6XnSQvIJ2veg5T7eadwCdUcnb9UV6rA80QBfqicJd7C7ty9CwzB3OYwrDaHxCJZ72sDWnsBVIY3itjAUWtLJyip0kOEQzK56PXuN9d34uyxphGgbNvojERiD8IPTVSAn9kk/0gOPkRYhiloTBgZAJNxhWrc4tWCc4HStgq0OkoHKgu8QPerzBHkpoGhhO3fCKQeoD8wZ1+hVrh0xgl5PB0yAcB1e2BOs1SAWsgphjBxv0ILDj3z6eldNLfXFrAKqhqmgxx18UBRQ8sRfAfTIk7osyaiWkS9cI7EVnTL8uNyeA4652cVXIgVeYYIaqsk00tErY+jWQoIWkt1rzJb9GY6Xh4Qy2trjZcO7sRWndg8neMIc2j08xqHhD4cuToTa9EcvRd8u3PpZn2e4VRmYt+OTMzYRWoWl3WUDVq0ibveEVHv0ZB5wFhDCG7EhhnfIDbJSEmjMD3R02G4E+8p45ikIAfZC1kpeyavmdRhtdC3RkLdd4RF3pWKXD8KgGoUYlVsVVj15GJu/dY6p0uqjP5wCa2cIQCJpzy7kGhLTiIHKxC2MqCGFhCDPtYWVu4tFHKJstAWTA8V1aXHHzzfpRxBefx0n5R006GeyxmG2cw/HFModkoIEnGcPEUOlwoii5Ta50ghwzMkNRWmTpv0hZztuPQgBMDDWSlb5wuJzrlPGZYBSAJ0WHt5wXuLsW9HtqCLg/REZY5ZZKAV+Mf6e9lA+G8cjZQo2+EIaIHsO2hxVELOlwq7iTUhewK1Cp5lRzKkry+EqjwMDAoh8/nDDthDwgnMHw2UK22aaiwJ3n/75XZ81sAkuMU2vD6uHVY3DHdATxWFp8CEuobMFzAKjRQ/q+PwSieC5TW2DMqvwlEUXKclReH8tKpHF3B1jEdonz7oW5cVaKmIQCk9Vve5PCkByLqC2TNbKBK5XlmsE0B2sUfl6g5h2rjVP5SqJWGB5UpSmsO7iKFaciBufa/8EOtAqI9IqnntrK0UqGoUC04SD9T6TsP1c69/FRpR0OHqSHoPHyUYLPE09grlS75ayiTchjMwDA7ngtUc+VaybTpI6cWd6moDxMEy8/V/hsrPkYZJXcQmg49aZ+XUYKzegia7mTbgPn5bKAK2wEFQ75+/iX0RmjnH5rMxlJuzSwVpN8XULA7aGX90Cm7aOhkSd8AwH1zMj8DWIkHQnFpOqCbjiknBgJVTKyQ8giavXXygKz1Qp/4/Y1CbOSM+OtFgQ3Kqfpt0ttrNRt23vai5/XiVZJeyYI5lCVwYDKfSiHvhPp4f9dW9nLLomOswPmRUml4/fPjVK/eS/kyq2E6e2B1fPkH4W1fO4mEy0wTyx0Qs7LYeXssNeo4gRmafh+WRXdgn6aDPXxtXTlKFwLZOSfhHi+NmlD1s6L1MQegxJo34CuXtnUBF1r7sAaKbaJIZksqrD94Xect71ilZjP4rWHM7SSQfSQd1u2lrbJQZM4xhUQFhywAsj9D61raDF8ln8PgqhUIOsoTMJWsAkEgvZdZfxV4ox0WR1Rclv2eiWJ/JGsr1oj/kpAMxrHuBS3ApXYo/zl2jiM6SO6bzDoCEEf7wkmMmP/lV1m3+tzICZIKtcZIspfoTUjQEXsodcPdEkmTu8Zddea4qdv+bjWMLxsnJoOjFQFoWMSRJvKhrMZjYlctgZViZyrKAMje3C9VQXbei862tgX8VAjUW3vkz5JDBk2usoFeSkPcedYRl29wEBt0nn6zIVD+Tk7CGgnUa2N+pbXbedtL4e2cw3gzB/F4/qQjIlndHstiJkMbN1Me5+7568abrh/IMnVDvg5nnEQ7LulDcgwBArS/WTY0fwvoVBTuKgb40PLKAdpYf1CEeMHOOmLF/Kj+2h24JVDpbhQ/SNvaLbOj7RwMwdWowIcrJ7h/1p3S5GeicleZD/KmdsOFD/KFWbVd1VMD/rXVXo4UUOUAyTmAm4blgFbebn8AcggnihfEokaMa3uUxGMz3FOq89evKtccpLz0dvuTzO0qpgp1gcjLc1g3tO5ECghrc9Pl5qevS7cNyWZZu2VGVm4VHxfm3jjHHIL2uap5CTuMXS94fkpKtw3Jnr12y4wUny1Sa+/s4LwUx65e5RX4jNyUL/kp9eJM5ejiJq6GSdqEc4lD8eLWsjfdsXsqFrj8/GXr7PLE80SRW1H7Zb2VPITZRXvspeWuYT3cLY/sCmOdbCDhL41JoG2MHen1TdPmlX3pHvwRAZDnCD/1hzuYxm4jl6VsGvedOypAI/N2RgGQ+/jrCNB28p8DkNuh8IfSd3xnl14JpTGgJVENUaDWBWIPoowA/SsHSOK8dysxqxYc7RsRLnjrDlPMnXDhw67EnXMlFcf5+9J5Dzh73E9NEz9cVY6ldWQ0cd+UXfoDpzgmFz4QXQTkpyrjvjE2FYi+dq+k1cGiVNG+yyQEIjGgY++KOOTeViAAWsATADHhL22BEeuF2GWX3APiX3ch0KIErb6XCyrIG5TOfWssya7PfSDWhECLMtf5fcWBHLk8oNMHzxpL0g/nlz6Qn40p/e8HL2YcZtxLkAhL+ECZuC29pHjpB3HqA5U+0HXXzg/ROw6AyMf75ru1QO+F93jGCl+FcXIwk0fOd/2P0Jth56oG6mJAXgmxoIQWAeXheMwucJOIDdSIAOid8HSIMV/xYcMklrYaAAAW9ElEQVTZbPuDhkCCi9ZTahECvQ+AaACEjsiZwgMg9Ay6QLBA43UOUqmnAM02P1LxpX8Jsxh45nIE6Npv9oyXAdBJMlciKoSB8J4tGgPyS4iKYFSsT6aHUGuJrEFm4m3ndwW3ogqBvMFVTu/8BJ71/Kk0Tkdd+yMTr1r/3FZx71ViFOhZBKicCQQuBVwf+Ha4ll8GkXWTgESf/XQDILWtLnHGjzwYXNNAzZM0MEhiQLNzamWNvnPqAXkdYzDlgo8FSh0Ckbk2dV7rc75tX1eGGWJ8oMoHOguAWt+QqceTL40IqZTH5As76BnCkr05cQSo4t5YRkUdAs2dKNJC5eMlzpLAu9Zr9mnTch/onT+4RoHmzsuY3kNE7I36EDjhacwv2yBNTjDa0zO/r1owdJzoPE6O3RAB4iHQhzvf/KAh0Ox1hRdMAXknW04BEhce0FEIdDMbqFHzC5Xu14w7sLPHB/pNCPTBL6GDQIdu5wLBJtFC/iQ4KzZezewyBDqcABQq9XygazUBU7pnfPeREvoo3pY+UGDCmuUsG+jmZ7OAjNtWfRHTrWayx/XHMuH5EbCDd98UAQqmwOtEe9rVLrDEuIIzSB/j3/l2IdC8sYN0qtE/qKdp/3DWRIDWl9BRFwDdzQW6VsnvmH6adi/lVaDCR/TBA8qu/dGEhUCyzVzN4Ul1qvk+FZ6yXshVoNRHwQ717I3wZvKRKqv/cF4ry9Ru52FxV9UZCVsZCwbXGFAQT1XPXDAj4gruSftvr6wFCUTXA72dAuQu2KwVKs7hx2CLqjCZ0AMOYZXerbML4fnLmDgOgOwVkwnCBMyb7FU2NDIi9iHr/FSp2WUAdBQA3cw0qZmJouqvkHYE6LcB0FUI9H3Y7OcB8R8bNIUHs05v9gvaCw9LSIQ6FEzkg+50HRCMYdwpDqi9yNDBxatFQP4IuEZOfqU2PcKNtckIDq8IEAtund9PAXrwr6yRX5b97gbtLsWdW7F+KAC6CYE+BkDBlTXSqFUD+FWviuOhlpOA3gVA/KX3+HSu/yytscbwUcZM6NQ0aBGQnyU/q2cCZRgrjCjGLZNznPGFQL5Sy6r2NrDGgKi8kk4HyquEfVQ1RuvneIlc4RgQAvnNPo/YQyEQRtgXk4Hk7FA8qBrj71r9HBVMth2g5lfzgGi/pSkTus6ydotA+f39+2YO0BcJ0XelLVfWYorh0xOA5Cc9m40Jv5XlDzcQwu99cqUw3cbErWkPvJoMFPRDARDa1LOAuDkU4tQMsLSZCPQLH4gL3/DNcdYxByjVnqm+xtB8ZMJfWkjYuW/ZkGwSUPeZdbzyeske9LzsdrATOGw69HcbsMBZSPIAqIsAVcksoPwOB9ZUnFkBzC2ZBER9eyh0SORtmJd1tZBLbOxpa7Vgiskz1wPxKUD5XKAzVJ1U1li/8qe2ZKwdOuTbdgBE1Xofed8N2fzVlHRKs/eA8AgL9z2zgY5U22Hvayubf7yEAqBbDygNgWg7N4HE1wKSj2TiXWWdUMVFbLQPgN57QJlo/MfPB+Kd2jpzXVvbD17wKUD0VQB071s/Emimw4q3BJIo3Ysa1vF0038etYcCoAtx6gbHhr7s+UCiYQUkURI3EJutCun3k/x8gg5R39USAxLX3pW1QDWHrQiQNa9AB/EBpI7Iz4JWxkOgIJ5ZCJPz2AiZu0UghWMbiKjyhgncYphhBp8c3cLO2he/XAskTatfeED5XKAMzkbkIqF/jTkxVLIlA+RkCOSnESA/oKn95eZAb2vYRsbPYS9Xqba44hZTOZV24j+jQP7g2t77QO1MoFxcVFRlyHmPOZawlJJ/gH21c0iEOPXzGB9EgHwdUiX0+XQgIk5L2Mr6Efb3lqpHTE6yW6HSLFkI0oDzHnbIJgCd496T6UByYH8FzetWPg8LCGKWW/Ig1BmOQ0tLwyZ9yKcAXc4DYoIR2Ht30RIsoI5BhCm9vaq/OHYS7PfzWwtoig6J0yaZcwo2604YpBd7XTPc3wuhgVnFHq4qs6t8APLdwl9PAerUzsrJQrsW0vS2+RvsqMUr2MoLp1pWCWZX6x8ogXx7iE0AIu1MoPwj5uWqM4K7+fDjOHV5V3PIYDgwcPHKe9g0ID4PiDzgSbIl9DkQb4IzcRWQL++UWrvHvg/mXOxqPRDDefG0pIfqA7fvMUIw56XKOVKYbS4NbD60grxDIFnXPtDHONAM4R8uhNrbjjMW3L2QY0adGv3DgzOUh0BhlQVAfCZQKi5f663HuBUcBwsu3kCeFX5Z2FH4YgqQCEvoYta6fSbOcG971n0LbT7R+UsuYN0TD/wcAuqjQN5AFTPQ5u1WIuIIwwgonteqfNTwnLei+7zlf273sSFQHcSnRoC6eUCse8F1HlBwCVGzOfrVJeyJPkqsYwAiQDwC5Jl1c4HEPXRDDdMuIdiZAAUkIDL5AdTxmfUw3xklppTQzCoT728wp3mnM38Uus1D/P+D+zQh/msI5Cm1CJR6LtDDxftbHYsJ3TWmvTwTKnnWvauxwneBpxGgB3+0nwtUkQvcaVB9l8npQd5gVuNrsEdaMHcwpSC8jznVkelsv+LaB7oPgJp5QCU9vYL92HcNF3KuUefXoqQ5JpsczrZNwMtHECh9iee5YWeXVnYJ/X1ElECuXTkbiNHTlypj1b1s9QVExbDiOQC9soEwk087HLstBqAMGh/my+P3AERV78TxbJGCNZEwyVVAJ+wzqtJRYY+KaTYqtDxDoNIFygDodf94AXkZNVCfxrKUVq4flbYaqD2BUFhov7joi0mKa9x+iGf+mpPbvi1yBFIZCTo5t23r7E3HX5+6QA8aqBiAXs8CegPH6WIBvcSM15iiFIE6aTIX9lsRSI5tVKcWaiQQHYD+ygB9xcSQSq6k4mImkM7cIydnqj4K3Eicn7V+EGkr7O12mWglEJNAHYy/EChKitQ0ezXtAT8PQaDpCXwLyDWAGzRpax+2BnN7Fyj1gRoE+pfOe8J+SAHNsBhlLZeYAIcKrR4K6Lz0gToHKHmdoA4Va4FOD8ONNeMiLWmOWVmEVTwAJCofSLhA8j2vusCl9xDY1AjkR+yOi9Rp1U14A+U0IHE3AYgchhtrVgBVeoOcZziA/8EDuobD+Dyg9+7QEQPqyHG4sWYFkNnm5290Fde1q4nph2A/5CvfLZyFoz1p5gHVI/ntwAj5wQUKjK/83wgvnjoKdDALqBhZ7COB7RUCETEZ6DlURNr4QewzJApUTwAKD3rqxF8kP4XoBDnsz43THSSHo658oMjGCnd0iQKpmckWgIKemkeA3AofAcL4nxr+2wTIH8uyhnuBtySXlqUDFC5T4wCwja3AESDh7+s4iAH9Oiyh/ze9jY0LmQJEAqAz8e+CEgqi9B8XqNgRUKTKrqYAnYdAza6A3kwAOmdlAHS8JaCGuqZn9tYHOgKf0uMBeRNpiKL0gORE0gMiIgY0NyZ/BMjvPrLLq2VAQbjuYiCvyq7OKlerAMh10ZNuZ0CEYXY/G0jQvQJxfy9d1tEr1315SCYARSKsFwL5g2sG5907V46jQN74ycT9doCoPw3K9IzeAqIxIK+RR0ItlwHxMti8HQJdJ25IEen4zoBEBMhT6mN6Sl0nmxza33i2xk6BvE21x9xfAz8ISjEWrrszIPRvTADaRu6YyUCnP18PtJVEJBGgMgLkJ6wS/mbULQIVXqhFVvobs7k6mdsS2VP5SVd3CeSX0PfCX26GfXshULkVoCsJ5ChsCAT15QG1RyHQebEFnvzqrEhuneYhLUYfiAZAzeGOgJigReK2V2kx+v0Q9X11pP4yBGKzgbJgJvcZF2cQVeACXb1x3whHcfhAgbNMAs3lSfKg62LoohZ/7gBdXHkN5phPAermA2U9kM59msGJP2WQY8zv9WphAWGyJAjI2wpQ2/+m9neopamfrQG6Efa+WAX0k20A2Wj4RL2cUfuvdYfP4CxOc+WXFlCugQ62C5SqVR59+J1r+8FY9hW+pTBA1zYQlC2BHJo+0KL0Q0YwjiDFxRjuAmHiDdbaQN//5bBxLz1LEOgIj3K0gV7MzrIRCqw1iEu3yjBvOMelWXPpe1gmr5w3AZA7VJwcbwEIVxmq8Bp2lYOOiOBtRL7qAR0eL0rQ5AgJn6SeXjpBcspAK5xPfiUnKxCoNVx60RigRcm+QHTW8NK5yCKMEqj60rlCMM7G2TH1ove/L0rL2D/bM2LSSD+QnPihbqlxcMq3mm0Bh8uBzON4BCiLAQXKYZKF5BACoALr26M7AzQ3HVqfhoTfhJ1QHgOCh9S2b57p9TaIZ1Nr0fC582omiQ90wgJlTfIwryGmZWVhrvZSLW1mPdDS5NR9MD2J3CSDiiw9HiESZpUkdRvD8x5oubdcgcE97q0LxgJwC00Vo1VCmsfFzrYAhIpgxS3r/PBeRl7V7MqfmM5FK1lWeptuNqgyLfI7/Q5nZcM9C33j0n3by9JqyFSpXbD4xsPua6bAmJo61QMLPsLX80y8cexMqnSe+MGgeDbKJjxoRrC+QcG5JbipQfhT9FJW0mfDnxTLgUTqZ8N5IhSwpS66U0vDrjLJgytRhUk3AyJCb5jUgp1xXqYizA6Vd8xrPywGRDabuELZEF05sLqAJQQRSiziVckcIN3qfSAWfGyOUKXRpf5DqGRkpOw3C3v4xjh8ZjqhYCKfiur5cp5Uxf3ox/SqTYqxvRDmojYQYGdj4SLDoZDLgTC8qr8nG6Zrof66wnTheG1c2Q0b1Jl8rNVwHVu1tN9H/PICoLzuEwk4PBu0MjjKwRp6emcdc1U1cl4sRIU/83qCvFerDYDwS4UN13l+Oj5e2uTKpHsNJ18vgsHirQnMfirvJT/lc9+6/S7GVjV8F5x+1tElOqRr+y2EmftfyHS1fQwDgtdYci57bi5UqlcqoMgKPt/6sI7l6fJI318qrFJfeKHCUmgwjjP9ngxz4bUaef5gzwYeOJe18IGAMLcbGnygyoNeUF55jx8m6qh0vQt7tgr1JAJjB6MFTJ2ny7dWkWQ3sh5VagYESsw29ZkROqoxFFR3YdHcifo9/d9c1EPUCenPrKLYxRdor4DC8UUOYdWGtVIXJBY3wvzu9sjO7aL8H7UBApPxC429yHbFqtBaVCaR76RauVeRdLiifAvwF34b6CINj/oSMzeTmzMusclECijXL/mQPaHazqTK4nhwfQyVTOcBtSYVJfdNaZSgulAy65LyNnxnXjAUg9LNbPalco1h3hjfAtQtsAw+lI3Z7VSYzCE9Tz5Ts8thp1/uFpDuamLdyNhhqP3hJVaj5DNHDjhsT5dLZAydOevkGr+vezh5cGZTu+wNRBps6g21ebX0ut4n5IMTs4t5QL3K+mfFpCPVtRqoVL+0wy3mDq19e+kP6dZep7SYHVznn/M90iTWABX9p4tecQYJTdXxB1DvxXiXsU7ME1NtUHgSMc3G7uSv4ed4wHk1F6g0D+uiR0LbdaB5i/iNUr80cMPjfGvRAA3njje2fT4A9bVpgLzekXlA8m/tgVgGlPU1xGJqpDe8yHf3C5ZehXq1iebskimZub3OrZyJiJRsTKGsK7A73noZD1vexFWle9ShskTrw7l3z90qBXWx16HQithC0IcGwhAFD9DjlyxcDDYYdYcI/DLXWwitglU6tPiMyuZha9PVVTlb8G1gHv0Om4revUkidx5qsN+DD1llSc8qIjq3Na6gb86txtfnGYfpKbP6jt0BBULcKtTTIdiSZrPg61+N32XbPGLoHykWFyssnmLF5xc/t7L/ok6BOKWgO9LW9GC7qabcm1LR/jksoiJsANoJTWTvAe01m+Fs0isMXNikkcIZ8Jf6GWl//HgVAbKs2szkl9NfobETctjdqS3FXBymv3e4QMBwFqkEtpZWuV8c1O4daBxoZsdN+4oIU//DCrl3d7/v9ldiNgXK4w/S4tMIvzm5sx0DVCY69cJsINPhVyOvjwH14V3ZlAb27RSUEv7Jhy8UFa8KMJsCAvWfmZsvb1yq/nnjt9TlU+g3NtjcEgUkOnc/gXl58bpmpR+3Yj7H+9dhCOXgqDUqhE82zS8wflcV+qiYm615h4c3+PMkanS60kvh3o2t6yLXFU+wkMDOnfpl4ChdKW7drR1eVmtPEjGImNs1pDpZgiX48lBuztedAFSsfkMeFHrkE042BY/eny3hwvK4VKtxwOmw7h0GKP4Sdzm//TzZYIVxnfRbX9MVFRFsPp2+kXumsIjOxiT3iHYFRCIqGxcvYdmugGisVY8IfySg6QY0r4bf109GZuRqtsRPrLc9YboPeZx53Xqh8S7VO4b88cQeiYrhcrZpYNRSgfJpuAYqzdV0cvvZulgYaf9bdE3q0YCGgjABZNQtrseVSE+73yYXKsqn1AMk24mE3KaQ/WlzXNioobUnYZ8YjzVL2U+3OC70E1JsKfTVp9TSklgWw/1K/mn1RXow20Z+lW2JNEeCALO9ihzqw/RHjyaRKLq2W5AKfFuSRcZ23HGLwcnzUhduRWjEafGN8pftB4jFzMPeu5q32aMsMlnCIdp/1CLLmm2s5M6SozXh0otCWTeRn8I/nxKQkvF9hF9Vj0fxJE/yJI8tsw8R36mkn9iclVnrJp+AGBfaJzKRtnACQ6TaG1Cnfyudl7K92NW8L5hgtS6v5pwfsy0ZluRSURbOS9FcAI8p7GPp/N3vH9iXkGi0YjgNeDRJw+wj99ZKCHt8d2h0F+iwHPL4QPH4VbY/oLEIX9N5Pv7YwkVVxK5n+1puYHtb5RgRum8jxN8qw/a90uHrKdu3neZ7yui+F4O435iDsMpHlsPU72D4vu1GP8o9koZ7haQ7sAf8sBI6TYvcUK/tmpbeZrIp39gxxEcMlM3ye1nFkq8tomCbVaR/39SKytzd0Hiv0RN2hvLR5NQHYpubdZblYQItRgb3z1ydQ/FOC3KrMVtGZIWfqPhxGnPm1/3RMI44KXRzr+n1MYTzrBdrtyhuN8xiqwtZjd8+uOwQ+oFwQ1Dj4sZIcEt35Avlt1ENdp21JNyKv3HvAHnhYkoJX/Yh8nbnSXkV3G1jIDkhinZGJKoIZGKD2iTuWnRRDSSxLxlmBd2BjOTpia4PqbDA48grW5R0+gJejq2O77qU2GQjBJOPRdvkViVMATIimA+AP8KS6FRTlunDwYpdQFCrVIIBc0REm4hd8TiboCY25kxc744HhumhjPikIsrH7LOtiJM9K59URF4A94TUnbPclsS++aR5vpOXiU4xMeblrrSdaNHULSHQ0N5NVs9tAtnby9K5rhA6CWim8W9vzaIzu19pSTtZPuMyN5euFa+ezux/2crO3SjD9EMMldgBcb7ttw5o5Hq/NWbOzXrJ7VE1Yj/PFXt7VbXkBqn9sXxTR6c7nVwE5G4CoxvN27lNM9nS9cXdMcWWu0HZsvlYIO4Cg5eyb7rQjWcaw62cb7Te9xCTfuviNsRLMjJpgHLFTA2Lte+cJsHOwnnlbrw15ZZw/DrD4p9Ra3STJh4XP23WmzkP2JoqOzf1nj5dJ7yUKdsS6t/R2V67Agu7nh143sNUZ75bMfqxdOvK00vkrtQlihTD6hxOm0lQZ0qcscl/y053qQRZGUB+5mOFKXXKHfFEU18y+9sLv7PJdqPNvYSWuJf8L3UrLt0xT/JZcIUHyeot/Z42AdquRGbWfe/0fg88iZWrfpChL/hUwsU2zquTrfnopA32/i034Fnblbrn/k2RTfR5fd++IN3cBt1ztra2wyRaa2WDHSDZ2sYQ5AycIJN8NuM8q9+SLzDLF+9rWLVdor/5AlsmX0QTO8M2Io8YMLyax0y6n+2Ygjkm3orymeoj3yrQqvraB1BUO/4/AIB6xTgbprQAAAAASUVORK5CYII="></div></div><div class="right-resize"></div><div class="bottom-resize"></div><div class="corner-resize"></div></div><div class="card-connector no-interaction hidden" data-cardset="card_7"></div><div class="card" data-topcard="" data-color="teal" id="card_8" data-cardset="card_8" data-parent="card_7" style="z-index: 441; left: 90em; top: 4em; width: 24em; height: 14em;"><div class="top"><div class="titlearea draghandle"><span class="type-icon" onclick="menu_toggleTitle(event)">💬</span><span class="title">Thinking</span><input type="text" class="edit-title hidden" onkeydown="title_keydown(event)" oninput="title_input(event)" onchange="setValueAttr(event)"><time datetime="2025-03-03T00:22:29.652Z" title="2025-03-03T00:22:29.652Z">3/2/2025</time></div><a href="#" class="toggle-editor-direct" onclick="toggleHidden(getCardEditor(cardEvent(event)))">📝</a><a href="#" class="toggle-menu" onclick="toggleHidden(getCardMenu(cardEvent(event)))">⚙️</a><div class="menu hidden"><div class="colors"><a href="#" data-color="teal" onclick="menu_color(event)"></a><a href="#" data-color="blue" onclick="menu_color(event)"></a><a href="#" data-color="red" onclick="menu_color(event)"></a><a href="#" data-color="purple" onclick="menu_color(event)"></a><a href="#" data-color="gray" onclick="menu_color(event)"></a></div><a href="#" class="toggle-title" onclick="menu_toggleTitle(event)">Set title</a><a href="#" class="toggle-editor" onclick="toggleHidden(getCardEditor(cardEvent(event)))">Toggle editor</a><a href="#" class="set-parent" onclick="menu_setUnsetParent(event)">Clear parent</a><a href="#" onclick="menu_delete(event)">Delete card</a><a href="#" onclick="menu_deletetree(event)">Delete tree</a><div class="card-info"><div>id: <span class="card-id">8</span></div><div>ref: <a href="#card_8" class="card-ref">card_8</a></div><div>type: <span class="card-type">chat</span></div><div>from: <span class="card-from">v0.8</span></div><div>parent: <a href="#card_7" class="card-parent">card_7</a></div></div></div></div><div class="content"><div class="messages card-main"><div class="message-container"><time datetime="2025-03-03T00:22:47.764Z" title="2025-03-03T00:22:47.764Z">3/2/2025</time><span class="message" data-message="a little chat attached to an image">a little chat attached to an image</span></div><div class="message-container"><time datetime="2025-03-03T00:23:38.805Z" title="2025-03-03T00:23:38.805Z">3/2/2025</time><span class="message" data-message="maybe we can think about the drawing, what went right, what we could improve, etc">maybe we can think about the drawing, what went right, what we could improve, etc</span></div><div class="message-container"><time datetime="2025-03-03T00:23:48.352Z" title="2025-03-03T00:23:48.352Z">3/2/2025</time><span class="message" data-message="though for this quick sketch, maybe that's silly lol">though for this quick sketch, maybe that's silly lol</span></div><div class="message-container"><time datetime="2025-03-03T00:24:22.261Z" title="2025-03-03T00:24:22.261Z">3/2/2025</time><span class="message" data-message="you can also hide the chat post area if you're done with it using 📝">you can also hide the chat post area if you're done with it using 📝</span></div></div><textarea class="editor hidden" onkeydown="if(event.keyCode===13 &amp;&amp; !event.shiftKey){card=cardEvent(event); sendMessage(card,event.target.value); event.target.value='';}"></textarea></div><div class="right-resize"></div><div class="bottom-resize"></div><div class="corner-resize"></div></div><div class="card-connector no-interaction" data-cardset="card_8" style="left: 102em; top: 11em; width: 26.5em; height: 1em; transform: scale(-1);"></div><div class="card" data-topcard="" data-color="teal" id="card_9" data-cardset="card_9" style="z-index: 440; left: 64em; top: 22em; width: 39em; height: 30em;"><div class="top"><div class="titlearea draghandle"><span class="type-icon" onclick="menu_toggleTitle(event)">✏️</span><span class="title">Cat</span><input type="text" class="edit-title hidden" onkeydown="title_keydown(event)" oninput="title_input(event)" onchange="setValueAttr(event)"><time datetime="2025-03-03T00:24:40.485Z" title="2025-03-03T00:24:40.485Z">3/2/2025</time></div><a href="#" class="toggle-editor-direct" onclick="toggleHidden(getCardEditor(cardEvent(event)))">📝</a><a href="#" class="toggle-menu" onclick="toggleHidden(getCardMenu(cardEvent(event)))">⚙️</a><div class="menu hidden"><div class="colors"><a href="#" data-color="teal" onclick="menu_color(event)"></a><a href="#" data-color="blue" onclick="menu_color(event)"></a><a href="#" data-color="red" onclick="menu_color(event)"></a><a href="#" data-color="purple" onclick="menu_color(event)"></a><a href="#" data-color="gray" onclick="menu_color(event)"></a></div><a href="#" class="toggle-title" onclick="menu_toggleTitle(event)">Set title</a><a href="#" class="toggle-editor" onclick="toggleHidden(getCardEditor(cardEvent(event)))">Toggle editor</a><a href="#" class="set-parent" onclick="menu_setUnsetParent(event)">Set parent</a><a href="#" onclick="menu_delete(event)">Delete card</a><a href="#" onclick="menu_deletetree(event)">Delete tree</a><div class="card-info"><div>id: <span class="card-id">9</span></div><div>ref: <a href="#card_9" class="card-ref">card_9</a></div><div>type: <span class="card-type">drawing</span></div><div>from: <span class="card-from">v0.8</span></div><div>parent: <a href="#" class="card-parent"></a></div></div></div></div><div class="content"><div class="card-main draw-container"><div class="draw-controls editor"><div class="tools"><button title="Freehand tool" data-tool="pencil" data-selected="" onclick="radio(event.target)">〰</button><button title="Straight line tool" data-tool="line" onclick="radio(event.target)">━</button><button title="Rectangle tool" data-tool="rectangle" onclick="radio(event.target)">□</button><button title="Rectangle (filled) tool" data-tool="rectangle-fill" onclick="radio(event.target)">■</button></div><div class="separator"></div><div class="modifiers"><button class="undo" title="Undo" onclick="drawing_undo(event)">↺</button><button class="redo" disabled="" title="Redo" onclick="drawing_redo(event)">↻</button></div><div class="separator"></div><div class="colors"><button style="background:#333333" onclick="event.target.parentNode.querySelector('input').click()">🎨</button><input type="color" name="color" class="hidden" value="#333333" onchange="event.target.setAttribute('value',event.target.value);event.target.parentNode.firstElementChild.style.background=event.target.value"></div><div class="sizes"><button onclick="radio(event.target)">1</button><button data-selected="" onclick="radio(event.target)">3</button><button onclick="radio(event.target)">6</button><button onclick="radio(event.target)">12</button><button onclick="radio(event.target)">24</button></div></div><div class="draw-main"><svg viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg" style="background:white" onmousedown="drawing_mouseDown(event)" onmousemove="drawing_mouseMove(event)" onmouseup="drawing_mouseUp(event)"><polyline class="s" stroke="#333333" stroke-width="0.30" points="11.44 14.20 11.44 14.20 11.44 13.75 11.44 13.42 11.44 13.02 11.44 12.63 11.44 12.29 11.44 11.84 11.44 11.50 11.44 11.11 11.44 10.77 11.44 10.55 11.44 10.38 11.44 10.21 11.44 10.10 11.44 10.04 11.44 9.99 11.44 9.93 11.44 9.93 11.44 9.87 11.44 9.70 11.49 9.48 11.61 9.31 11.72 8.97 11.77 8.81 11.83 8.64 11.89 8.36 11.94 8.19 12.00 7.96 12.00 7.91 12.00 7.79 12.06 7.62 12.06 7.57 12.11 7.40 12.11 7.34 12.11 7.29 12.11 7.23 12.11 7.17 12.11 7.12 12.11 7.12 12.11 7.12 12.17 7.06 12.22 7.06 12.28 7.06 12.28 7.12 12.34 7.17 12.45 7.34 12.56 7.40 12.67 7.57 12.79 7.79 13.01 7.96 13.24 8.19 13.46 8.47 13.80 8.75 14.08 9.03 14.42 9.37 14.70 9.65 15.09 9.93 15.37 10.27 15.65 10.60 15.88 10.83 15.99 11.00 16.22 11.17 16.33 11.28 16.39 11.39 16.44 11.45 16.50 11.45 16.55 11.50 16.55 11.56"></polyline><polyline class="s" stroke="#333333" stroke-width="0.30" points="26.00 11.45 26.00 11.45 26.11 11.28 26.17 11.17 26.28 11.00 26.39 10.89 26.56 10.60 26.79 10.44 27.01 10.21 27.24 10.04 27.52 9.76 27.74 9.54 28.03 9.31 28.19 9.03 28.42 8.86 28.64 8.64 28.87 8.47 29.09 8.19 29.32 8.02 29.54 7.85 29.71 7.68 29.94 7.51 30.11 7.40 30.22 7.29 30.33 7.12 30.39 7.01 30.50 6.95 30.50 6.89 30.56 6.89 30.56 6.89 30.61 6.78 30.67 6.67 30.72 6.61 30.78 6.61 30.84 6.50 30.89 6.44 30.95 6.39 31.06 6.27 31.17 6.22 31.29 6.16 31.34 6.11 31.46 6.05 31.57 5.99 31.62 5.94 31.68 5.88 31.68 5.88 31.74 5.88 31.79 5.88 31.79 5.88 31.91 5.99 31.91 6.22 32.02 6.56 32.02 6.89 32.13 7.23 32.19 7.57 32.24 7.96 32.24 8.41 32.30 8.86 32.30 9.25 32.36 9.59 32.36 9.82 32.36 10.15 32.36 10.38 32.36 10.66 32.36 10.89 32.36 11.17 32.36 11.50 32.36 11.84 32.36 12.12 32.41 12.40 32.41 12.69 32.41 12.97 32.47 13.25 32.52 13.47 32.58 13.70 32.58 13.92 32.58 13.98 32.58 14.09 32.58 14.15 32.58 14.20 32.58 14.26 32.58 14.26"></polyline><polyline class="s" stroke="#333333" stroke-width="0.30" points="14.81 17.07 14.81 17.07 14.92 16.96 15.09 16.90 15.32 16.85 15.54 16.73 15.77 16.68 15.94 16.57 16.33 16.45 16.44 16.45 16.50 16.40 16.61 16.40 16.67 16.34 16.72 16.34 16.78 16.34 16.84 16.28 16.89 16.28 17.00 16.28 17.12 16.28 17.17 16.28 17.34 16.34 17.51 16.40 17.62 16.45 17.79 16.45 17.96 16.51 18.02 16.51 18.07 16.51 18.13 16.57 18.18 16.57 18.24 16.62 18.30 16.62 18.35 16.73 18.41 16.79 18.41 16.85 18.47 16.96 18.52 17.02 18.52 17.13 18.58 17.18 18.58 17.24 18.58 17.24 18.63 17.30 18.63 17.35 18.63 17.41 18.63 17.46 18.63 17.52 18.47 17.63 18.35 17.69 18.18 17.80 17.90 17.91 17.68 17.97 17.51 18.03 17.29 18.03 17.06 18.08 16.89 18.14 16.72 18.14 16.50 18.20 16.27 18.25 16.10 18.25 15.88 18.25 15.77 18.25 15.54 18.25 15.49 18.25 15.37 18.25 15.26 18.25 15.15 18.25 15.04 18.20 14.92 18.14 14.87 18.08 14.81 18.08 14.70 18.03 14.64 18.03 14.64 17.97 14.59 17.91 14.53 17.86 14.47 17.80 14.42 17.75 14.36 17.69 14.36 17.69 14.36 17.63 14.36 17.58 14.36 17.52 14.36 17.46 14.30 17.35 14.30 17.30"></polyline><polyline class="s" stroke="#333333" stroke-width="0.30" points="27.41 15.72 27.41 15.72 27.46 15.72 27.58 15.67 27.63 15.67 27.74 15.67 27.91 15.67 28.03 15.67 28.03 15.67 28.14 15.67 28.25 15.67 28.36 15.67 28.42 15.67 28.42 15.67 28.53 15.67 28.64 15.67 28.76 15.72 28.81 15.78 28.98 15.83 29.09 15.89 29.26 15.89 29.26 15.95 29.38 16.00 29.43 16.06 29.49 16.12 29.54 16.17 29.60 16.23 29.66 16.23 29.66 16.28 29.66 16.28 29.66 16.34 29.66 16.40 29.77 16.51 29.77 16.57 29.77 16.62 29.77 16.68 29.77 16.68 29.77 16.73 29.77 16.79 29.71 16.85 29.32 17.07 29.04 17.13 28.81 17.18 28.59 17.18 28.31 17.24 28.19 17.24 28.03 17.24 27.86 17.24 27.52 17.24 27.24 17.24 26.96 17.13 26.79 17.07 26.56 16.96 26.39 16.90 26.28 16.85 26.23 16.79 26.11 16.73 26.00 16.68 26.00 16.62 26.00 16.51 26.06 16.40 26.17 16.34 26.28 16.23 26.39 16.17 26.51 16.12 26.51 16.12 26.56 16.12 26.62 16.06 26.68 16.06 26.73 16.00 26.79 16.00 26.84 16.00 26.84 16.00"></polyline><polyline class="s" stroke="#333333" stroke-width="0.30" points="18.41 19.55 18.41 19.55 18.47 19.60 18.47 19.60 18.52 19.60 18.58 19.60 18.69 19.71 18.75 19.77 18.86 19.88 19.03 19.94 19.14 20.00 19.25 20.05 19.37 20.11 19.48 20.16 19.59 20.22 19.65 20.28 19.70 20.33 19.76 20.33 19.82 20.33 19.87 20.39 19.93 20.39 19.98 20.39 20.04 20.39 20.10 20.45 20.21 20.45 20.27 20.50 20.43 20.50 20.49 20.50 20.72 20.50 20.88 20.56 21.05 20.56 21.17 20.56 21.28 20.56 21.45 20.56 21.61 20.56 21.73 20.56 21.84 20.56 21.95 20.56 22.06 20.56 22.12 20.56 22.18 20.56 22.29 20.56 22.40 20.56 22.46 20.56 22.51 20.56 22.57 20.56 22.63 20.56 22.68 20.56 22.74 20.56 22.85 20.50 22.91 20.45 22.96 20.45 23.08 20.39 23.19 20.39 23.30 20.33 23.41 20.22 23.53 20.16 23.58 20.16 23.64 20.11 23.75 20.05 23.81 20.00 23.86 20.00 23.98 19.94 24.03 19.88 24.15 19.77 24.26 19.71 24.31 19.66 24.43 19.60 24.48 19.60 24.54 19.55 24.60 19.49 24.65 19.43 24.71 19.43 24.76 19.43 24.82 19.32 24.88 19.32 24.93 19.32 24.93 19.32 24.99 19.32 25.05 19.32 25.10 19.38 25.16 19.43 25.27 19.55 25.33 19.60 25.38 19.66 25.44 19.71 25.55 19.83 25.61 19.88 25.66 19.94 25.78 20.00 25.89 20.00 26.00 20.05 26.06 20.05 26.17 20.05 26.28 20.11 26.39 20.11 26.51 20.11 26.51 20.11 26.62 20.11 26.68 20.11 26.79 20.11 26.84 20.11 26.90 20.11 26.90 20.11 26.96 20.11 27.01 20.11 27.13 20.11 27.18 20.11 27.24 20.11 27.29 20.05 27.29 20.00 27.41 20.00 27.46 19.94 27.52 19.88 27.63 19.83 27.69 19.77 27.80 19.66 27.91 19.60 28.03 19.49 28.14 19.38 28.14 19.32 28.19 19.26 28.31 19.21 28.36 19.15 28.42 19.10 28.42 19.10"></polyline><polyline class="s" stroke="#333333" stroke-width="0.30" points="11.27 18.87 11.27 18.87 11.04 18.87 10.65 18.87 9.81 18.87 9.30 18.87 8.74 18.81 8.23 18.81 7.78 18.81 7.33 18.81 6.94 18.81 6.54 18.81 6.15 18.81 5.87 18.81 5.59 18.81 5.48 18.81 5.25 18.87"></polyline><polyline class="s" stroke="#333333" stroke-width="0.30" points="14.14 21.63 14.14 21.63 13.80 21.79 13.40 21.91 12.90 22.08 11.94 22.30 11.38 22.47 10.76 22.64 10.20 22.75 9.69 22.92 9.19 23.09 8.79 23.14 8.40 23.26 8.06 23.31 7.89 23.43 7.73 23.43 7.61 23.48 7.56 23.48"></polyline><polyline class="s" stroke="#333333" stroke-width="0.30" points="34.21 15.95 34.21 15.95 34.49 15.83 34.89 15.78 35.28 15.61 35.73 15.55 36.24 15.44 36.63 15.38 37.08 15.38 37.47 15.33 37.87 15.33 38.26 15.27 38.54 15.22 38.82 15.22 38.93 15.16 39.05 15.16 39.16 15.16 39.22 15.16 39.27 15.16"></polyline><polyline class="s" stroke="#333333" stroke-width="0.30" points="33.87 17.75 33.87 17.75 34.21 17.75 34.49 17.75 34.89 17.75 35.22 17.75 35.62 17.75 36.01 17.75 36.35 17.80 36.69 17.86 37.02 17.86 37.36 17.86 37.53 17.91 37.75 17.91 37.87 17.91 37.98 17.91 38.03 17.91 38.09 17.91 38.15 17.91 38.15 17.91 38.20 17.91 38.26 17.91 38.32 17.91 38.37 17.91 38.37 17.91"></polyline></svg></div></div></div><div class="right-resize"></div><div class="bottom-resize"></div><div class="corner-resize"></div></div><div class="card-connector no-interaction hidden" data-cardset="card_9"></div><div class="card" data-topcard="" data-color="purple" id="card_10" data-cardset="card_10" data-parent="card_2" style="z-index: 481; left: -27em; top: 15em; width: 25em; height: 30em;"><div class="top"><div class="titlearea draghandle"><span class="type-icon" onclick="menu_toggleTitle(event)">💬</span><span class="title">Notes on navigation</span><input type="text" class="edit-title hidden" onkeydown="title_keydown(event)" oninput="title_input(event)" onchange="setValueAttr(event)"><time datetime="2025-03-03T00:34:53.681Z" title="2025-03-03T00:34:53.681Z">3/2/2025</time></div><a href="#" class="toggle-editor-direct" onclick="toggleHidden(getCardEditor(cardEvent(event)))">📝</a><a href="#" class="toggle-menu" onclick="toggleHidden(getCardMenu(cardEvent(event)))">⚙️</a><div class="menu hidden"><div class="colors"><a href="#" data-color="teal" onclick="menu_color(event)"></a><a href="#" data-color="blue" onclick="menu_color(event)"></a><a href="#" data-color="red" onclick="menu_color(event)"></a><a href="#" data-color="purple" onclick="menu_color(event)"></a><a href="#" data-color="gray" onclick="menu_color(event)"></a></div><a href="#" class="toggle-title" onclick="menu_toggleTitle(event)">Set title</a><a href="#" class="toggle-editor" onclick="toggleHidden(getCardEditor(cardEvent(event)))">Toggle editor</a><a href="#" class="set-parent" onclick="menu_setUnsetParent(event)">Clear parent</a><a href="#" onclick="menu_delete(event)">Delete card</a><a href="#" onclick="menu_deletetree(event)">Delete tree</a><div class="card-info"><div>id: <span class="card-id">10</span></div><div>ref: <a href="#card_10" class="card-ref">card_10</a></div><div>type: <span class="card-type">chat</span></div><div>from: <span class="card-from">v0.8</span></div><div>parent: <a href="#card_2" class="card-parent">card_2</a></div></div></div></div><div class="content"><div class="messages card-main"><div class="message-container"><time datetime="2025-03-03T00:37:00.213Z" title="2025-03-03T00:37:00.213Z">3/2/2025</time><span class="message" data-message="The little &quot;circle&quot; you see at the top left of [Introduction](#card_1) is the main anchor point. Using 🧭 will recenter the view with this circle at the top left, and reset the zoom.">The little "circle" you see at the top left of <a href="#card_1">Introduction</a> is the main anchor point. Using 🧭 will recenter the view with this circle at the top left, and reset the zoom.</span></div><div class="message-container"><time datetime="2025-03-03T00:38:02.879Z" title="2025-03-03T00:38:02.879Z">3/2/2025</time><span class="message" data-message="If you find the mess of cards to not be to your liking, or maybe you want to temporarily see them in a list, use 📃 to switch to a scrolling page view. Oldest cards at top. You can still resize cards in this view">If you find the mess of cards to not be to your liking, or maybe you want to temporarily see them in a list, use 📃 to switch to a scrolling page view. Oldest cards at top. You can still resize cards in this view</span></div><div class="message-container"><time datetime="2025-03-03T00:38:21.285Z" title="2025-03-03T00:38:21.285Z">3/2/2025</time><span class="message" data-message="Dark mode with 🌒, of course">Dark mode with 🌒, of course</span></div><div class="message-container"><time datetime="2025-03-03T00:38:42.031Z" title="2025-03-03T00:38:42.031Z">3/2/2025</time><span class="message" data-message="Don't like the looks? Switch to a modern style with 🤔">Don't like the looks? Switch to a modern style with 🤔</span></div></div><textarea class="editor" onkeydown="if(event.keyCode===13 &amp;&amp; !event.shiftKey){card=cardEvent(event); sendMessage(card,event.target.value); event.target.value='';}"></textarea></div><div class="right-resize"></div><div class="bottom-resize"></div><div class="corner-resize"></div></div><div class="card-connector no-interaction" data-cardset="card_10" style="left: -14.5em; top: 30em; width: 31.5em; height: 4.25em; transform: scale(1);"></div></div>
+
+  <div id="sidebar">
+    <div id="app-info">
+      <a target="_blank" href="https://github.com/randomouscrap98/deskmess">Deskmess</a>
+      <span id="app-version" class="no-interaction">v0.8.1</span>
+      <span>| haloopdy 2025</span>
+    </div>
+    <div id="tree"><div class="tree-node"><div class="line"><span class="expand" onclick="treenode_expand(event.target)">▼</span><a href="#card_1" class="title">Introduction</a></div><div class="children"><div class="tree-node"><div class="line"><span class="expand" onclick="treenode_expand(event.target)">▼</span><a href="#card_2" class="title">Navigation</a></div><div class="children"><div class="tree-node"><div class="line"><span class="expand no-interaction" onclick="treenode_expand(event.target)"> </span><a href="#card_10" class="title">Notes on navigation</a></div><div class="children hidden"></div></div></div></div><div class="tree-node"><div class="line"><span class="expand" onclick="treenode_expand(event.target)">▼</span><a href="#card_3" class="title">Functionality</a></div><div class="children"><div class="tree-node"><div class="line"><span class="expand no-interaction" onclick="treenode_expand(event.target)"> </span><a href="#card_4" class="title">Goals</a></div><div class="children hidden"></div></div></div></div><div class="tree-node"><div class="line"><span class="expand" onclick="treenode_expand(event.target)">▼</span><a href="#card_5" class="title">Saving</a></div><div class="children"><div class="tree-node"><div class="line"><span class="expand no-interaction" onclick="treenode_expand(event.target)"> </span><a href="#card_6" class="title">Alt saving</a></div><div class="children hidden"></div></div></div></div></div></div><div class="tree-node"><div class="line"><span class="expand" onclick="treenode_expand(event.target)">▼</span><a href="#card_7" class="title">An imported sketch</a></div><div class="children"><div class="tree-node"><div class="line"><span class="expand no-interaction" onclick="treenode_expand(event.target)"> </span><a href="#card_8" class="title">Thinking</a></div><div class="children hidden"></div></div></div></div><div class="tree-node"><div class="line"><span class="expand no-interaction" onclick="treenode_expand(event.target)"> </span><a href="#card_9" class="title">Cat</a></div><div class="children hidden"></div></div></div>
+  </div>
+
+  <footer>
+    <div id="errors-container"></div>
+    <div class="spacer no-interaction"></div>
+    <div id="controls">
+      <button class="control temp hidden" id="action-cancelpending" title="Cancel pending operation">❌</button>
+      <button class="control" id="action-newtext" title="New text card">📄</button>
+      <button class="control" id="action-newchat" title="New chat card">💬</button>
+      <button class="control" id="action-newtodo" title="New todo card">✅</button>
+      <button class="control" id="action-newimage" title="New image card">🖼️</button>
+      <button class="control" id="action-newdrawing" title="New drawing card">✏️</button>
+      <button class="control" id="action-resetview" title="Reset view">🧭</button>
+      <button class="control" id="action-gridsnap" title="Snap to grid">📐</button>
+      <button class="control deactivated" id="action-pageview" title="View as page">📃</button>
+      <button class="control deactivated" id="action-darkmode" title="Toggle darkmode">🌒</button>
+      <button class="control deactivated" id="action-modern" title="Toggle modern">🤔</button>
+      <button class="control" id="action-sidebar" title="Toggle sidebar">🎚️</button>
+      <button class="control" id="action-import" title="Import page">📥</button>
+      <button class="control" id="action-export" title="Export page">📤</button>
+      <button class="control" id="action-save" title="Save page">💾</button>
+    </div>
+    <input type="file" title="Select a JSON file to import" accept=".json" id="import-file" class="hidden" onchange="importTrigger(event)">
+    <input type="file" title="Select an image to import" accept="image/*" id="import-image" class="hidden" onchange="importImageTrigger(event)">
+  </footer>
+
+  <template id="template-error">
+    <div class="error"></div>
+  </template>
+
+  <template id="template-treenode">
+    <div class="tree-node">
+      <div class="line">
+        <span class="expand" onclick="treenode_expand(event.target)">▼</span>
+        <a href="#" class="title"></a>
+      </div>
+      <div class="children"></div>
+    </div>
+  </template>
+
+  <template id="template-circularref">
+    <div class="circularref">Cycles:</div>
+  </template>
+
+  <template id="template-card">
+    <div class="card" data-topcard="" data-color="teal">
+      <div class="top">
+        <div class="titlearea draghandle">
+          <span class="type-icon" onclick="menu_toggleTitle(event)">X</span>
+          <span class="title">UNKNOWN</span>
+          <input type="text" class="edit-title hidden" onkeydown="title_keydown(event)" oninput="title_input(event)" onchange="setValueAttr(event)">
+          <time></time>
+        </div>
+        <a href="#" class="toggle-editor-direct hidden" onclick="toggleHidden(getCardEditor(cardEvent(event)))">📝</a>
+        <a href="#" class="toggle-menu" onclick="toggleHidden(getCardMenu(cardEvent(event)))">⚙️</a>
+        <div class="menu hidden">
+          <div class="colors">
+            <a href="#" data-color="teal" onclick="menu_color(event)"></a>
+            <a href="#" data-color="blue" onclick="menu_color(event)"></a>
+            <a href="#" data-color="red" onclick="menu_color(event)"></a>
+            <a href="#" data-color="purple" onclick="menu_color(event)"></a>
+            <a href="#" data-color="gray" onclick="menu_color(event)"></a>
+          </div>
+          <a href="#" class="toggle-title" onclick="menu_toggleTitle(event)">Set title</a>
+          <a href="#" class="toggle-editor hidden" onclick="toggleHidden(getCardEditor(cardEvent(event)))">Toggle editor</a>
+          <a href="#" class="set-parent" onclick="menu_setUnsetParent(event)">Set Parent</a>
+          <a href="#" onclick="menu_delete(event)">Delete card</a>
+          <a href="#" onclick="menu_deletetree(event)">Delete tree</a>
+          <div class="card-info">
+            <div>id: <span class="card-id"></span></div>
+            <div>ref: <a href="#" class="card-ref"></a></div>
+            <div>type: <span class="card-type"></span></div>
+            <div>from: <span class="card-from"></span></div>
+            <div>parent: <a href="#" class="card-parent"></a></div> </div>
+        </div>
+      </div>
+      <div class="content"></div>
+      <div class="right-resize"></div>
+      <div class="bottom-resize"></div>
+      <div class="corner-resize"></div>
+    </div>
+    <div class="card-connector no-interaction hidden"></div>
+  </template>
+
+  <template id="template-text">
+    <div class="markdown card-main"></div>
+    <textarea class="editor" style="height: 33%" oninput="setUnsaved(); text_autoMarkdown(event.target);" onchange="event.target.textContent=event.target.value;"></textarea>
+  </template>
+
+  <template id="template-text-menu">
+  </template>
+
+  <template id="template-drawing">
+    <div class="card-main draw-container">
+      <div class="draw-controls editor">
+        <div class="tools">
+          <button title="Freehand tool" data-tool="pencil" data-selected="" onclick="radio(event.target)">〰</button>
+          <button title="Straight line tool" data-tool="line" onclick="radio(event.target)">━</button>
+          <button title="Rectangle tool" data-tool="rectangle" onclick="radio(event.target)">□</button>
+          <button title="Rectangle (filled) tool" data-tool="rectangle-fill" onclick="radio(event.target)">■</button>
+        </div>
+        <div class="separator"></div>
+        <div class="modifiers">
+          <button class="undo" title="Undo" onclick="drawing_undo(event)">↺</button>
+          <button class="redo" disabled="" title="Redo" onclick="drawing_redo(event)">↻</button>
+        </div>
+        <div class="separator"></div>
+        <div class="colors">
+          <button style="background:#333333" onclick="event.target.parentNode.querySelector('input').click()">🎨</button>
+          <input type="color" name="color" class="hidden" value="#333333" onchange="event.target.setAttribute('value',event.target.value);event.target.parentNode.firstElementChild.style.background=event.target.value">
+        </div>
+        <div class="sizes">
+          <button onclick="radio(event.target)">1</button>
+          <button data-selected="" onclick="radio(event.target)">3</button>
+          <button onclick="radio(event.target)">6</button>
+          <button onclick="radio(event.target)">12</button>
+          <button onclick="radio(event.target)">24</button>
+        </div>
+      </div>
+      <div class="draw-main">
+        <svg viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg" style="background:white" onmousedown="drawing_mouseDown(event)" onmousemove="drawing_mouseMove(event)" onmouseup="drawing_mouseUp(event)"></svg>
+      </div>
+    </div>
+  </template>
+
+  <template id="template-chat">
+    <div class="messages card-main"></div>
+    <textarea class="editor" onkeydown="if(event.keyCode===13 &amp;&amp; !event.shiftKey){card=cardEvent(event); sendMessage(card,event.target.value); event.target.value='';}"></textarea>
+  </template>
+
+  <template id="template-message">
+    <div class="message-container">
+      <time></time>
+      <span class="message"></span>
+    </div>
+  </template>
+
+  <template id="template-todo">
+    <div class="todo-list card-main"></div>
+    <textarea class="editor" style="height: 33%" oninput="setUnsaved(); todo_autoGenerate(event.target);" onchange="event.target.textContent=event.target.value;"></textarea>
+  </template>
+
+  <template id="template-todo-menu">
+  </template>
+
+  <template id="template-todo-item">
+    <div class="todo-item">
+      <input type="checkbox" onchange="todo_changeState(event.target)">
+      <span class="todo-text"></span>
+      <time></time>
+    </div>
+  </template>
+
+  <template id="template-image">
+    <div class="card-main image-container">
+      <img src="#">
+    </div>
+  </template>
+
+  <template id="template-image-menu">
+  </template>
+</body></html>
