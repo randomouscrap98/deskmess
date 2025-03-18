@@ -741,6 +741,10 @@ button.control:hover {
     tm.setAttribute("title", now.toISOString());
     tm.textContent = now.toLocaleDateString();
   }
+  function setMarkdown(element, text, inline) { 
+    element.innerHTML = inline ? marked.parseInline(text) : marked.parse(text);
+    element.querySelectorAll("a").forEach(x => x.setAttribute("target", "_blank"));
+  }
 
   function radio(element) {
     Array.from(element.parentNode.children).forEach(x => x.removeAttribute("data-selected"));
@@ -1203,7 +1207,7 @@ button.control:hover {
     let emsg = copyTemplateSingle("template-message");
     setDateElement(emsg.querySelector('time'), date);
     let emsgmsg = emsg.querySelector('.message');
-    emsgmsg.innerHTML = marked.parseInline(message);
+    setMarkdown(emsgmsg, message, true);
     emsgmsg.setAttribute("data-message", message);
     return emsg;
   }
@@ -1627,9 +1631,9 @@ button.control:hover {
 
   function text_updateMarkdown(card) {
     let content = getCardContent(card);
-    content.querySelector(".markdown").innerHTML =
-      marked.parse(getCardEditor(card).value);
-    console.log("Updating markdown in " + card.id);
+    let markdown = content.querySelector(".markdown");
+    setMarkdown(markdown, getCardEditor(card).value);
+    console.log("Updated markdown in " + card.id);
   }
 
   function todo_parseLine(line) {
@@ -1657,7 +1661,7 @@ button.control:hover {
     let item = copyTemplateSafe("template-todo-item");
     item.firstElementChild.setAttribute("data-refid", refid);
     let ttext = item.querySelector(".todo-text");
-    ttext.innerHTML = marked.parseInline(data.text);
+    setMarkdown(ttext, data.text, true);
     ttext.setAttribute("data-raw", data.text);
     if(data.done) {
       ttext.style.textDecoration = "line-through";
@@ -1856,7 +1860,7 @@ button.control:hover {
   <div id="sidebar">
     <div id="app-info">
       <a target="_blank" href="https://github.com/randomouscrap98/deskmess">Deskmess</a>
-      <span id="app-version" class="no-interaction">v0.8.1</span>
+      <span id="app-version" class="no-interaction">v0.8.2</span>
       <span>| haloopdy 2025</span>
     </div>
     <div id="tree"></div>
