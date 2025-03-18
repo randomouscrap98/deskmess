@@ -27,6 +27,7 @@
   --content-color: #111;
   --sidebar-width: 18rem;
   --body-shadow: rgba(127,127,127,0.5);
+  --alternating-bg: rgba(127,127,127,0.07);
 }
 .dark-mode {
   --editor-bg: #333;
@@ -458,7 +459,7 @@ button.control:hover {
 .modern .messages { font-size: 1em; }
 .message-container { padding: 0.15em 0.25em; }
 .modern .message-container { border-radius: 0.35em; }
-.message-container:nth-child(odd) { background-color: rgba(127,127,127,0.07); }
+.message-container:nth-child(odd) { background-color: var(--alternating-bg); }
 .message-container time { font-weight: bold; }
 .message-container time::after { content: ": "; }
 
@@ -475,7 +476,7 @@ button.control:hover {
   border-radius: 0.35em;
 }
 .todo-list .todo-item:nth-child(odd) {
-  background-color: rgba(127,127,127,0.07);
+  background-color: var(--alternating-bg);
 }
 .todo-list .todo-item .todo-text {
   flex: 1;
@@ -510,9 +511,34 @@ button.control:hover {
   padding: 0.3em 0.5em;
   font-family: monospace, monospace;
 }
+.markdown table {
+  border-collapse: collapse;
+  text-align: left;
+}
+.markdown table thead {
+  background: var(--alternating-bg);
+}
+.markdown table tr, .markdown table td, .markdown table th {
+  border: 0.05em solid rgba(127,127,127,0.5);
+}
+.markdown table td, .markdown table th {
+  padding: 0.15em 0.3em;
+  padding-right: 0.75em;
+}
 .modern .markdown pre code {
   border-radius: 0.5em;
   padding: 0.6em 0.8em;
+}
+.modern .markdown table thead {
+  background: none;
+}
+.modern .markdown table td, .modern .markdown table th {
+  padding: 0.3em 0em;
+  padding-right: 1.5em;
+}
+.modern .markdown table tr, .modern .markdown table td, .modern .markdown table th {
+  border: none;
+  border-bottom: 0.05em solid rgba(127,127,127,0.5);
 }
 
 /* Drawing */
