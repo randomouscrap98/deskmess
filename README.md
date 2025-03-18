@@ -28,6 +28,7 @@ It's as easy as downloading index.html, or you can try it out [here](https://hal
 - Grid snapping
 - Ability to link cards together as parent / child, build trees you can move around
 - Sidebar with tree navigation for entire project
+- Find cards by searching content and titles
 - Fully local single file, save exact html and open it later where you left off,
   page will never update from underneath you (no server unless desired)
 - Import/export raw data so you can upgrade to newer versions when desired
