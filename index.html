@@ -28,6 +28,7 @@
   --sidebar-width: 18rem;
   --body-shadow: rgba(127,127,127,0.5);
   --alternating-bg: rgba(127,127,127,0.07);
+  --sidebar-color: rgba(127,127,127,0.75);
   --highlight-bg: #BFE;
 }
 .dark-mode {
@@ -112,12 +113,24 @@ body.modern {
 .open-sidebar #sidebar {
   width: var(--sidebar-width);
 }
+#tool-toggle {
+  float: right;
+  text-decoration: none;
+}
+#tool-tray button {
+	border: none;
+	background: none;
+  color: var(--editor-color);
+	font-size: 0.85em;
+	padding: 0;
+	margin-right: 0.5em;
+  cursor: pointer;
+}
 #search {
   width: 100%;
   box-sizing: border-box;
   background: none;
   border-style: inset;
-  /*background: var(--editor-bg);*/
   color: var(--editor-color);
 }
 .modern #sidebar-controls {
@@ -131,7 +144,7 @@ body.modern {
 }
 #app-info {
   font-size: 0.8em;
-  color: rgba(127,127,127,0.75);
+  color: var(--sidebar-color);
   background: var(--editor-bg);
   padding: 0.1em 0.5em;
 }
@@ -143,6 +156,7 @@ body.modern {
   justify-content: center;
   margin: 0.5em auto;
   background: none;
+  flex-wrap: wrap;
 }
 #tree { padding: 0.5em; }
 .modern #tree { padding: 1em; }
@@ -327,11 +341,11 @@ button.control:hover {
   border-radius: 0.25em;
   border: none;
 }
-.card .top time {
+/*.card .top time {
   flex: none;
   font-size: 0.8em;
   opacity: 0.8;
-}
+}*/
 
 .card .top .menu {
   position: absolute;
@@ -1438,7 +1452,7 @@ button.control:hover {
 
     if(localParam) {
       console.log("Using local IndexedDB to store " + localParam);
-      window["action-export"].addEventListener("click", () => {downloadExport();});
+      //window["action-export"].addEventListener("click", () => {downloadExport();});
       window["action-save"].addEventListener("click", () => { exportsDbPut(localParam, exportPage(), (e) => {
         setSaved();
         console.log(`Saved to ${localParam}`);
@@ -1454,7 +1468,7 @@ button.control:hover {
       });
     } else if (serverParam) {
       console.log("Using server to store: " + serverParam);
-      window["action-export"].addEventListener("click", () => {downloadExport();});
+      //window["action-export"].addEventListener("click", () => {downloadExport();});
       window["action-save"].addEventListener("click", () => { serverPut(serverParam, exportPage(), (e) => {
         setSaved();
         console.log(`Saved to ${serverParam}`);
@@ -1470,10 +1484,9 @@ button.control:hover {
       });
     } else {
       window["action-save"].addEventListener("click", () => {removePendingCardAction(); setSaved(); downloadPage();});
-      window["action-export"].addEventListener("click", () => {downloadExport(); setSaved();});
+      //window["action-export"].addEventListener("click", () => {downloadExport(); setSaved();});
     }
 
-    window["action-import"].addEventListener("click", () => window['import-file'].click());
     window["action-gridsnap"].addEventListener("click", (event) => toggleControl(event.target, "grid-snap"));
     window["action-pageview"].addEventListener("click", (event) => toggleControl(event.target, "page-view"));
     window["action-darkmode"].addEventListener("click", (event) => toggleControl(event.target, "dark-mode"));
@@ -1487,6 +1500,10 @@ button.control:hover {
     window["action-newimage"].addEventListener("click", () => window['import-image'].click()); //addCard("image"));
     window["action-resetview"].addEventListener("click", () => main.style = "");
 
+    window["tool-import"].addEventListener("click", () => window['import-file'].click());
+    window["tool-export"].addEventListener("click", () => {downloadExport();});
+    window["tool-clone"].addEventListener("click", () => {removePendingCardAction(); downloadPage();});
+
     let searchTimeout = null;
     window["search"].addEventListener("input", () => {
       if(searchTimeout !== null) {
@@ -1497,12 +1514,18 @@ button.control:hover {
       }, AUTOMARKDOWNDELAY);
     });
 
+    window["tool-toggle"].addEventListener('click', (e) => {
+      e.preventDefault();
+      toggleHidden(window['tool-tray']);
+    });
+
     window.addEventListener('beforeunload', function (event) {
       if (isUnsaved()) {
         event.preventDefault();
         event.returnValue = ''; // Chrome requires returnValue to be set
       }
     });
+
 
     let lastBodyMouse = null;
     window['main-block'].addEventListener("wheel", (event) => {
@@ -1929,8 +1952,14 @@ button.control:hover {
   <div id="sidebar">
     <div id="app-info">
       <a target="_blank" href="https://github.com/randomouscrap98/deskmess">Deskmess</a>
-      <span id="app-version" class="no-interaction">v0.8.2</span>
+      <span id="app-version" class="no-interaction">v0.9.0</span>
       <span>| haloopdy 2025</span>
+      <a href="#tools" id="tool-toggle">⚙️</a>
+      <div id="tool-tray" class="hidden">
+        <button id="tool-export">📤 Export json</button>
+        <button id="tool-import">📥 Import json</button>
+        <button id="tool-clone">📃 Clone page</button>
+      </div>
     </div>
     <div id="sidebar-controls">
       <input id="search" placeholder="Search">
@@ -1954,8 +1983,8 @@ button.control:hover {
       <button class="control deactivated" id="action-darkmode" title="Toggle darkmode">🌒</button>
       <button class="control deactivated" id="action-modern" title="Toggle modern">🤔</button>
       <button class="control deactivated" id="action-sidebar" title="Toggle sidebar">🎚️</button>
-      <button class="control" id="action-import" title="Import page">📥</button>
-      <button class="control" id="action-export" title="Export page">📤</button>
+      <!--<button class="control" id="action-import" title="Import page">📥</button>
+      <button class="control" id="action-export" title="Export page">📤</button>-->
       <button class="control" id="action-save" title="Save page">💾</button>
     </div>
     <input type="file" title="Select a JSON file to import" accept=".json" id="import-file" class="hidden" onchange="importTrigger(event)" />
@@ -1988,7 +2017,6 @@ button.control:hover {
           <span class="title">UNKNOWN</span>
           <input type="text" class="edit-title hidden" 
               onkeydown="title_keydown(event)" oninput="title_input(event)" onchange="setValueAttr(event)">
-          <time></time>
         </div>
         <a href="#" class="toggle-editor-direct hidden" onclick="toggleHidden(getCardEditor(cardEvent(event)))">📝</a>
         <a href="#" class="toggle-menu" onclick="toggleHidden(getCardMenu(cardEvent(event)))">⚙️</a>
@@ -2009,6 +2037,7 @@ button.control:hover {
           <div class="card-info">
             <div>id: <span class="card-id"></span></div>
             <div>ref: <a href="#" class="card-ref"></a></div>
+            <div>date: <time></time></div>
             <div>type: <span class="card-type"></span></div>
             <div>from: <span class="card-from"></span></div>
             <div>parent: <a href="#" class="card-parent"></a></div> </div>
