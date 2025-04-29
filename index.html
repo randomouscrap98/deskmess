@@ -277,6 +277,9 @@ button.control:hover {
   transition: background 0.1s ease-in,
     box-shadow 0.1s ease-in;
 }
+.card.minimized {
+  height: unset !important;
+}
 
 .card input[type="checkbox"] {
   width: 1em;
@@ -341,11 +344,6 @@ button.control:hover {
   border-radius: 0.25em;
   border: none;
 }
-/*.card .top time {
-  flex: none;
-  font-size: 0.8em;
-  opacity: 0.8;
-}*/
 
 .card .top .menu {
   position: absolute;
@@ -656,6 +654,7 @@ button.control:hover {
   left: unset !important;
   padding: 0.5rem;
   box-sizing: border-box;
+  align-items: flex-start;
 }
 .page-view.open-sidebar #main-container {
   /* NOTE: this is required to make #links work correctly in visual mode */
@@ -744,6 +743,7 @@ button.control:hover {
 <script>
   const MCKEY = "main-container";
   const NEXTIDKEY = "data-nextid";
+  const MINIMIZEDCLASS = "minimized";
   const MODRESIZERIGHT = 1;
   const MODRESIZEBOTTOM = 2;
   const MODMOVECARDS = 4;
@@ -993,6 +993,7 @@ button.control:hover {
       id: getCardId(card).textContent,
       ref: getCardRef(card).textContent,
       parent: getCardParent(card).textContent,
+      minimized: card.classList.contains(MINIMIZEDCLASS),
       x: ofs.x,
       y: ofs.y,
       z: ofs.z,
@@ -1077,6 +1078,9 @@ button.control:hover {
     } else if(cdata.type == "drawing") {
       if(cdata.draw_data) 
         getCardContent(card).querySelector("svg").innerHTML = cdata.draw_data;
+    }
+    if(cdata.minimized) {
+      card.querySelector(".toggle-minimize").click();
     }
     return card;
   }
@@ -1691,6 +1695,22 @@ button.control:hover {
     }
   }
 
+  function menu_minimize(event) {
+    let card = cardEvent(event);
+    let content = getCardContent(card);
+    let bottom_resize = card.querySelector(".bottom-resize");
+    const hidden = toggleHidden(content);
+    if(hidden) { // minimized
+      event.target.textContent = "➕";
+      card.classList.add(MINIMIZEDCLASS);
+      setHidden(bottom_resize);
+    } else {
+      event.target.textContent = "➖";
+      card.classList.remove(MINIMIZEDCLASS);
+      setUnhidden(bottom_resize);
+    }
+  }
+
   function menu_setUnsetParent(event) {
     let card = cardEvent(event);
     // If card already has a parent, need to unset it. Otherwise begin the
@@ -2018,6 +2038,7 @@ button.control:hover {
           <input type="text" class="edit-title hidden" 
               onkeydown="title_keydown(event)" oninput="title_input(event)" onchange="setValueAttr(event)">
         </div>
+        <a href="#" class="toggle-minimize" onclick="menu_minimize(event)">➖</a>
         <a href="#" class="toggle-editor-direct hidden" onclick="toggleHidden(getCardEditor(cardEvent(event)))">📝</a>
         <a href="#" class="toggle-menu" onclick="toggleHidden(getCardMenu(cardEvent(event)))">⚙️</a>
         <div class="menu hidden">
