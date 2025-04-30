@@ -822,9 +822,11 @@ button.control:hover {
   function getCardTitle(card) { return card.querySelector('.top .title'); }
   function getCardDate(card) { return card.querySelector('.top time'); }
   function getCardContent(card) { return card.querySelector(':scope > .content'); }
+  function getCardConnector(card) { return card.parentNode.querySelector(`.card-connector[data-cardset="${card.id}"]`); }
   function getCardEditor(card) { return card.querySelector('.content .editor'); }
   function getCardMenu(card) { return card.querySelector('.menu'); }
   function getCardTitleEdit(card) { return card.querySelector('.edit-title'); }
+  function getCardMinimizeToggle(card) { return card.querySelector('.toggle-minimize'); }
   function getCardFrom(card) { return card.querySelector(".card-from"); }
   function getCardType(card) { return card.querySelector(".card-type"); }
   function getCardId(card) { return card.querySelector(".card-id"); } // Id from INFO, not actual id
@@ -832,7 +834,12 @@ button.control:hover {
   function getCardParent(card) { return card.querySelector(".card-parent"); }
   function getCardChildren(card) { return window[MCKEY].querySelectorAll(`.card[data-parent="${card.id}"]`) }
   function getRootCards() { return window[MCKEY].querySelectorAll(`.card:not([data-parent])`) }
+  function isCardMinimized(card) { return card.classList.contains(MINIMIZEDCLASS) }
   function bringToFront(card) { card.style.zIndex = findMaxCardIndex() + 1; } // Increase forever
+  function applyWholeCard(card, apply) {
+    apply(card);
+    apply(getCardConnector(card));
+  }
   function getCardAllChildren(card) {
     let seen = {};
     seen[card.id] = true; // can't be a child of yourself (well you can... but)
@@ -847,33 +854,67 @@ button.control:hover {
     }
     return result;
   }
+  // Reset the styling on card so it connects to its parrent
+  function resetConnector(card) {
+    let con = getCardConnector(card);
+    let parent = getCardParent(card);
+    if(!parent.textContent) {
+      console.warn("Couldn't set card parent connector for " + card.id + ", element doesn't exist");
+      return;
+    }
+    let pelm = document.getElementById(parent.textContent);
+    let cofs = getOffset(card);
+    let pofs = getOffset(pelm);
+    pofs.x += pofs.width / 2;
+    pofs.y += pofs.height / 2;
+    cofs.x += cofs.width / 2;
+    cofs.y += isCardMinimized(card) ? 1.4 : cofs.height / 2;
+    const xofs = pofs.x - cofs.x;
+    const yofs = pofs.y - cofs.y;
+    con.style.left = cofs.x + "em";
+    con.style.top = cofs.y + "em";
+    con.style.width = Math.abs(xofs) + "em";
+    con.style.height = Math.abs(yofs) + "em";
+    con.style.transform = `scale(${Math.sign(xofs) || 1}, ${Math.sign(yofs) || 1})`;
+  }
+  function resetMinimizedStyle(card) {
+    let content = getCardContent(card);
+    let bottom_resize = card.querySelector(".bottom-resize");
+    let minimizeToggle = getCardMinimizeToggle(card);
+    if(isCardMinimized(card)) {
+      setHidden(content);
+      let children = getCardAllChildren(card);
+      children.forEach(c => applyWholeCard(c, setHidden));
+      minimizeToggle.textContent = "➕";
+      card.classList.add(MINIMIZEDCLASS);
+      setHidden(bottom_resize);
+      resetConnector(card);
+    } else {
+      setUnhidden(content);
+      let children = Array.from(getCardChildren(card));
+      while(children.length) {
+        let cc = children.pop(); // doesn't matter where?
+        if(!isCardMinimized(cc)) {
+          children = children.concat(Array.from(getCardChildren(cc)));
+        }
+        applyWholeCard(cc, setUnhidden);
+      }
+      minimizeToggle.textContent = "➖";
+      card.classList.remove(MINIMIZEDCLASS);
+      setUnhidden(bottom_resize);
+      resetConnector(card);
+    }
+  }
   function setCardParent(card, parent) { // parent should be a string
     let cp = getCardParent(card); // the element, not the value
     let cpmenu = getCardMenu(card).querySelector(".set-parent");
     parent = parent || "";
     cp.textContent = parent;
     cp.href = "#" + parent;
-    let con = card.parentNode.querySelector(`.card-connector[data-cardset="${card.id}"]`);
+    let con = getCardConnector(card);
     if(parent) {
       card.setAttribute("data-parent", parent);
-      let pelm = document.getElementById(parent);
-      if(!pelm) {
-        console.warn("Couldn't set card parent connector for " + parent + ", element doesn't exist");
-        return;
-      }
-      let cofs = getOffset(card);
-      let pofs = getOffset(pelm);
-      pofs.x += pofs.width / 2;
-      pofs.y += pofs.height / 2;
-      cofs.x += cofs.width / 2;
-      cofs.y += cofs.height / 2;
-      const xofs = pofs.x - cofs.x;
-      const yofs = pofs.y - cofs.y;
-      con.style.left = cofs.x + "em";
-      con.style.top = cofs.y + "em";
-      con.style.width = Math.abs(xofs) + "em";
-      con.style.height = Math.abs(yofs) + "em";
-      con.style.transform = `scale(${Math.sign(xofs) || 1}, ${Math.sign(yofs) || 1})`;
+      resetConnector(card);
       setUnhidden(con);
       cpmenu.textContent = "Clear parent";
     } else {
@@ -993,7 +1034,7 @@ button.control:hover {
       id: getCardId(card).textContent,
       ref: getCardRef(card).textContent,
       parent: getCardParent(card).textContent,
-      minimized: card.classList.contains(MINIMIZEDCLASS),
+      minimized: isCardMinimized(card),
       x: ofs.x,
       y: ofs.y,
       z: ofs.z,
@@ -1080,7 +1121,7 @@ button.control:hover {
         getCardContent(card).querySelector("svg").innerHTML = cdata.draw_data;
     }
     if(cdata.minimized) {
-      card.querySelector(".toggle-minimize").click();
+      getCardMinimizeToggle(card).click();
     }
     return card;
   }
@@ -1191,7 +1232,8 @@ button.control:hover {
       Object.keys(jsonData.cards).forEach(key => importCard(jsonData.cards[key]));
       // After, some parents may need to be reconnected
       document.querySelectorAll(".card").forEach(card => {
-        setCardParent(card, getCardParent(card).textContent);
+        resetConnector(card);
+        resetMinimizedStyle(card);
       });
       // TODO: this is bad
       if(forceSaveState === undefined) forceSaveState = !getRemoteName();
@@ -1616,8 +1658,8 @@ button.control:hover {
               c.card.style.left = lastBodyMouse.snapEm(c.cofs.x + xofs) + "em";
               c.card.style.top = lastBodyMouse.snapEm(c.cofs.y + yofs) + "em";
             }
-            // HORRIBLE!!
-            setCardParent(c.card, c.card.getAttribute("data-parent"));
+            resetConnector(c.card);
+            // setCardParent(c.card, c.card.getAttribute("data-parent"));
           });
         }
         else { // Working solely on main
@@ -1697,18 +1739,8 @@ button.control:hover {
 
   function menu_minimize(event) {
     let card = cardEvent(event);
-    let content = getCardContent(card);
-    let bottom_resize = card.querySelector(".bottom-resize");
-    const hidden = toggleHidden(content);
-    if(hidden) { // minimized
-      event.target.textContent = "➕";
-      card.classList.add(MINIMIZEDCLASS);
-      setHidden(bottom_resize);
-    } else {
-      event.target.textContent = "➖";
-      card.classList.remove(MINIMIZEDCLASS);
-      setUnhidden(bottom_resize);
-    }
+    card.classList.toggle(MINIMIZEDCLASS);
+    resetMinimizedStyle(card);
   }
 
   function menu_setUnsetParent(event) {
