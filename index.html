@@ -862,7 +862,7 @@ button.control:hover {
     let con = getCardConnector(card);
     let parent = getCardParent(card);
     if(!parent.textContent) {
-      console.warn("Couldn't set card parent connector for " + card.id + ", element doesn't exist");
+      console.debug("Couldn't set card parent connector for " + card.id + ", element doesn't exist");
       return;
     }
     let pelm = document.getElementById(parent.textContent);
@@ -1166,6 +1166,20 @@ button.control:hover {
     return result;
   }
 
+  // Sometimes exports have some funny issues. Clear them up
+  function fixExport(exp) {
+    // Fix up cards that have no parent
+    for (var key in exp.cards) {
+      if (exp.cards.hasOwnProperty(key)) {
+        let parent = exp.cards[key].parent;
+        if(parent && !exp.cards[parent]) {
+          console.warn(`REMOVING UNKNOWN PARENT FROM ${key}: ${parent}`);
+          exp.cards[key].parent = "";
+        }
+      }
+    }
+  }
+
   function downloadPage() {
     // Get the HTML of the current page
     var doc = document.documentElement.outerHTML;
@@ -1175,13 +1189,13 @@ button.control:hover {
     downloadBlob(blob, getCurrentName() + ".html");
   }
 
-  function downloadExport() {
-    const exp = exportPage();
+  function downloadExport(parent) {
+    const exp = exportPage(parent);
     var blob = new Blob([exp], {type: 'application/json'});
     downloadBlob(blob, getCurrentName() + ".json");
   }
 
-  function exportPage() {
+  function exportPage(parent) {
     offset = getMainOffset();
     let exp = {
       file_version: "1",
@@ -1195,9 +1209,18 @@ button.control:hover {
       open_sidebar: controlEnabled(window['action-sidebar']),
       cards: {}
     };
-    document.querySelectorAll(".card").forEach(card => {
-      exp.cards[card.id] = exportCard(card);
-    });
+    if(parent) {
+      exp.cards[parent.id] = exportCard(parent);
+      getCardAllChildren(parent).forEach(card => {
+        exp.cards[card.id] = exportCard(card);
+      });
+    } else {
+      document.querySelectorAll(".card").forEach(card => {
+        exp.cards[card.id] = exportCard(card);
+      });
+    }
+    // TODO: this is lazy, probably don't want to do this!
+    fixExport(exp);
     return JSON.stringify(exp);
   }
 
@@ -1217,6 +1240,7 @@ button.control:hover {
     try {
       const jsonData = JSON.parse(page);
       console.log('Parsed JSON successfully');
+      fixExport(jsonData);
       if(jsonData.file_version != "1") {
         throw "Invalid or unknown file version";
       }
@@ -1501,7 +1525,6 @@ button.control:hover {
 
     if(localParam) {
       console.log("Using local IndexedDB to store " + localParam);
-      //window["action-export"].addEventListener("click", () => {downloadExport();});
       window["action-save"].addEventListener("click", () => { exportsDbPut(localParam, exportPage(), (e) => {
         setSaved();
         console.log(`Saved to ${localParam}`);
@@ -1517,7 +1540,6 @@ button.control:hover {
       });
     } else if (serverParam) {
       console.log("Using server to store: " + serverParam);
-      //window["action-export"].addEventListener("click", () => {downloadExport();});
       window["action-save"].addEventListener("click", () => { serverPut(serverParam, exportPage(), (e) => {
         setSaved();
         console.log(`Saved to ${serverParam}`);
@@ -1533,7 +1555,6 @@ button.control:hover {
       });
     } else {
       window["action-save"].addEventListener("click", () => {removePendingCardAction(); setSaved(); downloadPage();});
-      //window["action-export"].addEventListener("click", () => {downloadExport(); setSaved();});
     }
 
     window["action-gridsnap"].addEventListener("click", (event) => toggleControl(event.target, "grid-snap"));
@@ -2088,6 +2109,7 @@ button.control:hover {
           <a href="#" class="toggle-editor hidden" 
             onclick="toggleHidden(getCardEditor(cardEvent(event)))">Toggle editor</a>
           <a href="#" class="set-parent" onclick="menu_setUnsetParent(event)">Set Parent</a>
+          <a href="#" class="export-tree" onclick="downloadExport(cardEvent(event))">Export tree</a>
           <a href="#" onclick="menu_delete(event)">Delete card</a>
           <a href="#" onclick="menu_deletetree(event)">Delete tree</a>
           <div class="card-info">
