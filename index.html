@@ -755,6 +755,8 @@ button.control:hover {
   const CARDOFSX = 2;
   const CARDOFSY = 2;
   const AUTOMARKDOWNDELAY = 300; // ms
+  const IMPORTMSG = "Importing will OVERWRITE all existing data on this page! This is intended for version upgrades!\n\nAre you sure you want to remove all data and import?";
+  const APPENDMSG = "Appending will add all cards from an import at the current location. It will modify the cards to have new ids and references.\n\nAre you sure you want to append?";
 
   // Funny math!
   function clamp(v, min, max) {
@@ -1224,26 +1226,43 @@ button.control:hover {
     return JSON.stringify(exp);
   }
 
-  function importTrigger(event) {
+  function fileTrigger(event, callback, msg) {
     const file = event.target.files[0];
-    if(file && confirm("Importing will OVERWRITE all existing data on this page! This is intended for version upgrades!\n\nAre you sure you want to remove all data and import?")) {
-      console.log("User is importing " + file.name);
+    if(file && (!msg || confirm(msg))) {
+      console.log("User is loading file " + file.name);
       const reader = new FileReader();
-      reader.onload = (e) => importPage(e.target.result);
+      reader.onload = (e) => callback(e.target.result);
       reader.readAsText(file);
     } else {
-      console.log("Quit import (no files)");
+      console.log("Quit load (no files)");
     }
+  }
+
+  function importImageTrigger(event) {
+    const file = event.target.files[0];
+    if(file) {
+      console.log("User is importing image " + file.name);
+      const reader = new FileReader();
+      reader.onload = (e) => addCard("image", {image_data:e.target.result});
+      reader.readAsDataURL(file);
+    } else {
+      console.log("Quit image import (no files)");
+    }
+  }
+
+  function parsePage(page) {
+    const jsonData = JSON.parse(page);
+    console.log('Parsed JSON successfully');
+    fixExport(jsonData);
+    if(jsonData.file_version != "1") {
+      throw "Invalid or unknown file version";
+    }
+    return jsonData;
   }
 
   function importPage(page, forceSaveState) {
     try {
-      const jsonData = JSON.parse(page);
-      console.log('Parsed JSON successfully');
-      fixExport(jsonData);
-      if(jsonData.file_version != "1") {
-        throw "Invalid or unknown file version";
-      }
+      const jsonData = parsePage(page);
       window[MCKEY].innerHTML = "";
       window[MCKEY].style = "";
       if(jsonData.offset) {
@@ -1275,15 +1294,41 @@ button.control:hover {
     }
   }
 
-  function importImageTrigger(event) {
-    const file = event.target.files[0];
-    if(file) {
-      console.log("User is importing image " + file.name);
-      const reader = new FileReader();
-      reader.onload = (e) => addCard("image", {image_data:e.target.result});
-      reader.readAsDataURL(file);
-    } else {
-      console.log("Quit image import (no files)");
+  function appendPage(page) {
+    try {
+      const jsonData = parsePage(page);
+      const idAppend = "_i" + nextCardId();
+      const zTop = findMaxCardIndex() + 1;
+      // This offset will be added to all the cards so they "appear" at the current location
+      const mofs = getMainOffset();
+      mofs.x = pxToEm(mofs.x, window[MCKEY]);
+      mofs.y = pxToEm(mofs.y, window[MCKEY]);
+      Object.keys(jsonData.cards).forEach(key => {
+        // Modify the id, ref, and parent to include the unique identifier (no collisions)
+        jsonData.cards[key].id += idAppend;
+        jsonData.cards[key].ref += idAppend;
+        if(jsonData.cards[key].parent) {
+          jsonData.cards[key].parent += idAppend;
+        }
+        // Modify the offset of the card, and make sure the new tree is on top,
+        // but preserves the original sorting
+        jsonData.cards[key].x -= mofs.x;
+        jsonData.cards[key].y -= mofs.y;
+        jsonData.cards[key].z += zTop;
+        importCard(jsonData.cards[key]);
+      });
+      // After, some parents may need to be reconnected
+      document.querySelectorAll(".card").forEach(card => {
+        resetConnector(card);
+        resetMinimizedStyle(card);
+      });
+      setUnsaved();
+      rebuildTree();
+      console.log('Successfully appended data');
+    }
+    catch(err) {
+      console.error(err, err.stack);
+      alert(`Couldn't parse append: ${err}`);
     }
   }
 
@@ -1567,10 +1612,11 @@ button.control:hover {
     window["action-newchat"].addEventListener("click", () => addCard("chat"));
     window["action-newtodo"].addEventListener("click", () => addCard("todo"));
     window["action-newdrawing"].addEventListener("click", () => addCard("drawing"));
-    window["action-newimage"].addEventListener("click", () => window['import-image'].click()); //addCard("image"));
+    window["action-newimage"].addEventListener("click", () => window['import-image'].click());
     window["action-resetview"].addEventListener("click", () => main.style = "");
 
     window["tool-import"].addEventListener("click", () => window['import-file'].click());
+    window["tool-append"].addEventListener("click", () => window['append-file'].click());
     window["tool-export"].addEventListener("click", () => {downloadExport();});
     window["tool-clone"].addEventListener("click", () => {removePendingCardAction(); downloadPage();});
 
@@ -2034,6 +2080,7 @@ button.control:hover {
       <div id="tool-tray" class="hidden">
         <button id="tool-export">📤 Export json</button>
         <button id="tool-import">📥 Import json</button>
+        <button id="tool-append">📥 Append json</button>
         <button id="tool-clone">📃 Clone page</button>
       </div>
     </div>
@@ -2059,11 +2106,10 @@ button.control:hover {
       <button class="control deactivated" id="action-darkmode" title="Toggle darkmode">🌒</button>
       <button class="control deactivated" id="action-modern" title="Toggle modern">🤔</button>
       <button class="control deactivated" id="action-sidebar" title="Toggle sidebar">🎚️</button>
-      <!--<button class="control" id="action-import" title="Import page">📥</button>
-      <button class="control" id="action-export" title="Export page">📤</button>-->
       <button class="control" id="action-save" title="Save page">💾</button>
     </div>
-    <input type="file" title="Select a JSON file to import" accept=".json" id="import-file" class="hidden" onchange="importTrigger(event)" />
+    <input type="file" title="Select a JSON file to import" accept=".json" id="import-file" class="hidden" onchange="fileTrigger(event, importPage, IMPORTMSG)" />
+    <input type="file" title="Select a JSON file to append" accept=".json" id="append-file" class="hidden" onchange="fileTrigger(event, appendPage, APPENDMSG)" />
     <input type="file" title="Select an image to import" accept="image/*" id="import-image" class="hidden" onchange="importImageTrigger(event)" />
   </footer>
 
