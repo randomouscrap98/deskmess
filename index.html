@@ -899,7 +899,8 @@ button.control:hover {
       card.classList.add(MINIMIZEDCLASS);
       setHidden(bottom_resize);
       resetConnector(card);
-    } else {
+    } else if (!isHidden(card)) {
+      // If you yourself are hidden, there's nothing to do for minimization
       setUnhidden(content);
       let children = Array.from(getCardChildren(card));
       while(children.length) {
@@ -1332,7 +1333,6 @@ button.control:hover {
         cardRefMapping[origRef] = newRef;
         jsonData.cards[key].id = String(newId);
         jsonData.cards[key].ref = newRef;
-        // jsonData.cards[key].oldref = origRef;
       });
       Object.keys(jsonData.cards).forEach(key => {
         let card = jsonData.cards[key];
@@ -2109,7 +2109,7 @@ button.control:hover {
   <div id="sidebar">
     <div id="app-info">
       <a target="_blank" href="https://github.com/randomouscrap98/deskmess">Deskmess</a>
-      <span id="app-version" class="no-interaction">v0.9.0</span>
+      <span id="app-version" class="no-interaction">v0.9.1</span>
       <span>| haloopdy 2025</span>
       <a href="#tools" id="tool-toggle">⚙️</a>
       <div id="tool-tray" class="hidden">
