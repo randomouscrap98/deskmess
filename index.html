@@ -811,7 +811,11 @@ button.control:hover {
   }
   function setMarkdown(element, text, inline) { 
     element.innerHTML = inline ? marked.parseInline(text) : marked.parse(text);
-    element.querySelectorAll("a").forEach(x => x.setAttribute("target", "_blank"));
+    element.querySelectorAll("a").forEach(x => {
+      if(x.getAttribute('href').indexOf("#") != 0) {
+        x.setAttribute("target", "_blank");
+      }
+    });
   }
 
   function radio(element) {
@@ -1227,6 +1231,9 @@ button.control:hover {
     return JSON.stringify(exp);
   }
 
+  // Generic event handler for file input. Will pull the first file, read as text,
+  // then call the callback with the result. Can also optionally prompt before applying
+  // the callback
   function fileTrigger(event, callback, msg) {
     const file = event.target.files[0];
     if(file && (!msg || confirm(msg))) {
@@ -1251,6 +1258,7 @@ button.control:hover {
     }
   }
 
+  // Parse raw data for an export, testing file versions and fixing fixable data.
   function parsePage(page) {
     const jsonData = JSON.parse(page);
     console.log('Parsed JSON successfully');
@@ -1261,6 +1269,8 @@ button.control:hover {
     return jsonData;
   }
 
+  // Full import the given raw export, setting the entire state to exactly as it was 
+  // at the export, fully overwriting whatever is currently loaded with the import
   function importPage(page, forceSaveState) {
     try {
       const jsonData = parsePage(page);
@@ -1295,6 +1305,8 @@ button.control:hover {
     }
   }
 
+  // Append only the cards from the given raw export with the current position set as the
+  // origin. This effectively imports the cards "here", throwing away zoom/offset/settings.
   function appendPage(page) {
     try {
       const jsonData = parsePage(page);
@@ -1304,29 +1316,41 @@ button.control:hover {
       const mofs = getMainOffset();
       mofs.x = pxToEm(mofs.x, window[MCKEY]);
       mofs.y = pxToEm(mofs.y, window[MCKEY]);
-      let cardIdMapping = {};
       let cardRefMapping = {};
+      let fixRefs = function(t) {
+        Object.keys(cardRefMapping).forEach(key => {
+          t = t.replaceAll("#" + key, "#" + cardRefMapping[key]);
+        });
+        return t;
+      }
       Object.keys(jsonData.cards).forEach(key => {
         // First, we have to establish the new ids and references, and build up a 
         // mapping of old to new
-        const origId = Number(jsonData.cards[key].id);
-        const newId = origId + nextId;
+        const newId = Number(jsonData.cards[key].id) + nextId;
         const origRef = jsonData.cards[key].ref;
         const newRef = REFPREPEND + String(newId);
-        cardIdMapping[origId] = newId;
         cardRefMapping[origRef] = newRef;
         jsonData.cards[key].id = String(newId);
         jsonData.cards[key].ref = newRef;
+        // jsonData.cards[key].oldref = origRef;
       });
       Object.keys(jsonData.cards).forEach(key => {
+        let card = jsonData.cards[key];
         // We don't care if there's a parent or not, this will still work.
-        jsonData.cards[key].parent = cardRefMapping[jsonData.cards[key].parent] || "";
+        card.parent = cardRefMapping[card.parent] || "";
+        // Now that we have a mapping, we can attempt to fix up references (if there are any)
+        if(card.text) {
+          card.text = fixRefs(card.text);
+        }
+        if(card.messages) {
+          for(let i = 0; i < card.messages.length; i++) {
+            card.messages[i].message = fixRefs(card.messages[i].message);
+          }
+        }
         // Modify the offset of the card, and make sure the new tree is on top,
         // but preserves the original sorting
-        jsonData.cards[key].x -= mofs.x;
-        jsonData.cards[key].y -= mofs.y;
-        jsonData.cards[key].z += zTop;
-        importCard(jsonData.cards[key]);
+        card.x -= mofs.x; card.y -= mofs.y; card.z += zTop;
+        importCard(card);
       });
       // After, some parents may need to be reconnected
       document.querySelectorAll(".card").forEach(card => {
