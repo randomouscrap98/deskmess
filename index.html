@@ -868,11 +868,11 @@ button.control:hover {
   function resetConnector(card) {
     let con = getCardConnector(card);
     let parent = getCardParent(card);
-    if(!parent.textContent) {
+    let pelm = document.getElementById(parent.textContent || "___NOELM___");
+    if(!pelm) {
       console.debug("Couldn't set card parent connector for " + card.id + ", element doesn't exist");
       return;
     }
-    let pelm = document.getElementById(parent.textContent);
     let cofs = getOffset(card);
     let pofs = getOffset(pelm);
     pofs.x += pofs.width / 2;
