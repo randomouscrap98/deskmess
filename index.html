@@ -1764,7 +1764,6 @@ button.control:hover {
               c.card.style.top = lastBodyMouse.snapEm(c.cofs.y + yofs) + "em";
             }
             resetConnector(c.card);
-            // setCardParent(c.card, c.card.getAttribute("data-parent"));
           });
         }
         else { // Working solely on main
@@ -1926,7 +1925,7 @@ button.control:hover {
     let editor = getCardEditor(card);
     let list = content.querySelector(".todo-list");
     list.innerHTML = "";
-    let lines = editor.value.split('\n'); //.filter(line => line.trim() !== '');
+    let lines = editor.value.split('\n');
     for(let i = 0; i < lines.length; i++) {
       const line = lines[i].trim();
       if(!line) continue;
@@ -2109,7 +2108,7 @@ button.control:hover {
   <div id="sidebar">
     <div id="app-info">
       <a target="_blank" href="https://github.com/randomouscrap98/deskmess">Deskmess</a>
-      <span id="app-version" class="no-interaction">v0.9.1</span>
+      <span id="app-version" class="no-interaction">v0.9.2</span>
       <span>| haloopdy 2025</span>
       <a href="#tools" id="tool-toggle">⚙️</a>
       <div id="tool-tray" class="hidden">
