@@ -2300,7 +2300,7 @@ button.control:hover {
   </template>
 
   <template id="template-chat">
-    <div class="messages card-main"></div>
+    <div class="messages markdown card-main"></div>
     <textarea class="editor"
       onkeydown="if(event.keyCode===13 && !event.shiftKey){card=cardEvent(event); sendMessage(card,event.target.value); event.target.value='';}"></textarea>
   </template>
