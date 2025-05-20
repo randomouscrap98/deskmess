@@ -1030,6 +1030,10 @@ button.control:hover {
     }, 10000);
   }
 
+  function altAlert(msg) {
+    alert(msg);
+  }
+
   function downloadBlob(blob, name) {
     // Create an anchor element to create the download link
     var a = document.createElement('a');
@@ -1310,7 +1314,7 @@ button.control:hover {
       console.log('Successfully imported data');
     } catch (err) {
       console.error(err, err.stack);
-      alert(`Couldn't parse import: ${err}`);
+      altAlert(`Couldn't parse import: ${err}`);
     }
   }
 
@@ -1371,7 +1375,7 @@ button.control:hover {
     }
     catch(err) {
       console.error(err, err.stack);
-      alert(`Couldn't parse append: ${err}`);
+      altAlert(`Couldn't parse append: ${err}`);
     }
   }
 
@@ -1650,7 +1654,7 @@ button.control:hover {
         if(value) {
           importPage(value.value, true);
         } else {
-          alert(`You are creating a new browser-backed save at ${localParam}. Auto saves are enabled and all saves are stored in the browser. Bookmark this page for future use!`);
+          altAlert(`You are creating a new browser-backed save at ${localParam}. Auto saves are enabled and all saves are stored in the browser. Bookmark this page for future use!`);
           window["action-save"].click();
         }
         setInterval(() => window["action-save"].click(), 60000);
@@ -1665,7 +1669,7 @@ button.control:hover {
         if(value) {
           importPage(value, true);
         } else {
-          alert(`You are creating a new server-backed save at ${serverParam}. Auto saves are enabled and all saves are stored on the server. Bookmark this page for future use!`);
+          altAlert(`You are creating a new server-backed save at ${serverParam}. Auto saves are enabled and all saves are stored on the server. Bookmark this page for future use!`);
           window["action-save"].click();
         }
         setInterval(() => window["action-save"].click(), 60000);
@@ -1906,7 +1910,7 @@ button.control:hover {
         const pref = parent.id;
         const cref = card.id;
         if(pref == cref) {
-          alert("Can't set self as parent!");
+          altAlert("Can't set self as parent!");
           return false;
         }
         setCardParent(card, pref);
