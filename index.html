@@ -220,6 +220,9 @@ footer {
   display: flex;
   gap: 0.25em;
 }
+.hidden-buttons #controls:not(:hover) button:not(:last-child) {
+  display: none;
+}
 
 button.control {
   width: 2em;
@@ -1227,6 +1230,7 @@ button.control:hover {
       app_version: getProductVersion(),
       export_date: new Date().toISOString(),
       offset: offset,
+      hidden_buttons: controlEnabled(window['action-hidebuttons']),
       modern: controlEnabled(window['action-modern']),
       dark_mode: controlEnabled(window['action-darkmode']),
       page_view: controlEnabled(window['action-pageview']),
@@ -1299,6 +1303,7 @@ button.control:hover {
         window[MCKEY].style.left = jsonData.offset.x + "px";
         window[MCKEY].style.top = jsonData.offset.y + "px";
       }
+      setControl(window['action-hidebuttons'], jsonData.hidden_buttons);
       setControl(window['action-modern'], jsonData.modern);
       setControl(window['action-darkmode'], jsonData.dark_mode);
       setControl(window['action-pageview'], jsonData.page_view);
@@ -1687,6 +1692,7 @@ button.control:hover {
     window["action-pageview"].addEventListener("click", (event) => toggleControl(event.target, "page-view"));
     window["action-darkmode"].addEventListener("click", (event) => toggleControl(event.target, "dark-mode"));
     window["action-modern"].addEventListener("click", (event) => toggleControl(event.target, "modern"));
+    window["action-hidebuttons"].addEventListener("click", (event) => toggleControl(event.target, "hidden-buttons"));
     window["action-sidebar"].addEventListener("click", (event) => toggleControl(event.target, "open-sidebar"));
     window["action-cancelpending"].addEventListener("click", () => {removePendingCardAction();});
     window["action-newtext"].addEventListener("click", () => addCard("text"));
@@ -1754,8 +1760,12 @@ button.control:hover {
         let card = getContainingCard(event.target);
         let cards = [];
         let mods = 0;
+        // Close all menus if click outside of one
+        if(!getContainingMenu(event.target)) {
+          document.querySelectorAll('.card .menu').forEach(m => setHidden(m));
+        }
         if(card) {
-          if(!getContainingMenu(event.target)) setHidden(getCardMenu(card));
+          //if(!getContainingMenu(event.target)) setHidden(getCardMenu(card));
           cards.push({card:card, cofs:getOffset(card), main: true});
           bringAllToFront(card);
           if(event.target.classList.contains("right-resize")) {
@@ -2161,7 +2171,7 @@ button.control:hover {
   <div id="sidebar">
     <div id="app-info">
       <a target="_blank" href="https://github.com/randomouscrap98/deskmess">Deskmess</a>
-      <span id="app-version" class="no-interaction">v0.9.3</span>
+      <span id="app-version" class="no-interaction">v0.9.4</span>
       <span>| haloopdy 2025</span>
       <a href="#tools" id="tool-toggle">⚙️</a>
       <div id="tool-tray" class="hidden">
@@ -2192,6 +2202,7 @@ button.control:hover {
       <button class="control deactivated" id="action-pageview" title="View as page">📃</button>
       <button class="control deactivated" id="action-darkmode" title="Toggle darkmode">🌒</button>
       <button class="control deactivated" id="action-modern" title="Toggle modern">🤔</button>
+      <button class="control deactivated" id="action-hidebuttons" title="Toggle hide buttons">👁️</button>
       <button class="control deactivated" id="action-sidebar" title="Toggle sidebar">🎚️</button>
       <button class="control" id="action-save" title="Save page">💾</button>
     </div>
