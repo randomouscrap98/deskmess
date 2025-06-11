@@ -78,6 +78,36 @@ var TESTS = [
     cbd('action-modern', false);
   },
   function() {
+    console.log("Set parent test");
+    var card1 = window[REFPREPEND + "1"];
+    var card2 = window[REFPREPEND + "2"];
+    // set one card to be a parent of the other, through the functions
+    setCardParent(card1, card2.id);
+    // Open the menu first, just in case
+    // getCardMenu(card1).click();
+    // card1.querySelector(".set-parent").click();
+    // // Then click on card 2
+    // card2.click();
+    // Check if card2 has card1 as an (only) child
+    var children = Array.from(getCardChildren(card2));
+    if(children.length != 1) {
+      throw `Expected one child of card2, got ${children.length}`;
+    }
+    if(children[0] != card1) {
+      throw `Expected first child to be card1, got ${children[0]}`;
+    }
+  },
+  function() {
+    console.log("Bring to front tests");
+    // Can only test to see if they throw an exception
+    var card1 = window[REFPREPEND + "1"];
+    var card2 = window[REFPREPEND + "2"];
+    var card3 = window[REFPREPEND + "2"];
+    bringToFront(card3);
+    bringAllToFront(card2); // this has children
+    bringAllToFront(card1); // this has none
+  },
+  function() {
     TEST_ReloadPage("server=test1");
   },
   function() {

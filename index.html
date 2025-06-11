@@ -854,6 +854,11 @@ button.control:hover {
   function getRootCards() { return window[MCKEY].querySelectorAll(`.card:not([data-parent])`) }
   function isCardMinimized(card) { return card.classList.contains(MINIMIZEDCLASS) }
   function bringToFront(card) { card.style.zIndex = findMaxCardIndex() + 1; } // Increase forever
+  function bringAllToFront(card) {
+    bringToFront(card);
+    let children = getCardAllChildren(card);
+    children.forEach(c => bringToFront(c));
+  }
   function applyWholeCard(card, apply) {
     apply(card);
     apply(getCardConnector(card));
@@ -1623,7 +1628,7 @@ button.control:hover {
       let mc = window[MCKEY];
       mc.style.left = remToPx(CARDOFSX - emToRem(ofs.x, mc)) + "px";
       mc.style.top = remToPx(CARDOFSY - emToRem(ofs.y, mc)) + "px";
-      bringToFront(card);
+      bringAllToFront(card);
     }
   });
 
@@ -1752,7 +1757,7 @@ button.control:hover {
         if(card) {
           if(!getContainingMenu(event.target)) setHidden(getCardMenu(card));
           cards.push({card:card, cofs:getOffset(card), main: true});
-          bringToFront(card);
+          bringAllToFront(card);
           if(event.target.classList.contains("right-resize")) {
             mods = MODRESIZERIGHT;
             getCardChildren(card).forEach(c => cards.push({card:c, cofs:getOffset(c)}));
