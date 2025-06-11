@@ -1736,8 +1736,8 @@ button.control:hover {
         const mofs = getMainOffset();
         if (event.keyCode === 38) { mofs.y += ARROWMOVE; }  // Up arrow
         else if (event.keyCode === 40) { mofs.y -= ARROWMOVE; } // Down arrow
-        else if (event.keyCode === 37) { mofs.x -= ARROWMOVE; } // Left arrow
-        else if (event.keyCode === 39) { mofs.x += ARROWMOVE; } // Right arrow
+        else if (event.keyCode === 37) { mofs.x += ARROWMOVE; } // Left arrow
+        else if (event.keyCode === 39) { mofs.x -= ARROWMOVE; } // Right arrow
         main.style.left = mofs.x + "px";
         main.style.top = mofs.y + "px";
       }
@@ -1788,6 +1788,7 @@ button.control:hover {
           snapEm : controlEnabled(window["action-gridsnap"]) ?
             (v) => Math.round(v) : (v) => v 
         };
+        main.style.userSelect = "none"; // ALWAYS DO THIS
         //event.preventDefault();
         window.location.hash = ""; // to make life easier for people 
         return false;
@@ -1826,6 +1827,7 @@ button.control:hover {
     });
     window['main-block'].addEventListener("mouseup", (event) => {
       if(event.button === 0) {
+        main.style.removeProperty("user-select");
         if(lastBodyMouse) {
           lastBodyMouse = null;
           event.preventDefault();

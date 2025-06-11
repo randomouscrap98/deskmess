@@ -83,11 +83,6 @@ var TESTS = [
     var card2 = window[REFPREPEND + "2"];
     // set one card to be a parent of the other, through the functions
     setCardParent(card1, card2.id);
-    // Open the menu first, just in case
-    // getCardMenu(card1).click();
-    // card1.querySelector(".set-parent").click();
-    // // Then click on card 2
-    // card2.click();
     // Check if card2 has card1 as an (only) child
     var children = Array.from(getCardChildren(card2));
     if(children.length != 1) {
