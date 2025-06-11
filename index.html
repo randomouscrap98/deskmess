@@ -764,7 +764,6 @@ button.control:hover {
   const AUTOMARKDOWNDELAY = 300; // ms
   const IMPORTMSG = "Importing will OVERWRITE all existing data on this page! This is intended for version upgrades!\n\nAre you sure you want to remove all data and import?";
   const IMPORTMODMSG = "WARNING: mods are inserted DIRECTLY AS-IS and can permanently break the page! Make sure you save before testing mods!\n\nAre you sure you want to import?";
-    // Importing will OVERWRITE all existing data on this page! This is intended for version upgrades!\n\nAre you sure you want to remove all data and import?";
   const APPENDMSG = "Appending will add all cards from an import at the current location. It will modify the cards to have new ids and references.\n\nAre you sure you want to append?";
   const REFPREPEND = "card_";
 
@@ -1286,6 +1285,7 @@ button.control:hover {
       const reader = new FileReader();
       reader.onload = (e) => callback(e.target.result);
       reader.readAsText(file);
+      event.target.value = '';
     } else {
       console.log("Quit load (no files)");
     }
@@ -1298,6 +1298,7 @@ button.control:hover {
       const reader = new FileReader();
       reader.onload = (e) => addCard("image", {image_data:e.target.result});
       reader.readAsDataURL(file);
+      event.target.value = '';
     } else {
       console.log("Quit image import (no files)");
     }
