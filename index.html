@@ -506,11 +506,10 @@ button.control:hover {
 /* Todo */
 .todo-list { }
 .todo-list .todo-item {
-  margin: 0.1em;
   display: flex;
   gap: 0.35em;
   align-items: center;
-  padding: 0.1em 0.2em;
+  padding: 0.1em 0.3em;
 }
 .modern .todo-list .todo-item {
   border-radius: 0.35em;
@@ -527,7 +526,8 @@ button.control:hover {
 }
 
 /* Markdown */
-.content .markdown { padding: 0.5em; line-height: 1.4; }
+.content .markdown { line-height: 1.4; }
+.content > .markdown { padding: 0.5em; }
 .modern .card .content .markdown { padding: 0.75em; }
 .markdown > :first-child { margin-top: 0; }
 .markdown p { margin: 1em 0; }
@@ -2171,7 +2171,7 @@ button.control:hover {
   <div id="sidebar">
     <div id="app-info">
       <a target="_blank" href="https://github.com/randomouscrap98/deskmess">Deskmess</a>
-      <span id="app-version" class="no-interaction">v0.9.4</span>
+      <span id="app-version" class="no-interaction">v0.9.5</span>
       <span>| haloopdy 2025</span>
       <a href="#tools" id="tool-toggle">⚙️</a>
       <div id="tool-tray" class="hidden">
@@ -2323,7 +2323,7 @@ button.control:hover {
   </template>
 
   <template id="template-chat">
-    <div class="messages markdown card-main"></div>
+    <div class="messages card-main"></div>
     <textarea class="editor"
       onkeydown="if(event.keyCode===13 && !event.shiftKey){card=cardEvent(event); sendMessage(card,event.target.value); event.target.value='';}"></textarea>
   </template>
@@ -2331,7 +2331,7 @@ button.control:hover {
   <template id="template-message">
     <div class="message-container">
       <time></time>
-      <span class="message"></span>
+      <span class="message markdown"></span>
     </div>
   </template>
 
@@ -2346,7 +2346,7 @@ button.control:hover {
   </template>
 
   <template id="template-todo-item">
-    <div class="todo-item">
+    <div class="todo-item markdown">
       <input type="checkbox" onchange="todo_changeState(event.target)">
       <span class="todo-text"></span>
       <time></time>
