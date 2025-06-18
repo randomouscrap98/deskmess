@@ -1770,128 +1770,133 @@ button.control:hover {
     setupActions();
     setupTools();
     setupSearch();
-
-    let main = window[MCKEY];
-
-    let lastBodyMouse = null;
-    window['main-block'].addEventListener("keydown", (event) => {
-      if(!canZoomPan(event)) { return; }
-      if (event.shiftKey) {
-        if (event.keyCode === 38) { // up arrow
-          zoomPage(ZOOMINMULT);
-        } else if (event.keyCode === 40) { // down arrow
-          zoomPage(ZOOMOUTMULT);
-        }
-      } else {
-        const mofs = getMainOffset();
-        if (event.keyCode === 38) { mofs.y += ARROWMOVE; }  // Up arrow
-        else if (event.keyCode === 40) { mofs.y -= ARROWMOVE; } // Down arrow
-        else if (event.keyCode === 37) { mofs.x += ARROWMOVE; } // Left arrow
-        else if (event.keyCode === 39) { mofs.x -= ARROWMOVE; } // Right arrow
-        main.style.left = mofs.x + "px";
-        main.style.top = mofs.y + "px";
-      }
-    });
-    window['main-block'].addEventListener("wheel", (event) => {
-      if(!canZoomPan(event)) { return; }
-      var delta = Math.max(-1, Math.min(1, (event.wheelDelta || -event.detail)));
-      zoomPage(delta < 0 ? ZOOMOUTMULT : ZOOMINMULT, event.clientX, event.clientY);
-    });
-    window['main-block'].addEventListener("mousedown", (event) => {
-      if(event.button === 0) {
-        if(isInFooter(event.target)) return;
-        if(isInSidebar(event.target)) return;
-        let card = getContainingCard(event.target);
-        let cards = [];
-        let mods = 0;
-        // Close all menus if click outside of one
-        if(!getContainingMenu(event.target)) {
-          document.querySelectorAll('.card .menu').forEach(m => setHidden(m));
-        }
-        if(card) {
-          cards.push({card:card, cofs:getOffset(card), main: true});
-          bringAllToFront(card);
-          if(event.target.classList.contains("right-resize")) {
-            mods = MODRESIZERIGHT;
-            getCardChildren(card).forEach(c => cards.push({card:c, cofs:getOffset(c)}));
-          } else if(event.target.classList.contains("bottom-resize")) {
-            mods = MODRESIZEBOTTOM;
-            getCardChildren(card).forEach(c => cards.push({card:c, cofs:getOffset(c)}));
-          } else if(event.target.classList.contains("corner-resize")) {
-            mods = MODRESIZERIGHT | MODRESIZEBOTTOM;
-            getCardChildren(card).forEach(c => cards.push({card:c, cofs:getOffset(c)}));
-          } else if(findDraghandle(event.target)) {
-            if(pendingCardAction) {
-              pendingCardAction(card);
-              return;
-            }
-            // Don't do dragging if we're in pageview mode
-            if(controlEnabled(window["action-pageview"])) { return; }
-            mods = MODMOVECARDS;
-            getCardAllChildren(card).forEach(c => cards.push({card:c, cofs:getOffset(c)}));
-          } else {
-            return;
-          }
-        }
-        lastBodyMouse = {
-          x : event.clientX, xs: event.clientX,
-          y : event.clientY, ys: event.clientY,
-          cards: cards,
-          mods: mods,
-          snapEm : controlEnabled(window["action-gridsnap"]) ?
-            (v) => Math.round(v) : (v) => v 
-        };
-        main.style.userSelect = "none"; // ALWAYS DO THIS
-        //event.preventDefault();
-        window.location.hash = ""; // to make life easier for people 
-        return false;
-      }
-    });
-    window['main-block'].addEventListener("mousemove", (event) => {
-      if(lastBodyMouse) {
-        addCard.offset = null; // any movement will reset the accum offset
-        const mofs = getMainOffset();
-        if(lastBodyMouse.mods) { // Working on cards or something
-          const xofs = pxToRem(event.clientX - lastBodyMouse.xs) / mofs.fs;
-          const yofs = pxToRem(event.clientY - lastBodyMouse.ys) / mofs.fs;
-          lastBodyMouse.cards.forEach(c => {
-            if(c.main) {
-              if(lastBodyMouse.mods & MODRESIZERIGHT) {
-                c.card.style.width = lastBodyMouse.snapEm(Math.max(c.cofs.width + xofs, MINCARDWIDTH)) + "em";
-              }
-              if(lastBodyMouse.mods & MODRESIZEBOTTOM) {
-                c.card.style.height = lastBodyMouse.snapEm(Math.max(c.cofs.height + yofs, MINCARDHEIGHT)) + "em";
-              }
-            }
-            if(lastBodyMouse.mods & MODMOVECARDS) {
-              c.card.style.left = lastBodyMouse.snapEm(c.cofs.x + xofs) + "em";
-              c.card.style.top = lastBodyMouse.snapEm(c.cofs.y + yofs) + "em";
-            }
-            resetConnector(c.card);
-          });
-        }
-        else { // Working solely on main
-          main.style.left = mofs.x + (event.clientX - lastBodyMouse.x) + "px";
-          main.style.top = mofs.y + (event.clientY - lastBodyMouse.y) + "px";
-        }
-        lastBodyMouse.x = event.clientX;
-        lastBodyMouse.y = event.clientY;
-      }
-    });
-    window['main-block'].addEventListener("mouseup", (event) => {
-      if(event.button === 0) {
-        main.style.removeProperty("user-select");
-        if(lastBodyMouse) {
-          lastBodyMouse = null;
-          event.preventDefault();
-          console.log("Master mouse up")
-        }
-      }
-    });
   });
 
   function cardEvent(event) { event.preventDefault(); return getContainingCard(event.target); }
   function setValueAttr(event) { event.target.setAttribute('value', event.target.value); }
+
+  function main_keydown(event) {
+    if(!canZoomPan(event)) { return; }
+    if (event.shiftKey) {
+      if (event.keyCode === 38) { // up arrow
+        zoomPage(ZOOMINMULT);
+      } else if (event.keyCode === 40) { // down arrow
+        zoomPage(ZOOMOUTMULT);
+      }
+    } else {
+      const mofs = getMainOffset();
+      if (event.keyCode === 38) { mofs.y += ARROWMOVE; }  // Up arrow
+      else if (event.keyCode === 40) { mofs.y -= ARROWMOVE; } // Down arrow
+      else if (event.keyCode === 37) { mofs.x += ARROWMOVE; } // Left arrow
+      else if (event.keyCode === 39) { mofs.x -= ARROWMOVE; } // Right arrow
+      window[MCKEY].style.left = mofs.x + "px";
+      window[MCKEY].style.top = mofs.y + "px";
+    }
+  }
+
+  function main_wheel(event) {
+    if(!canZoomPan(event)) { return; }
+    var delta = Math.max(-1, Math.min(1, (event.wheelDelta || -event.detail)));
+    zoomPage(delta < 0 ? ZOOMOUTMULT : ZOOMINMULT, event.clientX, event.clientY);
+  }
+
+  // WARN: this global is used for the following main mouse functions! This should
+  // be modified in the future to do something different!
+  let lastBodyMouse = null;
+
+  function main_mousedown(event) {
+    if(event.button === 0) {
+      if(isInFooter(event.target)) return;
+      if(isInSidebar(event.target)) return;
+      let card = getContainingCard(event.target);
+      let cards = [];
+      let mods = 0;
+      // Close all menus if click outside of one
+      if(!getContainingMenu(event.target)) {
+        document.querySelectorAll('.card .menu').forEach(m => setHidden(m));
+      }
+      if(card) {
+        cards.push({card:card, cofs:getOffset(card), main: true});
+        bringAllToFront(card);
+        if(event.target.classList.contains("right-resize")) {
+          mods = MODRESIZERIGHT;
+          getCardChildren(card).forEach(c => cards.push({card:c, cofs:getOffset(c)}));
+        } else if(event.target.classList.contains("bottom-resize")) {
+          mods = MODRESIZEBOTTOM;
+          getCardChildren(card).forEach(c => cards.push({card:c, cofs:getOffset(c)}));
+        } else if(event.target.classList.contains("corner-resize")) {
+          mods = MODRESIZERIGHT | MODRESIZEBOTTOM;
+          getCardChildren(card).forEach(c => cards.push({card:c, cofs:getOffset(c)}));
+        } else if(findDraghandle(event.target)) {
+          if(pendingCardAction) {
+            pendingCardAction(card);
+            return;
+          }
+          // Don't do dragging if we're in pageview mode
+          if(controlEnabled(window["action-pageview"])) { return; }
+          mods = MODMOVECARDS;
+          getCardAllChildren(card).forEach(c => cards.push({card:c, cofs:getOffset(c)}));
+        } else {
+          return;
+        }
+      }
+      lastBodyMouse = {
+        x : event.clientX, xs: event.clientX,
+        y : event.clientY, ys: event.clientY,
+        cards: cards,
+        mods: mods,
+        snapEm : controlEnabled(window["action-gridsnap"]) ?
+          (v) => Math.round(v) : (v) => v 
+      };
+      window[MCKEY].style.userSelect = "none"; // ALWAYS DO THIS
+      //event.preventDefault();
+      window.location.hash = ""; // to make life easier for people 
+      return false;
+    }
+  }
+
+  function main_mousemove(event) {
+    if(lastBodyMouse) {
+      addCard.offset = null; // any movement will reset the accum offset
+      const mofs = getMainOffset();
+      if(lastBodyMouse.mods) { // Working on cards or something
+        const xofs = pxToRem(event.clientX - lastBodyMouse.xs) / mofs.fs;
+        const yofs = pxToRem(event.clientY - lastBodyMouse.ys) / mofs.fs;
+        lastBodyMouse.cards.forEach(c => {
+          if(c.main) {
+            if(lastBodyMouse.mods & MODRESIZERIGHT) {
+              c.card.style.width = lastBodyMouse.snapEm(Math.max(c.cofs.width + xofs, MINCARDWIDTH)) + "em";
+            }
+            if(lastBodyMouse.mods & MODRESIZEBOTTOM) {
+              c.card.style.height = lastBodyMouse.snapEm(Math.max(c.cofs.height + yofs, MINCARDHEIGHT)) + "em";
+            }
+          }
+          if(lastBodyMouse.mods & MODMOVECARDS) {
+            c.card.style.left = lastBodyMouse.snapEm(c.cofs.x + xofs) + "em";
+            c.card.style.top = lastBodyMouse.snapEm(c.cofs.y + yofs) + "em";
+          }
+          resetConnector(c.card);
+        });
+      }
+      else { // Working solely on main
+        window[MCKEY].style.left = mofs.x + (event.clientX - lastBodyMouse.x) + "px";
+        window[MCKEY].style.top = mofs.y + (event.clientY - lastBodyMouse.y) + "px";
+      }
+      lastBodyMouse.x = event.clientX;
+      lastBodyMouse.y = event.clientY;
+    }
+  }
+
+  function main_mouseup(event) {
+    if(event.button === 0) {
+      window[MCKEY].style.removeProperty("user-select");
+      if(lastBodyMouse) {
+        lastBodyMouse = null;
+        event.preventDefault();
+        console.log("Master mouse up")
+      }
+    }
+  }
 
   function title_keydown(event) {
     if(event.keyCode==13){
@@ -2211,7 +2216,9 @@ button.control:hover {
   // !! INSERT TEST HARNESS HERE !!
 </script>
 
-<body id="main-block">
+<body id="main-block" onkeydown="main_keydown(event)" onwheel="main_wheel(event)"
+    onmousedown="main_mousedown(event)" onmousemove="main_mousemove(event)"
+    onmouseup="main_mouseup(event)">
 
   <div id="main-container" style="font-size: 1rem" data-nextid="1"></div>
 
