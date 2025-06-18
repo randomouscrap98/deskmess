@@ -1652,23 +1652,8 @@ button.control:hover {
     return true;
   }
 
-  window.addEventListener("hashchange", function(event) {
-    const cid = window.location.hash.substring(1);
-    if(!cid) return;
-    const card = document.getElementById(cid);
-    if(card) {
-      const ofs = getOffset(card);
-      console.log("Focusing card " + cid, ofs);
-      let mc = window[MCKEY];
-      mc.style.left = remToPx(CARDOFSX - emToRem(ofs.x, mc)) + "px";
-      mc.style.top = remToPx(CARDOFSY - emToRem(ofs.y, mc)) + "px";
-      bringAllToFront(card);
-    }
-  });
-
-  document.addEventListener("DOMContentLoaded", function () {
+  function setupSaveSystem() {
     let main = window[MCKEY];
-
     let localParam = getLocalName();
     let serverParam = getServerName();
 
@@ -1717,6 +1702,16 @@ button.control:hover {
       window["action-save"].addEventListener("click", () => {removePendingCardAction(); setSaved(); downloadPage();});
     }
 
+    // This may eventually be dependent on the save setup
+    window.addEventListener('beforeunload', function (event) {
+      if (isUnsaved()) {
+        event.preventDefault();
+        event.returnValue = ''; // Chrome requires returnValue to be set
+      }
+    });
+  }
+
+  function setupActions() {
     window["action-gridsnap"].addEventListener("click", (event) => toggleControl(event.target, "grid-snap"));
     window["action-pageview"].addEventListener("click", (event) => toggleControl(event.target, "page-view"));
     window["action-darkmode"].addEventListener("click", (event) => toggleControl(event.target, "dark-mode"));
@@ -1730,13 +1725,21 @@ button.control:hover {
     window["action-newdrawing"].addEventListener("click", () => addCard("drawing"));
     window["action-newmod"].addEventListener("click", () => window['import-mod'].click());
     window["action-newimage"].addEventListener("click", () => window['import-image'].click());
-    window["action-resetview"].addEventListener("click", () => main.style = "");
+    window["action-resetview"].addEventListener("click", () => window[MCKEY].style = "");
+  }
 
+  function setupTools() {
     window["tool-import"].addEventListener("click", () => window['import-file'].click());
     window["tool-append"].addEventListener("click", () => window['append-file'].click());
     window["tool-export"].addEventListener("click", () => {downloadExport();});
     window["tool-clone"].addEventListener("click", () => {removePendingCardAction(); downloadPage();});
+    window["tool-toggle"].addEventListener('click', (e) => {
+      e.preventDefault();
+      toggleHidden(window['tool-tray']);
+    });
+  }
 
+  function setupSearch() {
     let searchTimeout = null;
     window["search"].addEventListener("input", () => {
       if(searchTimeout !== null) {
@@ -1746,18 +1749,29 @@ button.control:hover {
         rebuildTree();
       }, AUTOMARKDOWNDELAY);
     });
+  }
 
-    window["tool-toggle"].addEventListener('click', (e) => {
-      e.preventDefault();
-      toggleHidden(window['tool-tray']);
-    });
+  window.addEventListener("hashchange", function(event) {
+    const cid = window.location.hash.substring(1);
+    if(!cid) return;
+    const card = document.getElementById(cid);
+    if(card) {
+      const ofs = getOffset(card);
+      console.log("Focusing card " + cid, ofs);
+      let mc = window[MCKEY];
+      mc.style.left = remToPx(CARDOFSX - emToRem(ofs.x, mc)) + "px";
+      mc.style.top = remToPx(CARDOFSY - emToRem(ofs.y, mc)) + "px";
+      bringAllToFront(card);
+    }
+  });
 
-    window.addEventListener('beforeunload', function (event) {
-      if (isUnsaved()) {
-        event.preventDefault();
-        event.returnValue = ''; // Chrome requires returnValue to be set
-      }
-    });
+  document.addEventListener("DOMContentLoaded", function () {
+    setupSaveSystem();
+    setupActions();
+    setupTools();
+    setupSearch();
+
+    let main = window[MCKEY];
 
     let lastBodyMouse = null;
     window['main-block'].addEventListener("keydown", (event) => {
@@ -1795,7 +1809,6 @@ button.control:hover {
           document.querySelectorAll('.card .menu').forEach(m => setHidden(m));
         }
         if(card) {
-          //if(!getContainingMenu(event.target)) setHidden(getCardMenu(card));
           cards.push({card:card, cofs:getOffset(card), main: true});
           bringAllToFront(card);
           if(event.target.classList.contains("right-resize")) {
