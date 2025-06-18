@@ -1669,6 +1669,8 @@ button.control:hover {
       }
     }
 
+    let setTitle = (t) => document.title = (t || "deskmess") + " - Desk Mess";
+
     if(localParam) {
       console.log("Using local IndexedDB to store " + localParam);
       window["action-save"].addEventListener("click", () => { exportsDbPut(localParam, exportPage(), (e) => {
@@ -1684,7 +1686,7 @@ button.control:hover {
         }
         setInterval(() => window["action-save"].click(), 60000);
       });
-      document.title = "Desk Mess - " + localParam;
+      setTitle(localParam);
     } else if (serverParam) {
       console.log("Using server to store: " + serverParam);
       window["action-save"].addEventListener("click", () => { serverPut(serverParam, exportPage(), (e) => {
@@ -1700,10 +1702,10 @@ button.control:hover {
         }
         setInterval(() => window["action-save"].click(), 60000);
       });
-      document.title = "Desk Mess - " + serverParam;
+      setTitle(serverParam);
     } else {
       window["action-save"].addEventListener("click", () => {removePendingCardAction(); setSaved(); downloadPage();});
-      document.title = "Desk Mess - " + window.location.pathname.split("/").pop();
+      setTitle(window.location.pathname.split("/").pop());
     }
 
     // This may eventually be dependent on the save setup
