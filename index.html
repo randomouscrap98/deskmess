@@ -876,9 +876,9 @@ button.control:hover {
   function isCardMinimized(card) { return card.classList.contains(MINIMIZEDCLASS) }
   function bringToFront(card) { card.style.zIndex = findMaxCardIndex() + 1; } // Increase forever
   function bringAllToFront(card) {
-    bringToFront(card);
     let children = getCardAllChildren(card);
     children.forEach(c => bringToFront(c));
+    bringToFront(card);
   }
   function applyWholeCard(card, apply) {
     apply(card);
