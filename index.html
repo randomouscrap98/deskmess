@@ -526,6 +526,14 @@ button.control:hover {
   font-size: 0.8em;
   opacity: 0.5;
 }
+.todo-list .todo-timer {
+  background: none;
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+  border: none;
+  font-weight: bold;
+}
 
 /* Markdown */
 .content .markdown { line-height: 1.4; }
@@ -2028,9 +2036,14 @@ button.control:hover {
     let ttext = item.querySelector(".todo-text");
     setMarkdown(ttext, data.text, true);
     ttext.setAttribute("data-raw", data.text);
+    let ttimer = item.querySelector(".todo-timer");
+    if(data.timing) {
+      ttimer.textContent = "🛑";
+    }
     if(data.done) {
       ttext.style.textDecoration = "line-through";
       item.querySelector("input").setAttribute('checked', true);
+      setHidden(ttimer);
       if(data.date)
         setDateElement(item.querySelector("time"), data.date.toISOString());
     }
@@ -2043,9 +2056,15 @@ button.control:hover {
     let list = content.querySelector(".todo-list");
     list.innerHTML = "";
     let lines = editor.value.split('\n');
+    let lineskipped = 0;
     for(let i = 0; i < lines.length; i++) {
       const line = lines[i].trim();
-      if(!line) continue;
+      if(!line) {
+        lineskipped++;
+        if(lineskipped > 1) { break; } else { continue; }
+      } else {
+        lineskipped = 0;
+      }
       const parsed = todo_parseLine(line);
       if(!parsed) {
         console.warn("Couldn't parse todo line: " + line);
@@ -2232,7 +2251,7 @@ button.control:hover {
   <div id="sidebar">
     <div id="app-info">
       <a target="_blank" href="https://github.com/randomouscrap98/deskmess">Deskmess</a>
-      <span id="app-version" class="no-interaction">v0.9.5</span>
+      <span id="app-version" class="no-interaction">v0.9.6</span>
       <span>| haloopdy 2025</span>
       <a href="#tools" id="tool-toggle">⚙️</a>
       <div id="tool-tray" class="hidden">
@@ -2413,6 +2432,7 @@ button.control:hover {
       <input type="checkbox" onchange="todo_changeState(event.target)">
       <span class="todo-text"></span>
       <time></time>
+      <button type="button" class="todo-timer" onclick="todo_timer(event.target)">⏱️</button>
     </div>
   </template>
 
