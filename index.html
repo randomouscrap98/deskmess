@@ -776,6 +776,7 @@ button.control:hover {
   const IMPORTMODMSG = "WARNING: mods are inserted DIRECTLY AS-IS and can permanently break the page! Make sure you save before testing mods!\n\nAre you sure you want to import?";
   const APPENDMSG = "Appending will add all cards from an import at the current location. It will modify the cards to have new ids and references.\n\nAre you sure you want to append?";
   const REFPREPEND = "card_";
+  const TODODELIMITER = "\n\n\n";
 
   var ARROWMOVE = 30; // pixels
   var ZOOMINMULT = 1.2;
@@ -2010,26 +2011,24 @@ button.control:hover {
   }
 
   function todo_parseLine(line) {
-    const matches = line.match(/^(.*?)(\s+\(done\s*([0-9:tTzZ.-]+)?\))?$/);
+    const matches = line.match(/^(.*?)(\s+\((done|start)\s*([0-9:tTzZ.-]+)?\))?$/);
     if(!matches) return null;
-    let [_, text, doneSection, doneDate] = matches;
+    let [_all, text, _datesection, identifier, date] = matches;
     return {
-      done: doneSection ? true : false,
-      date: doneDate ? new Date(doneDate) : null,
+      done: identifier === "done",
+      started: identifier === "start",
+      date: date ? new Date(date) : null,
       text: text.trim()
     };
   }
   function todo_createLine(data) {
-    if(data.done) {
-      if(data.date)
-        return data.text + " (done " + data.date.toISOString() + ")";
-      else
-        return data.text + " (done)";
+    let identifier = data.done ? "done" : data.started ? "start" : false;
+    if(identifier) {
+      return data.text + " (" + identifier + (data.date ? " " + data.date.toISOString() : "") + ")";
     } else {
       return data.text;
     }
   }
-
   function todo_renderItem(data, refid) {
     let item = copyTemplateSafe("template-todo-item");
     item.firstElementChild.setAttribute("data-refid", refid);
@@ -2037,19 +2036,19 @@ button.control:hover {
     setMarkdown(ttext, data.text, true);
     ttext.setAttribute("data-raw", data.text);
     let ttimer = item.querySelector(".todo-timer");
-    if(data.timing) {
-      ttimer.textContent = "🛑";
-    }
     if(data.done) {
       ttext.style.textDecoration = "line-through";
       item.querySelector("input").setAttribute('checked', true);
       setHidden(ttimer);
       if(data.date)
         setDateElement(item.querySelector("time"), data.date.toISOString());
+    } else if(data.started) {
+      ttimer.textContent = "🛑";
+      if(data.date)
+        ttimer.setAttribute("data-start", data.date.toISOString());
     }
     return item;
   }
-
   function todo_updateAll(card) {
     let content = getCardContent(card);
     let editor = getCardEditor(card);
@@ -2073,16 +2072,42 @@ button.control:hover {
       list.appendChild(todo_renderItem(parsed, i));
     }
   }
-  function todo_changeState(checkbox) {
-    let card = getContainingCard(checkbox);
+  function todo_addTime(editor, text, start) {
+    if(editor.value.indexOf(TODODELIMITER) < 0)
+      editor.value += TODODELIMITER;
+    editor.value += "\n" + text + "|" + start + "|" + (new Date()).toISOString();
+  }
+  // ANY change state, whether starting/stopping a timer or setting complete
+  function todo_changeState(element) {
+    // First, pull "previous" state data from element
+    let item = findParentOrSelf(element, (e) => e.classList.contains("todo-item"));
+    let card = getContainingCard(item);
     let editor = getCardEditor(card);
-    let item = findParentOrSelf(checkbox, (e) => e.classList.contains("todo-item"));
+    let timer = item.querySelector(".todo-timer");
     const linenum = parseInt(item.getAttribute("data-refid"));
+    const started = timer.getAttribute("data-start");
+    const timerClicked = element.classList.contains("todo-timer");
+    // Then, build up "new" data state to re-render element and to update text editor
     let data = {
-      text: item.querySelector('.todo-text').getAttribute("data-raw"),
-      done: checkbox.checked
+      text: item.querySelector(".todo-text").getAttribute("data-raw"),
+      done: item.querySelector("input").checked,
     };
-    if(data.done) data.date = new Date();
+    // Finish or setup new timer
+    if(timerClicked) {
+      if(started) {
+        todo_addTime(editor, data.text, started);
+      } else {
+        data.date = new Date();
+        data.started = true;
+        timer.setAttribute("data-start", data.date.toISOString());
+      }
+    }
+    // Finish task (which may also finish timer)
+    if(data.done) {
+      data.date = new Date();
+      if(started)
+        todo_addTime(editor, data.text, started);
+    }
     let newItem = todo_renderItem(data, linenum);
     item.parentNode.replaceChild(newItem, item);
     let lines = editor.value.split('\n');
@@ -2092,6 +2117,7 @@ button.control:hover {
     editor.textContent = text;
     setUnsaved();
   }
+
   function mod_syncBack(card) {
     let editor = getCardEditor(card);
     editor.value = getCardContent(card).querySelector(".mod").innerHTML;
@@ -2432,7 +2458,7 @@ button.control:hover {
       <input type="checkbox" onchange="todo_changeState(event.target)">
       <span class="todo-text"></span>
       <time></time>
-      <button type="button" class="todo-timer" onclick="todo_timer(event.target)">⏱️</button>
+      <button type="button" class="todo-timer" onclick="todo_changeState(event.target)">⏱️</button>
     </div>
   </template>
 
