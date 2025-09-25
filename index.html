@@ -513,6 +513,10 @@ button.control:hover {
   align-items: center;
   padding: 0.1em 0.3em;
 }
+.todo-list .todo-item.timer-active {
+  background-color: var(--red-border);
+  color: var(--menu-color);
+}
 .modern .todo-list .todo-item {
   border-radius: 0.35em;
 }
@@ -533,6 +537,7 @@ button.control:hover {
   margin: 0;
   border: none;
   font-weight: bold;
+  font-size: 1.0em;
 }
 
 /* Markdown */
@@ -2043,6 +2048,7 @@ button.control:hover {
       if(data.date)
         setDateElement(item.querySelector("time"), data.date.toISOString());
     } else if(data.started) {
+      item.firstElementChild.classList.add("timer-active");
       ttimer.textContent = "🛑";
       if(data.date)
         ttimer.setAttribute("data-start", data.date.toISOString());
