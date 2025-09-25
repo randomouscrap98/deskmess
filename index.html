@@ -513,15 +513,15 @@ button.control:hover {
   align-items: center;
   padding: 0.1em 0.3em;
 }
-.todo-list .todo-item.timer-active {
-  background-color: var(--red-border) !important;
-  color: var(--menu-color);
-}
 .modern .todo-list .todo-item {
   border-radius: 0.35em;
 }
 .todo-list .todo-item:nth-child(odd) {
   background-color: var(--alternating-bg);
+}
+.todo-list .todo-item.timer-active {
+  animation: todoTimerPulse 0.75s infinite;
+  color: var(--menu-color);
 }
 .todo-list .todo-item .todo-text {
   flex: 1;
@@ -538,6 +538,11 @@ button.control:hover {
   border: none;
   font-weight: bold;
   font-size: 1.0em;
+}
+@keyframes todoTimerPulse {
+  0% { background-color: var(--red-border); }
+  50% { background-color: var(--red); }
+  100% { background-color: var(--red-border); }
 }
 
 /* Markdown */
