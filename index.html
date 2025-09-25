@@ -2075,7 +2075,8 @@ button.control:hover {
   function todo_addTime(editor, text, start) {
     if(editor.value.indexOf(TODODELIMITER) < 0)
       editor.value += TODODELIMITER + "name|start|end";
-    editor.value += "\n" + text + "|" + start + "|" + (new Date()).toISOString();
+    // Y says that spreadsheets don't like iso time so locale it is
+    editor.value += "\n" + text + "|" + (new Date(start)).toLocaleString() + "|" + (new Date()).toLocaleString();
   }
   // ANY change state, whether starting/stopping a timer or setting complete
   function todo_changeState(element) {
