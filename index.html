@@ -2074,7 +2074,7 @@ button.control:hover {
   }
   function todo_addTime(editor, text, start) {
     if(editor.value.indexOf(TODODELIMITER) < 0)
-      editor.value += TODODELIMITER;
+      editor.value += TODODELIMITER + "name|start|end";
     editor.value += "\n" + text + "|" + start + "|" + (new Date()).toISOString();
   }
   // ANY change state, whether starting/stopping a timer or setting complete
