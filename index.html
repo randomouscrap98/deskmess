@@ -2136,11 +2136,8 @@ button.control:hover {
     let lines = parts[0].split('\n');
     for(let i = 0; i < lines.length; i++) {
       const line = lines[i].trim();
-      if(!line) {
-        //if(pending.length
-        //pending.push(lines[i]);
+      if(!line)
         continue;
-      }
       const parsed = todo_parseLine(line);
       if(!parsed) {
         console.warn("Couldn't parse todo line: " + line);
