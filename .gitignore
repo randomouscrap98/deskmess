@@ -3,3 +3,4 @@ notes/
 test/index.html
 test/notes/
 test/server.py
+run.sh
