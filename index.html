@@ -194,7 +194,7 @@ footer {
   display: flex;
   align-items: flex-end;
   gap: 0.25em;
-  padding: 0.3em 1em;
+  margin: 0.3em 1em;
   box-sizing: border-box;
   z-index: 1999999999;
   width: fit-content;
@@ -680,24 +680,16 @@ button.control:hover {
   width: 100%;
   height: 100%;
   margin: 0;
-  /*
-  display: flex;
-  flex-wrap: wrap;
-  padding: 0.5rem;
-  align-items: flex-start;
-  */
   display: block;
   overflow-x: hidden;
-  overflow-y: hidden; /*auto;*/
+  overflow-y: hidden;
   top: 0 !important;
   left: 0 !important;
   box-sizing: border-box;
 }
 .page-view.open-sidebar #main-container {
   /* NOTE: this is required to make #links work correctly in visual mode */
-  /*padding-right: calc(var(--sidebar-width) + 0.5rem);*/
   width: calc(100% - var(--sidebar-width));
-  /*padding-right: var(--sidebar-width);*/
 }
 .page-view .card-connector {
   display: none;
@@ -712,25 +704,15 @@ button.control:hover {
   border: none;
   padding-left: 0;
   padding-right: 0;
-  /*position: relative;
-  margin: 0.5em;
-  top: unset !important;
-  left: unset !important;*/
+  padding-bottom: 0;
+  box-sizing: border-box;
 }
 .page-view .content textarea.editor {
   border-left: none;
-  /*border-bottom: none;*/
   border-right: none;
 }
 .page-view .card .card-main { border: none !important; }
-/* SEVERE HACK TO ADD EXTRA SPACE, requires each card to have connector after */
-/*.page-view #main-container > :last-child {
-  display: block !important;
-  height: 50vh;
-  width: 100%;
-  position: unset;
-  visibility: hidden;
-}*/
+.page-view .draghandle { cursor: zoom-in; }
 
 
 /* Standard colors */
@@ -1260,6 +1242,7 @@ button.control:hover {
       Object.keys(extra).forEach(k => cdata[k] = extra[k]);
     }
     let result = importCard(cdata);
+    window.location.hash = "";
     setUnsaved();
     rebuildTree();
     bringAllToFront(result);
@@ -1511,6 +1494,7 @@ button.control:hover {
     let titleraw = getCardTitle(card).textContent;
     titlelm.textContent = titleraw;
     titlelm.href = "#" + getCardRef(card).textContent;
+    titlelm.addEventListener("click", () => setSelectedCard(card));
     if(searchText) {
       let contentraw = (getCardContent(card) || {}).textContent;
       if(titleraw.toLowerCase().indexOf(searchText) >= 0 || 
@@ -1601,6 +1585,9 @@ button.control:hover {
   function setControl(element, state) {
     if((state || false) != (controlEnabled(element) || false))
       element.click();
+  }
+  function controlClassEnabled(classname) {
+    return document.body.classList.contains(classname);
   }
 
   // Open the exports db, creating the db + table if it doesn't exist.
@@ -1712,11 +1699,16 @@ button.control:hover {
     main.style.top = (ogy - yofs * ratio) + "px";
   }
 
-  function canZoomPan(event) {
-    if(getContainingCard(event.target)) { return false; }
+  function canZoomPan(event, isZoom) {
     if(findParentOrSelf(event.target, (e) => e.id=="sidebar")) { return false; }
+    if(getContainingCard(event.target)) { 
+      if(!(isZoom && findParentOrSelf(event.target, (e) => e.classList.contains("draghandle")))) { 
+        return false;
+      }
+    }
+    // if(findParentOrSelf(event.target, (e) => e.id=="sidebar")) { return false; }
     // NOTE: CAN'T do this, because need to scroll page now
-    if(controlEnabled(window["action-pageview"])) { return false; }
+    // if(controlEnabled(window["action-pageview"])) { return false; }
     return true;
   }
 
@@ -1849,7 +1841,7 @@ button.control:hover {
   function setValueAttr(event) { event.target.setAttribute('value', event.target.value); }
 
   function main_keydown(event) {
-    if(!canZoomPan(event)) { return; }
+    if(!canZoomPan(event, event.shiftKey)) { return; }
     if (event.shiftKey) {
       if (event.keyCode === 38) { // up arrow
         zoomPage(ZOOMINMULT);
@@ -1868,7 +1860,7 @@ button.control:hover {
   }
 
   function main_wheel(event) {
-    if(!canZoomPan(event)) { return; }
+    if(!canZoomPan(event, true)) { return; }
     var delta = Math.max(-1, Math.min(1, (event.wheelDelta || -event.detail)));
     zoomPage(delta < 0 ? ZOOMOUTMULT : ZOOMINMULT, event.clientX, event.clientY);
   }
@@ -1878,6 +1870,7 @@ button.control:hover {
   let lastBodyMouse = null;
 
   function main_mousedown(event) {
+    if(controlClassEnabled('page-view')) { return; }
     if(event.button === 0) {
       if(isInFooter(event.target)) return;
       if(isInSidebar(event.target)) return;
@@ -1929,6 +1922,7 @@ button.control:hover {
   }
 
   function main_mousemove(event) {
+    if(controlClassEnabled('page-view')) { return; }
     if(lastBodyMouse) {
       addCard.offset = null; // any movement will reset the accum offset
       const mofs = getMainOffset();
@@ -1961,6 +1955,7 @@ button.control:hover {
   }
 
   function main_mouseup(event) {
+    if(controlClassEnabled('page-view')) { return; }
     if(event.button === 0) {
       window[MCKEY].style.removeProperty("user-select");
       if(lastBodyMouse) {
