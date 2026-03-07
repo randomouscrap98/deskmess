@@ -1586,9 +1586,6 @@ button.control:hover {
     if((state || false) != (controlEnabled(element) || false))
       element.click();
   }
-  function controlClassEnabled(classname) {
-    return document.body.classList.contains(classname);
-  }
 
   // Open the exports db, creating the db + table if it doesn't exist.
   function exportsDbWork(success) {
@@ -1706,9 +1703,6 @@ button.control:hover {
         return false;
       }
     }
-    // if(findParentOrSelf(event.target, (e) => e.id=="sidebar")) { return false; }
-    // NOTE: CAN'T do this, because need to scroll page now
-    // if(controlEnabled(window["action-pageview"])) { return false; }
     return true;
   }
 
@@ -1870,7 +1864,6 @@ button.control:hover {
   let lastBodyMouse = null;
 
   function main_mousedown(event) {
-    if(controlClassEnabled('page-view')) { return; }
     if(event.button === 0) {
       if(isInFooter(event.target)) return;
       if(isInSidebar(event.target)) return;
@@ -1884,6 +1877,12 @@ button.control:hover {
       if(card) {
         cards.push({card:card, cofs:getOffset(card), main: true});
         bringAllToFront(card);
+        if(pendingCardAction && findDraghandle(event.target)) {
+          pendingCardAction(card);
+          return;
+        }
+        // Don't go ANY farther if we're in page-view mode. Just need pending card action
+        if(controlEnabled(window['action-pageview'])) { return; }
         if(event.target.classList.contains("right-resize")) {
           mods = MODRESIZERIGHT;
           getCardChildren(card).forEach(c => cards.push({card:c, cofs:getOffset(c)}));
@@ -1894,12 +1893,6 @@ button.control:hover {
           mods = MODRESIZERIGHT | MODRESIZEBOTTOM;
           getCardChildren(card).forEach(c => cards.push({card:c, cofs:getOffset(c)}));
         } else if(findDraghandle(event.target)) {
-          if(pendingCardAction) {
-            pendingCardAction(card);
-            return;
-          }
-          // Don't do dragging if we're in pageview mode
-          if(controlEnabled(window["action-pageview"])) { return; }
           mods = MODMOVECARDS;
           getCardAllChildren(card).forEach(c => cards.push({card:c, cofs:getOffset(c)}));
         } else {
@@ -1922,7 +1915,7 @@ button.control:hover {
   }
 
   function main_mousemove(event) {
-    if(controlClassEnabled('page-view')) { return; }
+    if(controlEnabled(window['action-pageview'])) { return; }
     if(lastBodyMouse) {
       addCard.offset = null; // any movement will reset the accum offset
       const mofs = getMainOffset();
@@ -1955,7 +1948,7 @@ button.control:hover {
   }
 
   function main_mouseup(event) {
-    if(controlClassEnabled('page-view')) { return; }
+    if(controlEnabled(window['action-pageview'])) { return; }
     if(event.button === 0) {
       window[MCKEY].style.removeProperty("user-select");
       if(lastBodyMouse) {
