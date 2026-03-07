@@ -997,6 +997,28 @@ button.control:hover {
       setHidden(con);
     }
   }
+  function getSelectedCard() {
+    return document.querySelector(".card.selected");
+  }
+  function setSelectedCard(card) {
+    window['tree'].querySelectorAll(".tree-node.selected").forEach(elm => {
+      elm.classList.remove("selected");
+    });
+    document.querySelectorAll(".card.selected").forEach(elm => {
+      elm.classList.remove("selected");
+    });
+    if(card) {
+      card.classList.add("selected");
+      let cardRef = getCardRef(card).textContent;
+      let link = window['tree'].querySelector(`.tree-node .title[href="#${cardRef}"]`);
+      if(link) {
+        let line = findParentOrSelf(link, (e) => e.classList.contains("tree-node"));
+        line.classList.add("selected");
+      } else {
+        console.warn(`Can't find '${cardRef}' in tree (not selecting)`);
+      }
+    }
+  }
 
   // Template stuff
   function copyTemplateSingle(name) { 
@@ -1451,25 +1473,8 @@ button.control:hover {
     }
   }
 
-  function setSelectedCard(card) {
-    window['tree'].querySelectorAll(".tree-node.selected").forEach(elm => {
-      elm.classList.remove("selected");
-    });
-    document.querySelectorAll(".card.selected").forEach(elm => {
-      elm.classList.remove("selected");
-    });
-    card.classList.add("selected");
-    let cardRef = getCardRef(card).textContent;
-    let link = window['tree'].querySelector(`.tree-node .title[href="#${cardRef}"]`);
-    if(link) {
-      let line = findParentOrSelf(link, (e) => e.classList.contains("tree-node"));
-      line.classList.add("selected");
-    } else {
-      console.warn(`Can't find '${cardRef}' in tree (not selecting)`);
-    }
-  }
-
   function rebuildTree() {
+    let selectedCard = getSelectedCard();
     let tree = window['tree'];
     tree.innerHTML = "";
     let seen = new Set();
@@ -1487,6 +1492,7 @@ button.control:hover {
         leftover = except(leftover, seen);
       }
     }
+    setSelectedCard(selectedCard);
   }
   function buildSubtree(card, seen, searchText) {
     let nodelm = copyTemplateSingle("template-treenode");
