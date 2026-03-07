@@ -197,6 +197,8 @@ footer {
   padding: 0.3em 1em;
   box-sizing: border-box;
   z-index: 1999999999;
+  width: fit-content;
+  margin-left: auto;
 }
 .open-sidebar footer {
   /* NOTE: this is required to make #links work correctly in visual mode */
@@ -678,37 +680,57 @@ button.control:hover {
   width: 100%;
   height: 100%;
   margin: 0;
+  /*
   display: flex;
   flex-wrap: wrap;
-  overflow-x: hidden;
-  overflow-y: auto;
-  top: unset !important;
-  left: unset !important;
   padding: 0.5rem;
-  box-sizing: border-box;
   align-items: flex-start;
+  */
+  display: block;
+  overflow-x: hidden;
+  overflow-y: hidden; /*auto;*/
+  top: 0 !important;
+  left: 0 !important;
+  box-sizing: border-box;
 }
 .page-view.open-sidebar #main-container {
   /* NOTE: this is required to make #links work correctly in visual mode */
-  padding-right: calc(var(--sidebar-width) + 0.5rem);
+  /*padding-right: calc(var(--sidebar-width) + 0.5rem);*/
+  width: calc(100% - var(--sidebar-width));
+  /*padding-right: var(--sidebar-width);*/
 }
 .page-view .card-connector {
   display: none;
 }
 .page-view .card {
-  position: relative;
+  width: 100% !important;
+  height: 100% !important;
+  top: 0 !important;
+  left: 0 !important;
+  border-radius: 0;
+  position: absolute;
+  border: none;
+  padding-left: 0;
+  padding-right: 0;
+  /*position: relative;
   margin: 0.5em;
   top: unset !important;
-  left: unset !important;
+  left: unset !important;*/
 }
+.page-view .content textarea.editor {
+  border-left: none;
+  /*border-bottom: none;*/
+  border-right: none;
+}
+.page-view .card .card-main { border: none !important; }
 /* SEVERE HACK TO ADD EXTRA SPACE, requires each card to have connector after */
-.page-view #main-container > :last-child {
+/*.page-view #main-container > :last-child {
   display: block !important;
   height: 50vh;
   width: 100%;
   position: unset;
   visibility: hidden;
-}
+}*/
 
 
 /* Standard colors */
